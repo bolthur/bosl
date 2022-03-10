@@ -1,0 +1,13 @@
+{
+  "editor.renderControlCharacters": true,
+  "editor.renderLineHighlightOnlyWhenFocus": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "editor.useTabStops": false,
+  "editor.tabSize": 2,
+  "editor.renderWhitespace": "all",
+  "editor.rulers": [
+    80,
+    120
+  ]
+}
