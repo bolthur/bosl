@@ -1,0 +1,2 @@
+# bosl
+bolthur scripting language
