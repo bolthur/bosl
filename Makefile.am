@@ -1,7 +1,7 @@
 
 ACLOCAL_AMFLAGS = -I build-aux/m4
 
-SUBDIRS = library tests
+SUBDIRS = library cli tests
 
 # coverage stuff
 if CODE_COVERAGE_ENABLED

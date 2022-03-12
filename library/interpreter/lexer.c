@@ -107,7 +107,7 @@ static bool add_token(
     strcpy( ( char* )token->start, message );
     token->length = len;
   } else {
-    token->start = lexer->current;
+    token->start = lexer->start;
     token->length = ( size_t )( lexer->current - lexer->start );
   }
   // fill token
@@ -171,9 +171,14 @@ static bool determine_identifier_token( void ) {
         }
       }
       break;
-    case 'e': return handle_possible_keyword( 1, 3, "lse", TOKEN_ELSE );
+    case 'e': {
+      if ( 4 < lexer->current - lexer->start && 'i' == lexer->start[ 4 ] ) {
+        return handle_possible_keyword( 1, 5, "lseif", TOKEN_ELSE );
+      }
+      return handle_possible_keyword( 1, 3, "lse", TOKEN_ELSE );
+    }
     // let / const
-    case 'l': return handle_possible_keyword( 1, 2, "et", TOKEN_IF );
+    case 'l': return handle_possible_keyword( 1, 2, "et", TOKEN_LET );
     case 'c': return handle_possible_keyword( 1, 4, "onst", TOKEN_CONST );
       break;
     // reference / return
@@ -318,19 +323,20 @@ static bool scan_number( void ) {
   while ( isdigit( ( int )*lexer->current ) ) {
     advance();
   }
+  bool is_hex = 'x' == *lexer->current || 'X' == *lexer->current;
+  bool is_float = '.' == *lexer->current;
   // continue loop if hex or float
   if (
-    isdigit( ( int )next() )
-    && (
-      'x' == *lexer->current
-      || 'X' == *lexer->current
-      || '.' == *lexer->current
-    )
+    ( is_float && isdigit( ( int )next() ) )
+    || ( is_hex && isalnum( ( int )next() ) )
   ) {
     // skip xX.
     advance();
     // loop until non digit
-    while ( isdigit( ( int )*lexer->current ) ) {
+    while (
+      ( is_float && isdigit( ( int )*lexer->current ) )
+      || ( is_hex && isalnum( ( int )*lexer->current ) )
+    ) {
       advance();
     }
   }

@@ -67,6 +67,10 @@ BOSL_SET_FLAG
 # checks for programs
 AC_PROG_CC
 
+## gettext
+#AM_GNU_GETTEXT([external])
+#AM_GNU_GETTEXT_VERSION([0.21])
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_C_INLINE
@@ -107,6 +111,7 @@ AC_DEFINE_UNQUOTED(
 
 AC_CONFIG_FILES([
   Makefile
+  cli/Makefile
   library/Makefile
   tests/Makefile
   tests/libbosl/Makefile

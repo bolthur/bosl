@@ -63,7 +63,6 @@ typedef enum {
   TOKEN_IDENTIFIER,
   TOKEN_STRING,
   TOKEN_NUMBER,
-  TOKEN_HEX_NUMBER,
 
   // keywords
   TOKEN_LET,
@@ -73,6 +72,7 @@ typedef enum {
   TOKEN_FALSE,
   TOKEN_NULL,
   TOKEN_IF,
+  TOKEN_ELSEIF,
   TOKEN_ELSE,
   TOKEN_WHILE,
   TOKEN_FOR,
