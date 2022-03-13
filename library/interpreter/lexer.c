@@ -43,7 +43,7 @@ static char advance( void ) {
  * @return
  */
 static char next( void ) {
-  if ( ! *lexer->current ) {
+  if ( '\0' == lexer->current[ 0 ] ) {
     return '\0';
   }
   return lexer->current[ 1 ];
@@ -57,10 +57,10 @@ static char next( void ) {
  * @return
  */
 static bool match( char expected ) {
-  if ( ! *lexer->current ) {
-    return false;
-  }
-  if ( lexer->current[ 0 ] != expected ) {
+  if (
+    '\0' == lexer->current[ 0 ]
+    || lexer->current[ 0 ] != expected
+  ) {
     return false;
   }
   lexer->current++;
@@ -163,7 +163,7 @@ static bool determine_identifier_token( void ) {
       if ( 'f' == lexer->start[ 1 ] ) {
         return handle_possible_keyword( 1, 1, "f", TOKEN_IF );
       } else if ( 2 < lexer->current - lexer->start && 'n' == lexer->start[ 1 ] ) {
-        switch( *( lexer->start + 3 ) ) {
+        switch( lexer->start[ 3 ] ) {
           case '8': return handle_possible_keyword( 1, 3, "nt8", TOKEN_TYPE_INT8 );
           case '1': return handle_possible_keyword( 1, 4, "nt16", TOKEN_TYPE_INT16 );
           case '3': return handle_possible_keyword( 1, 4, "nt32", TOKEN_TYPE_INT32 );
@@ -173,7 +173,7 @@ static bool determine_identifier_token( void ) {
       break;
     case 'e': {
       if ( 4 < lexer->current - lexer->start && 'i' == lexer->start[ 4 ] ) {
-        return handle_possible_keyword( 1, 5, "lseif", TOKEN_ELSE );
+        return handle_possible_keyword( 1, 5, "lseif", TOKEN_ELSEIF );
       }
       return handle_possible_keyword( 1, 3, "lse", TOKEN_ELSE );
     }
@@ -182,15 +182,7 @@ static bool determine_identifier_token( void ) {
     case 'c': return handle_possible_keyword( 1, 4, "onst", TOKEN_CONST );
       break;
     // reference / return
-    case 'r': {
-      if ( 2 < lexer->current - lexer->start && 'e' == lexer->start[ 1 ] ) {
-        switch( *( lexer->start + 2 ) ) {
-          case 'f': return handle_possible_keyword( 1, 2, "ef", TOKEN_REFERENCE );
-          case 't': return handle_possible_keyword( 3, 3, "urn", TOKEN_REFERENCE );
-        }
-      }
-      break;
-    }
+    case 'r': return handle_possible_keyword( 1, 5, "eturn", TOKEN_RETURN );
     // null
     case 'n': return handle_possible_keyword( 1, 3, "ull", TOKEN_NULL );
     // true
@@ -198,20 +190,18 @@ static bool determine_identifier_token( void ) {
       break;
     // false / for / fn
     case 'f': {
-      if ( 'n' == lexer->start[ 1 ] ) {
-        return handle_possible_keyword( 1, 1, "n", TOKEN_FUNCTION );
-      }
       if ( 1 < lexer->current - lexer->start ) {
         switch ( lexer->start[ 1 ] ) {
-          case 'a': return handle_possible_keyword( 2, 3, "lse", TOKEN_FALSE );
-          case 'o': return handle_possible_keyword( 2, 1, "r", TOKEN_FOR );
+          case 'a': return handle_possible_keyword( 1, 4, "alse", TOKEN_FALSE );
+          case 'n': return handle_possible_keyword( 1, 1, "n", TOKEN_FUNCTION );
+          case 'o': return handle_possible_keyword( 1, 2, "or", TOKEN_FOR );
           case 'l': {
             if ( 5 < lexer->current - lexer->start ) {
-              switch( *( lexer->start + 5 ) ) {
-                case '8': return handle_possible_keyword( 3, 4, "oat8", TOKEN_TYPE_FLOAT8 );
-                case '1': return handle_possible_keyword( 3, 5, "oat16", TOKEN_TYPE_FLOAT16 );
-                case '3': return handle_possible_keyword( 3, 5, "oat32", TOKEN_TYPE_FLOAT32 );
-                case '6': return handle_possible_keyword( 3, 5, "oat64", TOKEN_TYPE_FLOAT64 );
+              switch( lexer->start[ 5 ] ) {
+                case '8': return handle_possible_keyword( 1, 5, "loat8", TOKEN_TYPE_FLOAT8 );
+                case '1': return handle_possible_keyword( 1, 6, "loat16", TOKEN_TYPE_FLOAT16 );
+                case '3': return handle_possible_keyword( 1, 6, "loat32", TOKEN_TYPE_FLOAT32 );
+                case '6': return handle_possible_keyword( 1, 6, "loat64", TOKEN_TYPE_FLOAT64 );
               }
             }
             break;
@@ -223,25 +213,33 @@ static bool determine_identifier_token( void ) {
     // handle while
     case 'w': return handle_possible_keyword( 1, 4, "hile", TOKEN_WHILE );
     // handle print
-    case 'p': return handle_possible_keyword( 1, 4, "rint", TOKEN_PRINT );
+    case 'p': {
+      if ( 1 < lexer->current - lexer->start ) {
+        switch( lexer->start[ 1 ] ) {
+          case 'r': return handle_possible_keyword( 1, 4, "rint", TOKEN_PRINT );
+          case 'o': return handle_possible_keyword( 1, 6, "ointer", TOKEN_POINTER );
+        }
+      }
+      break;
+    }
     // handle data type string
     case 's': return handle_possible_keyword( 1, 5, "tring", TOKEN_TYPE_STRING );
     // unsigned data types
     case 'u':
       if ( 4 < lexer->current - lexer->start && 'i' == lexer->start[ 1 ] ) {
-        switch ( *( lexer->start + 4 ) ) {
-          case '8': return handle_possible_keyword( 2, 3, "nt8", TOKEN_TYPE_UINT8 );
-          case '1': return handle_possible_keyword( 2, 4, "nt16", TOKEN_TYPE_UINT16 );
-          case '3': return handle_possible_keyword( 2, 4, "nt32", TOKEN_TYPE_UINT32 );
-          case '6': return handle_possible_keyword( 2, 4, "nt64", TOKEN_TYPE_UINT64 );
+        switch ( lexer->start[ 4 ] ) {
+          case '8': return handle_possible_keyword( 1, 4, "int8", TOKEN_TYPE_UINT8 );
+          case '1': return handle_possible_keyword( 1, 5, "int16", TOKEN_TYPE_UINT16 );
+          case '3': return handle_possible_keyword( 1, 5, "int32", TOKEN_TYPE_UINT32 );
+          case '6': return handle_possible_keyword( 1, 5, "int64", TOKEN_TYPE_UINT64 );
         }
       }
       if ( 5 < lexer->current - lexer->start && 'f' == lexer->start[ 1 ] ) {
-        switch ( *( lexer->start + 6 ) ) {
-          case '8': return handle_possible_keyword( 2, 5, "loat8", TOKEN_TYPE_UFLOAT8 );
-          case '1': return handle_possible_keyword( 2, 6, "loat16", TOKEN_TYPE_UFLOAT16 );
-          case '3': return handle_possible_keyword( 2, 6, "loat32", TOKEN_TYPE_UFLOAT32 );
-          case '6': return handle_possible_keyword( 2, 6, "loat64", TOKEN_TYPE_UFLOAT64 );
+        switch ( lexer->start[ 6 ] ) {
+          case '8': return handle_possible_keyword( 1, 6, "float8", TOKEN_TYPE_UFLOAT8 );
+          case '1': return handle_possible_keyword( 1, 7, "float16", TOKEN_TYPE_UFLOAT16 );
+          case '3': return handle_possible_keyword( 1, 7, "float32", TOKEN_TYPE_UFLOAT32 );
+          case '6': return handle_possible_keyword( 1, 7, "float64", TOKEN_TYPE_UFLOAT64 );
         }
       }
       break;
@@ -274,7 +272,7 @@ static bool scan_string( void ) {
     advance();
   }
   // handle end reached
-  if ( ! *lexer->current ) {
+  if ( '\0' == lexer->current[ 0 ] ) {
     return add_token( TOKEN_ERROR, "Unterminated string found" );
   }
   // get beyond closing double quotes
@@ -377,6 +375,7 @@ static bool scan_token( void ) {
     case '-': return add_token( TOKEN_MINUS, NULL );
     case '+': return add_token( TOKEN_PLUS, NULL );
     case '*': return add_token( TOKEN_STAR, NULL );
+    case '%': return add_token( TOKEN_MODULO, NULL );
     case '^': return add_token( TOKEN_XOR, NULL );
     case '~': return add_token( TOKEN_BINARY_ONE_COMPLEMENT, NULL );
     // one or two character tokens
@@ -407,7 +406,7 @@ static bool scan_token( void ) {
       return add_token( match( '=' ) ? TOKEN_LESS_EQUAL : TOKEN_LESS, NULL );
     }
     case '&': return add_token( match( '&' ) ? TOKEN_AND_AND : TOKEN_AND, NULL );
-    case '|': return add_token( match( '&' ) ? TOKEN_OR_OR : TOKEN_OR, NULL );
+    case '|': return add_token( match( '|' ) ? TOKEN_OR_OR : TOKEN_OR, NULL );
     // whitespace / newline
     case ' ':
     case '\r':
@@ -509,6 +508,8 @@ list_manager_t* lexer_scan( void ) {
       return NULL;
     }
   }
+  // push lexer start one more time
+  lexer->start = lexer->current;
   // add eof token
   if ( ! add_token( TOKEN_EOF, NULL ) ) {
     lexer_free();
