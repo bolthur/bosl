@@ -10,8 +10,7 @@ AC_CONFIG_MACRO_DIR([build-aux/m4])
 
 AC_CANONICAL_HOST
 AC_CONFIG_SRCDIR([library/interpreter/lexer.c])
-#-Werror <- disabled to be able to use AX_CODE_COVERAGE
-AM_INIT_AUTOMAKE([subdir-objects])
+AM_INIT_AUTOMAKE([subdir-objects -Wno-portability -Werror])
 AC_CONFIG_HEADERS([config.h])
 
 AC_LANG([C])
@@ -58,6 +57,9 @@ AX_VALGRIND_CHECK
 PKG_CHECK_MODULES([CHECK], [check])
 # check necessary programs
 BOSL_PROG_READLINK
+
+# root directory
+AC_SUBST(ROOT_SRC_DIR, $($BOSL_READLINK -f ${srcdir}))
 
 # set program
 BOSL_LANG_PROGRAM

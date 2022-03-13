@@ -29,39 +29,47 @@ AC_DEFUN([BOSL_SET_FLAG], [
   AC_DEFINE_UNQUOTED([_GNU_SOURCE], [1], [Necessary newlib define])
   #AC_DEFINE_UNQUOTED([_FORTIFY_SOURCE], [2], [Necessary newlib define])
 
-  # custom optimization level
-  AS_IF([test "x$enable_release" != "xyes"], [
-    # debug parameter
-    AS_IF([test "x$with_debug_symbols" == "xyes"], [
-      # debug symbols and sanitizer
-      # -fsanitize=undefined
-      AX_APPEND_COMPILE_FLAGS([-g -Og])
-    ])
-    # optimization level
-    case "${with_optimization_level}" in
-      no | 0)
-        AX_APPEND_COMPILE_FLAGS([-O0])
-        ;;
-      1)
-        AX_APPEND_COMPILE_FLAGS([-O1])
-        ;;
-      2)
-        AX_APPEND_COMPILE_FLAGS([-O2])
-        ;;
-      3)
-        AX_APPEND_COMPILE_FLAGS([-O3])
-        ;;
-      s)
-        AX_APPEND_COMPILE_FLAGS([-Os])
-        ;;
-      g)
-        AX_APPEND_COMPILE_FLAGS([-Og])
-        ;;
-      *)
-        AS_IF([test "x$with_debug_symbols" != "xyes"], [
-          AX_APPEND_COMPILE_FLAGS([-O2])
-        ] )
-        ;;
-    esac
-  ])
+  # custom optimization level if coverage is not defined
+  AS_IF([test "x$enable_code_coverage" = "xyes"], [
+      # additional stuff for coverage reports
+      AX_APPEND_COMPILE_FLAGS([-fno-inline-small-functions])
+      AX_APPEND_COMPILE_FLAGS([-fkeep-inline-functions])
+      AX_APPEND_COMPILE_FLAGS([-fkeep-static-functions])
+    ], [
+      AS_IF([test "x$enable_release" != "xyes"], [
+        # debug parameter
+        AS_IF([test "x$with_debug_symbols" == "xyes"], [
+          # debug symbols and sanitizer
+          # -fsanitize=undefined
+          AX_APPEND_COMPILE_FLAGS([-g -Og])
+        ])
+        # optimization level
+        case "${with_optimization_level}" in
+          no | 0)
+            AX_APPEND_COMPILE_FLAGS([-O0])
+            ;;
+          1)
+            AX_APPEND_COMPILE_FLAGS([-O1])
+            ;;
+          2)
+            AX_APPEND_COMPILE_FLAGS([-O2])
+            ;;
+          3)
+            AX_APPEND_COMPILE_FLAGS([-O3])
+            ;;
+          s)
+            AX_APPEND_COMPILE_FLAGS([-Os])
+            ;;
+          g)
+            AX_APPEND_COMPILE_FLAGS([-Og])
+            ;;
+          *)
+            AS_IF([test "x$with_debug_symbols" != "xyes"], [
+              AX_APPEND_COMPILE_FLAGS([-O2])
+            ] )
+            ;;
+        esac
+      ])
+    ]
+  )
 ])

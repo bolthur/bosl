@@ -3,6 +3,7 @@
 /build
 *~
 /aminclude_static.am
+/coverage
 
 # ---> Autotools
 # http://www.gnu.org/software/automake

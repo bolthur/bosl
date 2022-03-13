@@ -5,6 +5,9 @@ SUBDIRS = library cli tests
 
 # coverage stuff
 if CODE_COVERAGE_ENABLED
+CODE_COVERAGE_OUTPUT_DIRECTORY=$(ROOT_SRC_DIR)/coverage
+CODE_COVERAGE_IGNORE_PATTERN="/usr/*"
+CODE_COVERAGE_GENHTML_OPTIONS=--prefix $(ROOT_SRC_DIR)
 # include coverage stuff
 include $(top_srcdir)/aminclude_static.am
 # extend clean-local and distclean-local
@@ -20,7 +23,6 @@ check: check-valgrind
 endif
 
 # cppcheck stuff
-.PHONY: cppcheck
 cppcheck:
 	cppcheck -UCMC --inline-suppr --enable=all --force \
 		--suppress=missingIncludeSystem $(top_srcdir)

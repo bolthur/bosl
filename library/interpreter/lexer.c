@@ -126,133 +126,6 @@ static bool add_token(
 }
 
 /**
- * @fn bool handle_possible_keyword(uint32_t, uint32_t, const char*, bosl_token_type_t)
- * @brief Handle possible keyword and generate token
- *
- * @param start
- * @param length
- * @param compare
- * @param type
- * @return
- */
-static bool handle_possible_keyword(
-  uint32_t start,
-  uint32_t length,
-  const char* compare,
-  bosl_token_type_t type
-) {
-  if (
-    ( uint32_t )( lexer->current - lexer->start ) == start + length
-    && ! memcmp( lexer->start + start, compare, length )
-  ) {
-    return add_token( type, NULL );
-  }
-  return add_token( TOKEN_IDENTIFIER, NULL );
-}
-
-/**
- * @fn bool determine_identifier_token(void)
- * @brief Try to determine possible identifier
- *
- * @return
- */
-static bool determine_identifier_token( void ) {
-  switch ( *lexer->start ) {
-    // if elseif else
-    case 'i':
-      if ( 'f' == lexer->start[ 1 ] ) {
-        return handle_possible_keyword( 1, 1, "f", TOKEN_IF );
-      } else if ( 2 < lexer->current - lexer->start && 'n' == lexer->start[ 1 ] ) {
-        switch( lexer->start[ 3 ] ) {
-          case '8': return handle_possible_keyword( 1, 3, "nt8", TOKEN_TYPE_INT8 );
-          case '1': return handle_possible_keyword( 1, 4, "nt16", TOKEN_TYPE_INT16 );
-          case '3': return handle_possible_keyword( 1, 4, "nt32", TOKEN_TYPE_INT32 );
-          case '6': return handle_possible_keyword( 1, 4, "nt64", TOKEN_TYPE_INT64 );
-        }
-      }
-      break;
-    case 'e': {
-      if ( 4 < lexer->current - lexer->start && 'i' == lexer->start[ 4 ] ) {
-        return handle_possible_keyword( 1, 5, "lseif", TOKEN_ELSEIF );
-      }
-      return handle_possible_keyword( 1, 3, "lse", TOKEN_ELSE );
-    }
-    // let / const
-    case 'l': return handle_possible_keyword( 1, 2, "et", TOKEN_LET );
-    case 'c': return handle_possible_keyword( 1, 4, "onst", TOKEN_CONST );
-      break;
-    // reference / return
-    case 'r': return handle_possible_keyword( 1, 5, "eturn", TOKEN_RETURN );
-    // null
-    case 'n': return handle_possible_keyword( 1, 3, "ull", TOKEN_NULL );
-    // true
-    case 't': return handle_possible_keyword( 1, 3, "rue", TOKEN_TRUE );
-      break;
-    // false / for / fn
-    case 'f': {
-      if ( 1 < lexer->current - lexer->start ) {
-        switch ( lexer->start[ 1 ] ) {
-          case 'a': return handle_possible_keyword( 1, 4, "alse", TOKEN_FALSE );
-          case 'n': return handle_possible_keyword( 1, 1, "n", TOKEN_FUNCTION );
-          case 'o': return handle_possible_keyword( 1, 2, "or", TOKEN_FOR );
-          case 'l': {
-            if ( 5 < lexer->current - lexer->start ) {
-              switch( lexer->start[ 5 ] ) {
-                case '8': return handle_possible_keyword( 1, 5, "loat8", TOKEN_TYPE_FLOAT8 );
-                case '1': return handle_possible_keyword( 1, 6, "loat16", TOKEN_TYPE_FLOAT16 );
-                case '3': return handle_possible_keyword( 1, 6, "loat32", TOKEN_TYPE_FLOAT32 );
-                case '6': return handle_possible_keyword( 1, 6, "loat64", TOKEN_TYPE_FLOAT64 );
-              }
-            }
-            break;
-          }
-        }
-      }
-      break;
-    }
-    // handle while
-    case 'w': return handle_possible_keyword( 1, 4, "hile", TOKEN_WHILE );
-    // handle print
-    case 'p': {
-      if ( 1 < lexer->current - lexer->start ) {
-        switch( lexer->start[ 1 ] ) {
-          case 'r': return handle_possible_keyword( 1, 4, "rint", TOKEN_PRINT );
-          case 'o': return handle_possible_keyword( 1, 6, "ointer", TOKEN_POINTER );
-        }
-      }
-      break;
-    }
-    // handle data type string
-    case 's': return handle_possible_keyword( 1, 5, "tring", TOKEN_TYPE_STRING );
-    // unsigned data types
-    case 'u':
-      if ( 4 < lexer->current - lexer->start && 'i' == lexer->start[ 1 ] ) {
-        switch ( lexer->start[ 4 ] ) {
-          case '8': return handle_possible_keyword( 1, 4, "int8", TOKEN_TYPE_UINT8 );
-          case '1': return handle_possible_keyword( 1, 5, "int16", TOKEN_TYPE_UINT16 );
-          case '3': return handle_possible_keyword( 1, 5, "int32", TOKEN_TYPE_UINT32 );
-          case '6': return handle_possible_keyword( 1, 5, "int64", TOKEN_TYPE_UINT64 );
-        }
-      }
-      if ( 5 < lexer->current - lexer->start && 'f' == lexer->start[ 1 ] ) {
-        switch ( lexer->start[ 6 ] ) {
-          case '8': return handle_possible_keyword( 1, 6, "float8", TOKEN_TYPE_UFLOAT8 );
-          case '1': return handle_possible_keyword( 1, 7, "float16", TOKEN_TYPE_UFLOAT16 );
-          case '3': return handle_possible_keyword( 1, 7, "float32", TOKEN_TYPE_UFLOAT32 );
-          case '6': return handle_possible_keyword( 1, 7, "float64", TOKEN_TYPE_UFLOAT64 );
-        }
-      }
-      break;
-    // void type
-    case 'v': return handle_possible_keyword( 1, 3, "oid", TOKEN_TYPE_VOID );
-    // bool type
-    case 'b': return handle_possible_keyword( 1, 3, "ool", TOKEN_TYPE_BOOL );
-  }
-  // token is a normal identifier
-  return add_token( TOKEN_IDENTIFIER, NULL );
-}
-
-/**
  * @fn bool scan_string(void)
  * @brief Scan string
  *
@@ -302,8 +175,15 @@ static bool scan_identifier( void ) {
   ) {
     advance();
   }
-  // add token
-  return determine_identifier_token();
+  // try to get type
+  void* raw_type = hashmap_value_get( lexer->keyword, lexer->start );
+  // transform to token type
+  bosl_token_type_t type = TOKEN_IDENTIFIER;
+  if ( raw_type ) {
+    type = ( bosl_token_type_t )raw_type;
+  }
+  // return created type
+  return add_token( type, NULL );
 }
 
 /**
@@ -470,6 +350,54 @@ bool lexer_init( const char* source ) {
     free( lexer );
     return false;
   }
+  // create and fill hash map
+  lexer->keyword = hashmap_construct();
+  if ( ! lexer->keyword ) {
+    list_destruct( lexer->token );
+    free( lexer );
+    return false;
+  }
+  // populate hashmap with key words
+  if (
+    ! hashmap_value_set( lexer->keyword, "if", ( void* )TOKEN_IF )
+    || ! hashmap_value_set( lexer->keyword, "elseif", ( void* )TOKEN_ELSEIF )
+    || ! hashmap_value_set( lexer->keyword, "else", ( void* )TOKEN_ELSE )
+    || ! hashmap_value_set( lexer->keyword, "let", ( void* )TOKEN_LET )
+    || ! hashmap_value_set( lexer->keyword, "const", ( void* )TOKEN_CONST )
+    || ! hashmap_value_set( lexer->keyword, "return", ( void* )TOKEN_RETURN )
+    || ! hashmap_value_set( lexer->keyword, "true", ( void* )TOKEN_TRUE )
+    || ! hashmap_value_set( lexer->keyword, "false", ( void* )TOKEN_FALSE )
+    || ! hashmap_value_set( lexer->keyword, "null", ( void* )TOKEN_NULL )
+    || ! hashmap_value_set( lexer->keyword, "fn", ( void* )TOKEN_FUNCTION )
+    || ! hashmap_value_set( lexer->keyword, "for", ( void* )TOKEN_FOR )
+    || ! hashmap_value_set( lexer->keyword, "while", ( void* )TOKEN_WHILE )
+    || ! hashmap_value_set( lexer->keyword, "print", ( void* )TOKEN_PRINT )
+    || ! hashmap_value_set( lexer->keyword, "pointer", ( void* )TOKEN_POINTER )
+    || ! hashmap_value_set( lexer->keyword, "string", ( void* )TOKEN_TYPE_STRING )
+    || ! hashmap_value_set( lexer->keyword, "bool", ( void* )TOKEN_TYPE_BOOL )
+    || ! hashmap_value_set( lexer->keyword, "void", ( void* )TOKEN_TYPE_VOID )
+    || ! hashmap_value_set( lexer->keyword, "int8", ( void* )TOKEN_TYPE_INT8 )
+    || ! hashmap_value_set( lexer->keyword, "int16", ( void* )TOKEN_TYPE_INT16 )
+    || ! hashmap_value_set( lexer->keyword, "int32", ( void* )TOKEN_TYPE_INT32 )
+    || ! hashmap_value_set( lexer->keyword, "int64", ( void* )TOKEN_TYPE_INT64 )
+    || ! hashmap_value_set( lexer->keyword, "uint8", ( void* )TOKEN_TYPE_UINT8 )
+    || ! hashmap_value_set( lexer->keyword, "uint16", ( void* )TOKEN_TYPE_UINT16 )
+    || ! hashmap_value_set( lexer->keyword, "uint32", ( void* )TOKEN_TYPE_UINT32 )
+    || ! hashmap_value_set( lexer->keyword, "uint64", ( void* )TOKEN_TYPE_UINT64 )
+    || ! hashmap_value_set( lexer->keyword, "float8", ( void* )TOKEN_TYPE_FLOAT8 )
+    || ! hashmap_value_set( lexer->keyword, "float16", ( void* )TOKEN_TYPE_FLOAT16 )
+    || ! hashmap_value_set( lexer->keyword, "float32", ( void* )TOKEN_TYPE_FLOAT32 )
+    || ! hashmap_value_set( lexer->keyword, "float64", ( void* )TOKEN_TYPE_FLOAT64 )
+    || ! hashmap_value_set( lexer->keyword, "ufloat8", ( void* )TOKEN_TYPE_UFLOAT8 )
+    || ! hashmap_value_set( lexer->keyword, "ufloat16", ( void* )TOKEN_TYPE_UFLOAT16 )
+    || ! hashmap_value_set( lexer->keyword, "ufloat32", ( void* )TOKEN_TYPE_UFLOAT32 )
+    || ! hashmap_value_set( lexer->keyword, "ufloat64", ( void* )TOKEN_TYPE_UFLOAT64 )
+  ) {
+    hashmap_destruct( lexer->keyword );
+    list_destruct( lexer->token );
+    free( lexer );
+    return false;
+  }
   // return success
   return true;
 }
@@ -483,8 +411,10 @@ void lexer_free( void ) {
   if ( ! lexer ) {
     return;
   }
-  // destroy list and free instance
+  // destroy list and hash map
   list_destruct( lexer->token );
+  hashmap_destruct( lexer->keyword );
+  // finally free instance
   free( lexer );
 }
 

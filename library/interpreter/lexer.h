@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "../collection/list.h"
+#include "../collection/hashmap.h"
 
 #if ! defined( _LEXER_H )
 #define _LEXER_H
@@ -123,6 +124,7 @@ typedef struct bosl_lexer {
   const char* current;
   uint32_t line;
   list_manager_t* token;
+  hashmap_table_t* keyword;
 } bosl_lexer_t;
 
 bool lexer_init( const char* );

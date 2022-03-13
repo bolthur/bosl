@@ -9,5 +9,12 @@
   "editor.rulers": [
     80,
     120
-  ]
+  ],
+  "doxdocgen.generic.includeTypeAtReturn": false,
+  "doxdocgen.generic.boolReturnsTrueFalse": false,
+  "C_Cpp.autoAddFileAssociations": false,
+  "files.associations": {
+    "*.h": "c",
+    "*.c": "c"
+  },
 }
