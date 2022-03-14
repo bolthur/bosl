@@ -1,0 +1,29 @@
+{
+  "configurations": [
+    {
+      "name": "Mac",
+      "macFrameworkPath": [
+        "/System/Library/Frameworks",
+        "/Library/Frameworks"
+      ],
+      "intelliSenseMode": "macos-clang-x64",
+      "compilerPath": "/usr/bin/clang",
+      "cStandard": "c17",
+      "cppStandard": "c++14",
+      "forcedInclude": [
+        "${workspaceFolder}/build/config.h"
+      ]
+    },
+    {
+      "name": "Linux",
+      "intelliSenseMode": "linux-gcc-x64",
+      "compilerPath": "/usr/bin/clang",
+      "cStandard": "c17",
+      "cppStandard": "c++14",
+      "forcedInclude": [
+        "${workspaceFolder}/build/config.h"
+      ]
+    }
+  ],
+  "version": 4
+}

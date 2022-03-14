@@ -18,31 +18,27 @@
  */
 
 #include "error.h"
+#include "lexer.h"
+#include <stdio.h>
 
 /**
- * @fn void bosl_error_raise(uint32_t, const char*)
- * @brief Method to raise an error
+ * @brief Method to raise error
  *
- * @param line
+ * @param token
  * @param message
  */
-void bosl_error_raise(
-  __unused uint32_t line,
-  __unused const char* message
-) {
-}
-
-/**
- * @fn void bosl_error_report(uint32_t, const char*, const char*)
- * @brief Function to print error which can be overwritten
- *
- * @param line
- * @param source
- * @param message
- */
-__weak void bosl_error_report(
-  __unused uint32_t line,
-  __unused const char* source,
-  __unused const char* message
-) {
+#if defined( __linux__ ) || defined( __bolthur__ )
+__weak // weak reference only for linux and bolthur
+#endif
+void bosl_error_raise( bosl_token_t* token, const char* message ) {
+  // start error output
+  fprintf( stderr, "[line %u] Error", token->line );
+  // position / token information
+  if ( TOKEN_EOF == token->type ) {
+    fprintf( stderr, " at end" );
+  } else if ( TOKEN_ERROR != token->type ) {
+    fprintf( stderr, " at '%.*s'", ( int )token->length, token->start );
+  }
+  // finish with adding message
+  fprintf( stderr, ": %s\r\n", message );
 }

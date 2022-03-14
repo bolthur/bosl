@@ -1228,30 +1228,6 @@ START_TEST( test_lexer_scan_comma ) {
 }
 END_TEST
 
-START_TEST( test_lexer_scan_dot ) {
-  char str[] = ".";
-  char* cmp = str;
-  ck_assert( lexer_init( str ) );
-  list_manager_t* list = lexer_scan();
-  ck_assert_ptr_nonnull( list );
-
-  list_item_t* current = list->first;
-  bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_DOT );
-  ck_assert( 1 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-
-  cmp += 1;
-  current = current->next;
-  token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_EOF );
-  ck_assert( 0 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-}
-END_TEST
-
 START_TEST( test_lexer_scan_colon ) {
   char str[] = ":";
   char* cmp = str;
@@ -1992,7 +1968,6 @@ static Suite* lexer_suite( void ) {
   tcase_add_test( tc_core, test_lexer_scan_left_brace );
   tcase_add_test( tc_core, test_lexer_scan_right_brace );
   tcase_add_test( tc_core, test_lexer_scan_comma );
-  tcase_add_test( tc_core, test_lexer_scan_dot );
   tcase_add_test( tc_core, test_lexer_scan_colon );
   tcase_add_test( tc_core, test_lexer_scan_semicolon );
   tcase_add_test( tc_core, test_lexer_scan_minus );

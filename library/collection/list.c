@@ -47,7 +47,6 @@ void list_default_cleanup( list_item_t* a ) {
 }
 
 /**
- * @fn bool list_default_insert(list_manager_ptr_t, void*)
  * @brief Default insert callback
  *
  * @param list
@@ -579,7 +578,6 @@ bool list_remove_data( list_manager_t* list, void* data ) {
 }
 
 /**
- * @fn bool list_insert_data(list_manager_ptr_t, void*)
  * @brief Insert data with insert callback
  *
  * @param list
@@ -591,7 +589,6 @@ bool list_insert_data( list_manager_t* list, void* data ) {
 }
 
 /**
- * @fn bool list_insert_before(list_manager_ptr_t, list_item_ptr_t, void*)
  * @brief Insert data before item
  *
  * @param list

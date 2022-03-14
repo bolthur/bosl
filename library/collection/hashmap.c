@@ -152,11 +152,19 @@ const char* hashmap_value_set(
       index = 0;
     }
   }
-  // push back entry
-  table->entries[ index ].key = strdup( key );
-  if ( ! table->entries[ index ].key ) {
+
+  // get key length
+  size_t key_len = strlen( key ) + 1;
+  // allocate entry
+  char* new_key = malloc( sizeof( char ) * key_len );
+  if ( ! new_key ) {
     return NULL;
   }
+  // clear out stuff and copy
+  memset( new_key, 0, sizeof( char ) * key_len );
+  strcpy( new_key, key );
+  // push back data
+  table->entries[ index ].key = new_key;
   table->entries[ index ].value = value;
   // increase length
   table->length++;

@@ -17,12 +17,7 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
-#include "lexer.h"
+#include "parser.h"
 
-#if ! defined( _ERROR_H )
-#define _ERROR_H
-
-void bosl_error_raise( bosl_token_t*, const char* );
-
-#endif
+void parser_dummy( void ) {
+}

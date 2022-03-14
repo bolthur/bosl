@@ -21,13 +21,12 @@ AC_DEFUN([BOSL_SET_FLAG], [
   # generic
   AX_APPEND_COMPILE_FLAGS([-fno-exceptions -std=c18])
   AX_APPEND_COMPILE_FLAGS([-fomit-frame-pointer])
+  # flag to disable libcheck issues with clang
+  AX_APPEND_COMPILE_FLAGS([-Wno-gnu-zero-variadic-macro-arguments])
 
-  # third party stuff
+  # automatic macro include
   AX_APPEND_COMPILE_FLAGS([-I${ac_pwd}])
   AX_APPEND_COMPILE_FLAGS([-imacros\ $($BOSL_READLINK -f ${srcdir})/config.h])
-  # FIXME: NECESSARY BECAUSE OF NEWLIB
-  AC_DEFINE_UNQUOTED([_GNU_SOURCE], [1], [Necessary newlib define])
-  #AC_DEFINE_UNQUOTED([_FORTIFY_SOURCE], [2], [Necessary newlib define])
 
   # custom optimization level if coverage is not defined
   AS_IF([test "x$enable_code_coverage" = "xyes"], [

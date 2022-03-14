@@ -26,7 +26,6 @@
 static bosl_lexer_t* lexer = NULL;
 
 /**
- * @fn char advance(void)
  * @brief Push current to next character and return previous
  *
  * @return
@@ -37,7 +36,6 @@ static char advance( void ) {
 }
 
 /**
- * @fn char next(void)
  * @brief Return next character without stepping to next
  *
  * @return
@@ -50,7 +48,6 @@ static char next( void ) {
 }
 
 /**
- * @fn bool match(char)
  * @brief Check if expected character is found
  *
  * @param expected
@@ -68,7 +65,6 @@ static bool match( char expected ) {
 }
 
 /**
- * @fn bool add_token(bosl_token_type_t, const char*)
  * @brief Helper to add token to list of tokens
  *
  * @param type
@@ -126,7 +122,6 @@ static bool add_token(
 }
 
 /**
- * @fn bool scan_string(void)
  * @brief Scan string
  *
  * @return
@@ -155,7 +150,6 @@ static bool scan_string( void ) {
 }
 
 /**
- * @fn bool scan_identifier(void)
  * @brief Scan identifier
  *
  * @return
@@ -187,7 +181,6 @@ static bool scan_identifier( void ) {
 }
 
 /**
- * @fn bool scan_number(void)
  * @brief Scan number
  *
  * @return
@@ -223,8 +216,9 @@ static bool scan_number( void ) {
 }
 
 /**
- * @fn bool scan_token(void)
  * @brief Helper to scan a token
+ *
+ * @return
  */
 static bool scan_token( void ) {
   // get character and increase current to next one
@@ -249,7 +243,6 @@ static bool scan_token( void ) {
     case '{': return add_token( TOKEN_LEFT_BRACE, NULL );
     case '}': return add_token( TOKEN_RIGHT_BRACE, NULL );
     case ',': return add_token( TOKEN_COMMA, NULL );
-    case '.': return add_token( TOKEN_DOT, NULL );
     case ':': return add_token( TOKEN_COLON, NULL );
     case ';': return add_token( TOKEN_SEMICOLON, NULL );
     case '-': return add_token( TOKEN_MINUS, NULL );
@@ -304,7 +297,6 @@ static bool scan_token( void ) {
 }
 
 /**
- * @fn void token_list_cleanup(list_item_t*)
  * @brief Token list cleanup helper
  *
  * @param a
@@ -321,7 +313,6 @@ static void token_list_cleanup( list_item_t* a ) {
 }
 
 /**
- * @fn bool lexer_init(const char*)
  * @brief Prepare and setup lexer
  *
  * @param source
@@ -403,7 +394,6 @@ bool lexer_init( const char* source ) {
 }
 
 /**
- * @fn void lexer_free(void)
  * @brief Destroy lexer if initialized
  */
 void lexer_free( void ) {
@@ -419,8 +409,8 @@ void lexer_free( void ) {
 }
 
 /**
- * @fn list_manager_t* lexer_scan(void)
  * @brief Scan and return list of tokens
+ *
  * @return
  */
 list_manager_t* lexer_scan( void ) {
