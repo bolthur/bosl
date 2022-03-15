@@ -18,7 +18,12 @@
  */
 
 #include <stdbool.h>
-#include "../collection/list.h"
+
+#if defined( _COMPILING_BOSL )
+  #include "../collection/list.h"
+#else
+  typedef struct list_manager list_manager_t;
+#endif
 
 #if ! defined( _PARSER_H )
 #define _PARSER_H

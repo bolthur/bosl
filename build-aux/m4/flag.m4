@@ -27,6 +27,8 @@ AC_DEFUN([BOSL_SET_FLAG], [
   # automatic macro include
   AX_APPEND_COMPILE_FLAGS([-I${ac_pwd}])
   AX_APPEND_COMPILE_FLAGS([-imacros\ $($BOSL_READLINK -f ${srcdir})/config.h])
+  # information about compiling project
+  AX_APPEND_COMPILE_FLAGS([-D_COMPILING_BOSL])
 
   # custom optimization level if coverage is not defined
   AS_IF([test "x$enable_code_coverage" = "xyes"], [

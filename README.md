@@ -24,14 +24,8 @@ uint32 // 32 bit unsigned integer
 int64 // 64 bit signed integer
 uint64 // 64 bit unsigned integer
 // float
-float8 // 8 bit signed float
-ufloat8 // 8 bit unsigned float
-float16 // 16 bit signed float
-ufloat16 // 16 bit unsigned float
-float32 // 32 bit signed float
-ufloat32 // 32 bit unsigned float
-float64 // 64 bit signed float
-ufloat64 // 64 bit unsigned float
+float
+ufloat
 // string
 string
 // bool
@@ -198,13 +192,13 @@ the variable as pointer to something other.
 Similar scheme is also used for constants. Here we've exchange only `let` by `const`:
 `const <name>: [pointer] <type>`.
 
-Possible types are `int[8|16|32|64]`, `uint[8|16|32|64]`, `float[8|16|32|64]`,
-`ufloat[8|16|32|64]` and `string`.
+Possible types are `int[8|16|32|64]`, `uint[8|16|32|64]`, `float`, `ufloat`
+and `string`.
 
 ```js
 // normal variables are reserved by using 'let' followed by bit width
 let a: uint32 = 5;
-let b: float32 = 5.5;
+let b: float = 5.5;
 let c: uint16 = 0xFF;
 let my_string: string = "string";
 let null_value: uint8;

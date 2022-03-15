@@ -844,8 +844,8 @@ START_TEST( test_lexer_scan_type_uint64 ) {
 }
 END_TEST
 
-START_TEST( test_lexer_scan_type_float8 ) {
-  char str[] = "float8";
+START_TEST( test_lexer_scan_type_float ) {
+  char str[] = "float";
   char* cmp = str;
   ck_assert( lexer_init( str ) );
   list_manager_t* list = lexer_scan();
@@ -853,180 +853,36 @@ START_TEST( test_lexer_scan_type_float8 ) {
 
   list_item_t* current = list->first;
   bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_TYPE_FLOAT8 );
+  ck_assert_int_eq( token->type, TOKEN_TYPE_FLOAT );
+  ck_assert( 5 ==  token->length );
+  ck_assert_str_eq( token->start, cmp );
+  ck_assert_int_eq( token->line, 1 );
+
+  cmp += 5;
+  current = current->next;
+  token = current->data;
+  ck_assert_int_eq( token->type, TOKEN_EOF );
+  ck_assert( 0 ==  token->length );
+  ck_assert_str_eq( token->start, cmp );
+  ck_assert_int_eq( token->line, 1 );
+}
+END_TEST
+
+START_TEST( test_lexer_scan_type_ufloat ) {
+  char str[] = "ufloat";
+  char* cmp = str;
+  ck_assert( lexer_init( str ) );
+  list_manager_t* list = lexer_scan();
+  ck_assert_ptr_nonnull( list );
+
+  list_item_t* current = list->first;
+  bosl_token_t* token = current->data;
+  ck_assert_int_eq( token->type, TOKEN_TYPE_UFLOAT );
   ck_assert( 6 ==  token->length );
   ck_assert_str_eq( token->start, cmp );
   ck_assert_int_eq( token->line, 1 );
 
   cmp += 6;
-  current = current->next;
-  token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_EOF );
-  ck_assert( 0 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-}
-END_TEST
-
-START_TEST( test_lexer_scan_type_float16 ) {
-  char str[] = "float16";
-  char* cmp = str;
-  ck_assert( lexer_init( str ) );
-  list_manager_t* list = lexer_scan();
-  ck_assert_ptr_nonnull( list );
-
-  list_item_t* current = list->first;
-  bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_TYPE_FLOAT16 );
-  ck_assert( 7 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-
-  cmp += 7;
-  current = current->next;
-  token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_EOF );
-  ck_assert( 0 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-}
-END_TEST
-
-START_TEST( test_lexer_scan_type_float32 ) {
-  char str[] = "float32";
-  char* cmp = str;
-  ck_assert( lexer_init( str ) );
-  list_manager_t* list = lexer_scan();
-  ck_assert_ptr_nonnull( list );
-
-  list_item_t* current = list->first;
-  bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_TYPE_FLOAT32 );
-  ck_assert( 7 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-
-  cmp += 7;
-  current = current->next;
-  token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_EOF );
-  ck_assert( 0 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-}
-END_TEST
-
-START_TEST( test_lexer_scan_type_float64 ) {
-  char str[] = "float64";
-  char* cmp = str;
-  ck_assert( lexer_init( str ) );
-  list_manager_t* list = lexer_scan();
-  ck_assert_ptr_nonnull( list );
-
-  list_item_t* current = list->first;
-  bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_TYPE_FLOAT64 );
-  ck_assert( 7 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-
-  cmp += 7;
-  current = current->next;
-  token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_EOF );
-  ck_assert( 0 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-}
-END_TEST
-
-START_TEST( test_lexer_scan_type_ufloat8 ) {
-  char str[] = "ufloat8";
-  char* cmp = str;
-  ck_assert( lexer_init( str ) );
-  list_manager_t* list = lexer_scan();
-  ck_assert_ptr_nonnull( list );
-
-  list_item_t* current = list->first;
-  bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_TYPE_UFLOAT8 );
-  ck_assert( 7 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-
-  cmp += 7;
-  current = current->next;
-  token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_EOF );
-  ck_assert( 0 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-}
-END_TEST
-
-START_TEST( test_lexer_scan_type_ufloat16 ) {
-  char str[] = "ufloat16";
-  char* cmp = str;
-  ck_assert( lexer_init( str ) );
-  list_manager_t* list = lexer_scan();
-  ck_assert_ptr_nonnull( list );
-
-  list_item_t* current = list->first;
-  bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_TYPE_UFLOAT16 );
-  ck_assert( 8 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-
-  cmp += 8;
-  current = current->next;
-  token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_EOF );
-  ck_assert( 0 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-}
-END_TEST
-
-START_TEST( test_lexer_scan_type_ufloat32 ) {
-  char str[] = "ufloat32";
-  char* cmp = str;
-  ck_assert( lexer_init( str ) );
-  list_manager_t* list = lexer_scan();
-  ck_assert_ptr_nonnull( list );
-
-  list_item_t* current = list->first;
-  bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_TYPE_UFLOAT32 );
-  ck_assert( 8 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-
-  cmp += 8;
-  current = current->next;
-  token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_EOF );
-  ck_assert( 0 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-}
-END_TEST
-
-START_TEST( test_lexer_scan_type_ufloat64 ) {
-  char str[] = "ufloat64";
-  char* cmp = str;
-  ck_assert( lexer_init( str ) );
-  list_manager_t* list = lexer_scan();
-  ck_assert_ptr_nonnull( list );
-
-  list_item_t* current = list->first;
-  bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_TYPE_UFLOAT64 );
-  ck_assert( 8 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-
-  cmp += 8;
   current = current->next;
   token = current->data;
   ck_assert_int_eq( token->type, TOKEN_EOF );
@@ -1951,14 +1807,8 @@ static Suite* lexer_suite( void ) {
   tcase_add_test( tc_core, test_lexer_scan_type_uint16 );
   tcase_add_test( tc_core, test_lexer_scan_type_uint32 );
   tcase_add_test( tc_core, test_lexer_scan_type_uint64 );
-  tcase_add_test( tc_core, test_lexer_scan_type_float8 );
-  tcase_add_test( tc_core, test_lexer_scan_type_float16 );
-  tcase_add_test( tc_core, test_lexer_scan_type_float32 );
-  tcase_add_test( tc_core, test_lexer_scan_type_float64 );
-  tcase_add_test( tc_core, test_lexer_scan_type_ufloat8 );
-  tcase_add_test( tc_core, test_lexer_scan_type_ufloat16 );
-  tcase_add_test( tc_core, test_lexer_scan_type_ufloat32 );
-  tcase_add_test( tc_core, test_lexer_scan_type_ufloat64 );
+  tcase_add_test( tc_core, test_lexer_scan_type_float );
+  tcase_add_test( tc_core, test_lexer_scan_type_ufloat );
   tcase_add_test( tc_core, test_lexer_scan_type_string );
   tcase_add_test( tc_core, test_lexer_scan_type_void );
   tcase_add_test( tc_core, test_lexer_scan_type_bool );

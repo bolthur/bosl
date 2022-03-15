@@ -11,7 +11,7 @@
       "cStandard": "c17",
       "cppStandard": "c++14",
       "includePath": [ "${workspaceFolder}/build" ],
-      "defines": [ "HAVE_CONFIG_H" ],
+      "defines": [ "HAVE_CONFIG_H", "_COMPILING_BOSL" ],
       "forcedInclude": [ "${workspaceFolder}/config.h" ]
     },
     {
@@ -21,7 +21,7 @@
       "cStandard": "c17",
       "cppStandard": "c++14",
       "includePath": [ "${workspaceFolder}/build" ],
-      "defines": [ "HAVE_CONFIG_H" ],
+      "defines": [ "HAVE_CONFIG_H", "_COMPILING_BOSL" ],
       "forcedInclude": [ "${workspaceFolder}/config.h" ]
     }
   ],

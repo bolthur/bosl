@@ -25,25 +25,30 @@
 #if ! defined( _HASHMAP_H )
 #define _HASHMAP_H
 
-typedef struct {
+// forward declaration
+typedef struct hashmap_entry hashmap_entry_t;
+typedef struct hashmap_table hashmap_table_t;
+typedef struct hashmap_iterator hashmap_iterator_t;
+
+struct hashmap_entry {
   const char* key;
   void* value;
-} hashmap_entry_t;
+};
 
-typedef struct {
+struct hashmap_table {
   hashmap_entry_t* entries;
   size_t capacity;
   size_t length;
-} hashmap_table_t;
+};
 
-typedef struct {
+struct hashmap_iterator {
   const char* key;
   void* value;
 
   // some sort of private stuff
   hashmap_table_t* _table;
   size_t _index;
-} hashmap_iterator_t;
+};
 
 hashmap_table_t* hashmap_construct( void );
 void hashmap_destruct( hashmap_table_t* );

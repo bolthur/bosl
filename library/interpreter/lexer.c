@@ -375,14 +375,8 @@ bool lexer_init( const char* source ) {
     || ! hashmap_value_set( lexer->keyword, "uint16", ( void* )TOKEN_TYPE_UINT16 )
     || ! hashmap_value_set( lexer->keyword, "uint32", ( void* )TOKEN_TYPE_UINT32 )
     || ! hashmap_value_set( lexer->keyword, "uint64", ( void* )TOKEN_TYPE_UINT64 )
-    || ! hashmap_value_set( lexer->keyword, "float8", ( void* )TOKEN_TYPE_FLOAT8 )
-    || ! hashmap_value_set( lexer->keyword, "float16", ( void* )TOKEN_TYPE_FLOAT16 )
-    || ! hashmap_value_set( lexer->keyword, "float32", ( void* )TOKEN_TYPE_FLOAT32 )
-    || ! hashmap_value_set( lexer->keyword, "float64", ( void* )TOKEN_TYPE_FLOAT64 )
-    || ! hashmap_value_set( lexer->keyword, "ufloat8", ( void* )TOKEN_TYPE_UFLOAT8 )
-    || ! hashmap_value_set( lexer->keyword, "ufloat16", ( void* )TOKEN_TYPE_UFLOAT16 )
-    || ! hashmap_value_set( lexer->keyword, "ufloat32", ( void* )TOKEN_TYPE_UFLOAT32 )
-    || ! hashmap_value_set( lexer->keyword, "ufloat64", ( void* )TOKEN_TYPE_UFLOAT64 )
+    || ! hashmap_value_set( lexer->keyword, "float", ( void* )TOKEN_TYPE_FLOAT )
+    || ! hashmap_value_set( lexer->keyword, "ufloat", ( void* )TOKEN_TYPE_UFLOAT )
   ) {
     hashmap_destruct( lexer->keyword );
     list_destruct( lexer->token );

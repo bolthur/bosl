@@ -19,8 +19,14 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "../collection/list.h"
-#include "../collection/hashmap.h"
+
+#if defined( _COMPILING_BOSL )
+  #include "../collection/list.h"
+  #include "../collection/hashmap.h"
+#else
+  typedef struct list_manager list_manager_t;
+  typedef struct hashmap_entry hashmap_entry_t;
+#endif
 
 #if ! defined( _LEXER_H )
 #define _LEXER_H
@@ -89,14 +95,8 @@ typedef enum {
   TOKEN_TYPE_UINT16,
   TOKEN_TYPE_UINT32,
   TOKEN_TYPE_UINT64,
-  TOKEN_TYPE_FLOAT8,
-  TOKEN_TYPE_FLOAT16,
-  TOKEN_TYPE_FLOAT32,
-  TOKEN_TYPE_FLOAT64,
-  TOKEN_TYPE_UFLOAT8,
-  TOKEN_TYPE_UFLOAT16,
-  TOKEN_TYPE_UFLOAT32,
-  TOKEN_TYPE_UFLOAT64,
+  TOKEN_TYPE_FLOAT,
+  TOKEN_TYPE_UFLOAT,
   TOKEN_TYPE_STRING,
   TOKEN_TYPE_VOID,
   TOKEN_TYPE_BOOL,

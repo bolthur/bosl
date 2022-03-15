@@ -18,7 +18,12 @@
  */
 
 #include <stdint.h>
-#include "lexer.h"
+
+#if defined( _COMPILING_BOSL )
+  #include "lexer.h"
+#else
+  #include <bosl/lexer.h>
+#endif
 
 #if ! defined( _ERROR_H )
 #define _ERROR_H
