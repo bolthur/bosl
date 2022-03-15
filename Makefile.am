@@ -26,3 +26,6 @@ endif
 cppcheck:
 	cppcheck -UCMC --inline-suppr --enable=all --force \
 		--suppress=missingIncludeSystem $(top_srcdir)
+
+# pkg config installation stuff
+pkgconfig_DATA = library/bosl.pc

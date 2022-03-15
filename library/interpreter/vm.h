@@ -18,19 +18,13 @@
  */
 
 #include <stdbool.h>
-#include "../collection/list.h"
+#include <stdint.h>
 
-#if ! defined( _PARSER_H )
-#define _PARSER_H
+#if ! defined( _ERROR_H )
+#define _ERROR_H
 
-typedef struct bosl_parser {
-  list_manager_t* token;
-  list_item_t* current;
-  uint8_t* byte_code;
-} bosl_parser_t;
-
-bool parser_init( list_manager_t* );
-void parser_free( void );
-uint8_t* parser_compile( void );
+bool vm_init( uint8_t* );
+void vm_free( void );
+bool vm_execute( void );
 
 #endif

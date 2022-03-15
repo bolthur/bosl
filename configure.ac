@@ -47,31 +47,30 @@ AS_IF([test "x$enable_debug" == "xyes" && test "x$enable_release" == "xyes"], [
   AC_MSG_ERROR([Enabled debug and release are not possible at the same time])
 ])
 
+## gettext
+#AM_GNU_GETTEXT([external])
+#AM_GNU_GETTEXT_VERSION([0.21])
 # code coverage
 AX_CODE_COVERAGE
 # valgrind
 AX_VALGRIND_DFLT([sgcheck], [off])
 AX_VALGRIND_CHECK
+# ensure existance of pkg config
+PKG_PROG_PKG_CONFIG
+# define pkg config install dir
+PKG_INSTALLDIR
 
-# load check module for unit tests
-PKG_CHECK_MODULES([CHECK], [check])
-# check necessary programs
+# load check module for unit tests as private dependency
+AX_PKG_CHECK_MODULES([CHECK], [], [check >= 0.15.2])
+
+# check for proper readlink support
 BOSL_PROG_READLINK
 
-# root directory
-AC_SUBST(ROOT_SRC_DIR, $($BOSL_READLINK -f ${srcdir}))
-
-# set program
-BOSL_LANG_PROGRAM
-# set rest of flags
+# set compile flags
 BOSL_SET_FLAG
 
 # checks for programs
 AC_PROG_CC
-
-## gettext
-#AM_GNU_GETTEXT([external])
-#AM_GNU_GETTEXT_VERSION([0.21])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -111,10 +110,14 @@ AC_DEFINE_UNQUOTED(
   [Weak]
 )
 
+# root directory
+AC_SUBST(ROOT_SRC_DIR, $($BOSL_READLINK -f ${srcdir}))
+
 AC_CONFIG_FILES([
   Makefile
   cli/Makefile
   library/Makefile
+  library/bosl.pc:library/bosl.pc.in
   tests/Makefile
   tests/libbosl/Makefile
 ])

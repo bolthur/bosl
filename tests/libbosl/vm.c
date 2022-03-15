@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include "../../library/interpreter/lexer.h"
 #include "../../library/interpreter/parser.h"
+#include "../../library/interpreter/vm.h"
 
 static void setup( void ) {
 }
@@ -40,7 +41,7 @@ static Suite* lexer_suite( void ) {
 
   s = suite_create( "libbosl" );
   // test cases
-  tc_core = tcase_create( "parser" );
+  tc_core = tcase_create( "vm" );
   // add tests
   tcase_add_checked_fixture( tc_core, setup, teardown );
   tcase_add_test( tc_core, test_dummy );

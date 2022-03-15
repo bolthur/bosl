@@ -10,9 +10,9 @@
       "compilerPath": "/usr/bin/clang",
       "cStandard": "c17",
       "cppStandard": "c++14",
-      "forcedInclude": [
-        "${workspaceFolder}/build/config.h"
-      ]
+      "includePath": [ "${workspaceFolder}/build" ],
+      "defines": [ "HAVE_CONFIG_H" ],
+      "forcedInclude": [ "${workspaceFolder}/config.h" ]
     },
     {
       "name": "Linux",
@@ -20,9 +20,9 @@
       "compilerPath": "/usr/bin/clang",
       "cStandard": "c17",
       "cppStandard": "c++14",
-      "forcedInclude": [
-        "${workspaceFolder}/build/config.h"
-      ]
+      "includePath": [ "${workspaceFolder}/build" ],
+      "defines": [ "HAVE_CONFIG_H" ],
+      "forcedInclude": [ "${workspaceFolder}/config.h" ]
     }
   ],
   "version": 4

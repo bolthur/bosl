@@ -1,0 +1,12 @@
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: @PACKAGE_NAME@
+Description: bolthur obligated scripting language ( bosl ) parsing library
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir}/@PACKAGE@ -lbosl
+Cflags: -I${includedir}
+Requires: @AX_PACKAGE_REQUIRES@

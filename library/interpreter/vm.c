@@ -17,20 +17,14 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdbool.h>
-#include "../collection/list.h"
+#include "vm.h"
 
-#if ! defined( _PARSER_H )
-#define _PARSER_H
+bool vm_init( __unused uint8_t* bytecode ) {
+  return true;
+}
+void vm_free( void ) {
+}
 
-typedef struct bosl_parser {
-  list_manager_t* token;
-  list_item_t* current;
-  uint8_t* byte_code;
-} bosl_parser_t;
-
-bool parser_init( list_manager_t* );
-void parser_free( void );
-uint8_t* parser_compile( void );
-
-#endif
+bool vm_execute( void ) {
+  return true;
+}

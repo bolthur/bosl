@@ -1,9 +1,9 @@
 
 AM_CFLAGS = $(CHECK_CFLAGS) $(CODE_COVERAGE_CFLAGS)
 
-noinst_PROGRAMS = list hashmap error lexer parser
+noinst_PROGRAMS = list hashmap error lexer parser vm
 
-TESTS =  list hashmap error lexer parser
+TESTS =  list hashmap error lexer parser vm
 
 list_SOURCES = list.c
 list_LDADD = $(top_builddir)/library/libbosl.la $(CODE_COVERAGE_LIBS) $(CHECK_LIBS)
@@ -19,6 +19,9 @@ lexer_LDADD = $(top_builddir)/library/libbosl.la $(CODE_COVERAGE_LIBS) $(CHECK_L
 
 parser_SOURCES = parser.c
 parser_LDADD = $(top_builddir)/library/libbosl.la $(CODE_COVERAGE_LIBS) $(CHECK_LIBS)
+
+vm_SOURCES = vm.c
+vm_LDADD = $(top_builddir)/library/libbosl.la $(CODE_COVERAGE_LIBS) $(CHECK_LIBS)
 
 if VALGRIND_ENABLED
 @VALGRIND_CHECK_RULES@
