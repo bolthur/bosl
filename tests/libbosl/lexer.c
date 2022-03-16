@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 #include <check.h>
-#include "../../library/interpreter/lexer.h"
+#include "../../library/lexer.h"
 
 static void setup( void ) {
 }

@@ -9,7 +9,7 @@ AC_CONFIG_AUX_DIR([build-aux/config])
 AC_CONFIG_MACRO_DIR([build-aux/m4])
 
 AC_CANONICAL_HOST
-AC_CONFIG_SRCDIR([library/interpreter/lexer.c])
+AC_CONFIG_SRCDIR([library/lexer.c])
 AM_INIT_AUTOMAKE([subdir-objects -Wno-portability -Werror])
 AC_CONFIG_HEADERS([config.h])
 

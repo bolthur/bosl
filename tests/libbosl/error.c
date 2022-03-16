@@ -21,7 +21,7 @@
 #include <check.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "../../library/interpreter/error.h"
+#include "../../library/error.h"
 
 static char* buffer;
 static char* expected;
@@ -70,7 +70,7 @@ START_TEST( test_error_at_eof ) {
     "foo bar foo"
   );
   // call raise
-  bosl_error_raise( &token, "foo bar foo" );
+  error_raise( &token, "foo bar foo" );
   // assert string equal
   ck_assert_str_eq( expected, buffer );
 }
@@ -90,7 +90,7 @@ START_TEST( test_error_token ) {
     "token error"
   );
   // call raise
-  bosl_error_raise( &token, "token error" );
+  error_raise( &token, "token error" );
   // assert string equal
   ck_assert_str_eq( expected, buffer );
 }
@@ -113,7 +113,7 @@ START_TEST( test_error_normal ) {
     "trailing comma"
   );
   // call raise
-  bosl_error_raise( &token, "trailing comma" );
+  error_raise( &token, "trailing comma" );
   // assert string equal
   ck_assert_str_eq( expected, buffer );
 }

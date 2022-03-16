@@ -21,8 +21,8 @@
 #include <stdbool.h>
 
 #if defined( _COMPILING_BOSL )
-  #include "../collection/list.h"
-  #include "../collection/hashmap.h"
+  #include "collection/list.h"
+  #include "collection/hashmap.h"
 #else
   typedef struct list_manager list_manager_t;
   typedef struct hashmap_entry hashmap_entry_t;

@@ -72,7 +72,7 @@ static bool consume( bosl_token_type_t type, const char* error_message ) {
   // check for mismatch
   if ( token->type != type ) {
     // raise error and return false
-    bosl_error_raise( token, error_message );
+    error_raise( token, error_message );
     return false;
   }
   // head over to next
@@ -199,6 +199,11 @@ bool parser_init( list_manager_t* token ) {
   // push in token list
   parser->token = token;
   parser->current = token->first;
+  parser->ast = list_construct( NULL, NULL, NULL );
+  if ( ! parser->ast ) {
+    free( parser );
+    return false;
+  }
   // return success
   return true;
 }
@@ -211,16 +216,20 @@ void parser_free( void ) {
   if ( ! parser ) {
     return;
   }
+  // free ast
+  if ( parser->ast ) {
+    list_destruct( parser->ast );
+  }
   // just free structure
   free( parser );
 }
 
 /**
- * @brief Compile tokens to bytecode
+ * @brief Scan tokens to array of ast
  *
  * @return
  */
-uint8_t* parser_compile( void ) {
+list_manager_t* parser_scan( void ) {
   // handle not initialized
   if ( ! parser ) {
     return NULL;
@@ -233,5 +242,5 @@ uint8_t* parser_compile( void ) {
     }
   }
   // return built byte code
-  return parser->byte_code;
+  return parser->ast;
 }

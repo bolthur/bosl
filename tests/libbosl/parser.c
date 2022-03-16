@@ -20,8 +20,8 @@
 #include <stdlib.h>
 #include <check.h>
 #include <stdio.h>
-#include "../../library/interpreter/lexer.h"
-#include "../../library/interpreter/parser.h"
+#include "../../library/lexer.h"
+#include "../../library/parser.h"
 
 static void setup( void ) {
 }

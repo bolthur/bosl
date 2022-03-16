@@ -19,10 +19,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "../library/interpreter/error.h"
-#include "../library/interpreter/lexer.h"
-#include "../library/interpreter/parser.h"
-#include "../library/interpreter/vm.h"
+#include "../library/error.h"
+#include "../library/lexer.h"
+#include "../library/parser.h"
+#include "../library/interpreter.h"
 
 int main( int argc, __unused char* argv[] ) {
   if ( 2 != argc ) {

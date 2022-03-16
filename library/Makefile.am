@@ -6,16 +6,16 @@ noinst_HEADERS = \
   collection/hashmap.h
 
 pkginclude_HEADERS = \
-  interpreter/error.h \
-  interpreter/lexer.h \
-  interpreter/parser.h \
-  interpreter/vm.h
+  error.h \
+  interpreter.h \
+  lexer.h \
+  parser.h
 
 pkglib_LTLIBRARIES = libbosl.la
 libbosl_la_SOURCES = \
   collection/hashmap.c \
   collection/list.c \
-  interpreter/error.c \
-  interpreter/lexer.c \
-  interpreter/parser.c \
-  interpreter/vm.c
+  error.c \
+  interpreter.c \
+  lexer.c \
+  parser.c

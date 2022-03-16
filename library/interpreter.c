@@ -17,14 +17,15 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdbool.h>
-#include <stdint.h>
+#include "interpreter.h"
 
-#if ! defined( _ERROR_H )
-#define _ERROR_H
+bool interpreter_init( __unused list_manager_t* ast ) {
+  return true;
+}
 
-bool vm_init( uint8_t* );
-void vm_free( void );
-bool vm_execute( void );
+void interpreter_free( void ) {
+}
 
-#endif
+bool interpreter_execute( void ) {
+  return true;
+}
