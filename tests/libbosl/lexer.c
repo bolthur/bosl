@@ -611,6 +611,30 @@ START_TEST( test_lexer_scan_keyword_return ) {
 }
 END_TEST
 
+START_TEST( test_lexer_load ) {
+  char str[] = "load";
+  char* cmp = str;
+  ck_assert( lexer_init( str ) );
+  list_manager_t* list = lexer_scan();
+  ck_assert_ptr_nonnull( list );
+
+  list_item_t* current = list->first;
+  bosl_token_t* token = current->data;
+  ck_assert_int_eq( token->type, TOKEN_LOAD );
+  ck_assert( 4 ==  token->length );
+  ck_assert_str_eq( token->start, cmp );
+  ck_assert_int_eq( token->line, 1 );
+
+  cmp += 4;
+  current = current->next;
+  token = current->data;
+  ck_assert_int_eq( token->type, TOKEN_EOF );
+  ck_assert( 0 ==  token->length );
+  ck_assert_str_eq( token->start, cmp );
+  ck_assert_int_eq( token->line, 1 );
+}
+END_TEST
+
 START_TEST( test_lexer_scan_builtin_print ) {
   char str[] = "print";
   char* cmp = str;
@@ -859,30 +883,6 @@ START_TEST( test_lexer_scan_type_float ) {
   ck_assert_int_eq( token->line, 1 );
 
   cmp += 5;
-  current = current->next;
-  token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_EOF );
-  ck_assert( 0 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-}
-END_TEST
-
-START_TEST( test_lexer_scan_type_ufloat ) {
-  char str[] = "ufloat";
-  char* cmp = str;
-  ck_assert( lexer_init( str ) );
-  list_manager_t* list = lexer_scan();
-  ck_assert_ptr_nonnull( list );
-
-  list_item_t* current = list->first;
-  bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_TYPE_UFLOAT );
-  ck_assert( 6 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-
-  cmp += 6;
   current = current->next;
   token = current->data;
   ck_assert_int_eq( token->type, TOKEN_EOF );
@@ -1798,6 +1798,7 @@ static Suite* lexer_suite( void ) {
   tcase_add_test( tc_core, test_lexer_scan_keyword_for );
   tcase_add_test( tc_core, test_lexer_scan_keyword_function );
   tcase_add_test( tc_core, test_lexer_scan_keyword_return );
+  tcase_add_test( tc_core, test_lexer_load );
   // data types
   tcase_add_test( tc_core, test_lexer_scan_type_int8 );
   tcase_add_test( tc_core, test_lexer_scan_type_int16 );
@@ -1808,7 +1809,6 @@ static Suite* lexer_suite( void ) {
   tcase_add_test( tc_core, test_lexer_scan_type_uint32 );
   tcase_add_test( tc_core, test_lexer_scan_type_uint64 );
   tcase_add_test( tc_core, test_lexer_scan_type_float );
-  tcase_add_test( tc_core, test_lexer_scan_type_ufloat );
   tcase_add_test( tc_core, test_lexer_scan_type_string );
   tcase_add_test( tc_core, test_lexer_scan_type_void );
   tcase_add_test( tc_core, test_lexer_scan_type_bool );
