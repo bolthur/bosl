@@ -17,17 +17,11 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
+#if !defined( _LIBRARY_CONFIG_H )
+#define _LIBRARY_CONFIG_H
 
-#if defined( _COMPILING_BOSL )
-  #include "lexer.h"
-#else
-  #include <bosl/lexer.h>
+#if defined( HAVE_CONFIG_H )
+  #include <config.h>
 #endif
-
-#if ! defined( _ERROR_H )
-#define _ERROR_H
-
-void error_raise( bosl_token_t*, const char* );
 
 #endif

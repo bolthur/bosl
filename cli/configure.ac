@@ -1,7 +1,7 @@
 
 AC_PREREQ([2.71])
 
-AC_INIT([bosl], [0.1.0-dev], [https://github.com/bolthur/bosl/issues], [bosl], [https://github.com/bolthur/bosl])
+AC_INIT([bosl], [0.1.0-dev], [https://github.com/bolthur/bosl/issues], [bosl-cli], [https://github.com/bolthur/bosl])
 
 AC_COPYRIGHT([Copyright (C) 2022 bolthur project])
 
@@ -9,7 +9,7 @@ AC_CONFIG_AUX_DIR([aux/config])
 AC_CONFIG_MACRO_DIR([aux/m4])
 
 AC_CANONICAL_HOST
-AC_CONFIG_SRCDIR([cli/main.c])
+AC_CONFIG_SRCDIR([main.c])
 AM_INIT_AUTOMAKE([subdir-objects -Wno-portability -Werror])
 AC_CONFIG_HEADERS([config.h])
 
@@ -47,14 +47,20 @@ AS_IF([test "x$enable_debug" == "xyes" && test "x$enable_release" == "xyes"], [
   AC_MSG_ERROR([Enabled debug and release are not possible at the same time])
 ])
 
-# code coverage
-AX_CODE_COVERAGE
-# valgrind
-AX_VALGRIND_DFLT([sgcheck], [off])
-AX_VALGRIND_CHECK
+## gettext
+#AM_GNU_GETTEXT([external])
+#AM_GNU_GETTEXT_VERSION([0.21])
+# ensure existance of pkg config
+PKG_PROG_PKG_CONFIG
+
+# load check module for unit tests as private dependency
+AX_PKG_CHECK_MODULES([ARGTABLE2], [argtable2 >= 2.13], [])
 
 # check for proper readlink support
 BOSL_PROG_READLINK
+
+# set compile flags
+BOSL_SET_FLAG
 
 # checks for programs
 AC_PROG_CC
@@ -97,14 +103,8 @@ AC_DEFINE_UNQUOTED(
   [Weak]
 )
 
-# root directory
-AC_SUBST(ROOT_SRC_DIR, $($BOSL_READLINK -f ${srcdir}))
-
-AC_CONFIG_FILES([ Makefile ])
-
-AC_CONFIG_SUBDIRS([
-  library
-  cli
+AC_CONFIG_FILES([
+  Makefile
 ])
 
 AC_OUTPUT

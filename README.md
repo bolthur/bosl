@@ -4,6 +4,8 @@
 simple scripting language which is used in raspi iomem server for more complex
 mmio sequences than readm write, wait until true / false / not equal / equal.
 
+More specific grammar information might be found [here](markdown/grammar.md).
+
 ## Language overview
 
 Overview about the language itself.
@@ -208,9 +210,9 @@ let pointer_to_a: pointer uint32 = a;
 const foo: uint16 = 0xAB;
 
 // change value with pointer variable
-*pointer_to_a = 5;
+pointer_to_a = 5;
 // increment pointer to next address
-pointer_to_a = pointer_to_a + 1;
+pointer pointer_to_a = pointer pointer_to_a + 1;
 ```
 
 ### Control flow
@@ -290,20 +292,25 @@ let p2: pointer uint32 = load pointer uint32 some_pointer_name;
 let val: uint32 = load uint32 some_value_name;
 
 // change content pointer is pointing to ( changes also content outside the container )
-*p2 = 5;
+p2 = 5;
 // read content pointer is pointing tosgcheck
-let v: uint32 = *p2;
+let v: uint32 = p2;
 ```
 
 ### Loading funcrions from application that embeds the script for execution
 
 To use functions the container application is providing, some sort of function
-alias has to be added. The function is written as usual, but with empty body
-followed by assignment and `load fn` and a name.
+alias has to be added. The function is written as usual and the body is followed
+by assignment and `load fn` and a name. The body should be left empty as it's
+content is not going to be considered, but with empty body.
 
 ```js
 // make a function usable within script provided by container
 fn foo( parameter1: uint16, parameter2: uint16 ): void {} = load fn some_function_name_foo;
+fn foo2( parameter1: uint16, parameter2: uint16 ): void {
+  // this content is completely ignored here
+  let never_executed: uint16 = 5;
+} = load fn some_function_name_foo;
 fn bar( parameter1: uint16 ): uint16 {} = load fn some_function_name_bar;
 // call the aliased function
 foo( 5, 6 );

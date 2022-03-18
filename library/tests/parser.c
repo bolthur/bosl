@@ -20,31 +20,33 @@
 #include <stdlib.h>
 #include <check.h>
 #include <stdio.h>
-#include "../../library/lexer.h"
-#include "../../library/parser.h"
-#include "../../library/interpreter.h"
+#include <unistd.h>
+#include "../lib/scanner.h"
+#include "../lib/parser.h"
 
 static void setup( void ) {
 }
 
 static void teardown( void ) {
+  // destroy scanner and parser
+  scanner_free();
+  parser_free();
 }
 
-START_TEST( test_dummy ) {
-  ck_assert_int_eq( 2 + 3, 5 );
+START_TEST( test_simple_expression ) {
 }
 END_TEST
 
-static Suite* lexer_suite( void ) {
+static Suite* parser_suite( void ) {
   Suite* s;
   TCase* tc_core;
 
   s = suite_create( "libbosl" );
   // test cases
-  tc_core = tcase_create( "interpreter" );
+  tc_core = tcase_create( "parser" );
   // add tests
   tcase_add_checked_fixture( tc_core, setup, teardown );
-  tcase_add_test( tc_core, test_dummy );
+  tcase_add_test( tc_core, test_simple_expression );
   suite_add_tcase( s, tc_core );
   // return suite
   return s;
@@ -55,7 +57,7 @@ int main( void ) {
   Suite *s;
   SRunner *sr;
 
-  s = lexer_suite();
+  s = parser_suite();
   sr = srunner_create( s );
 
   srunner_run_all( sr, CK_NORMAL );

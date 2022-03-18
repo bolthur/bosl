@@ -17,28 +17,28 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "error.h"
-#include "lexer.h"
-#include <stdio.h>
+#include <stdbool.h>
 
-/**
- * @brief Method to raise error
- *
- * @param token
- * @param message
- */
-#if defined( __linux__ ) || defined( __bolthur__ )
-__weak // weak reference only for linux and bolthur
+#if defined( _COMPILING_BOSL )
+  #include "collection/list.h"
+  #include "scanner.h"
+#else
+  #include <bosl/scanner.h>
+  typedef struct list_manager list_manager_t;
 #endif
-void error_raise( bosl_token_t* token, const char* message ) {
-  // start error output
-  fprintf( stderr, "[line %u] Error", token->line );
-  // position / token information
-  if ( TOKEN_EOF == token->type ) {
-    fprintf( stderr, " at end" );
-  } else if ( TOKEN_ERROR != token->type ) {
-    fprintf( stderr, " at '%.*s'", ( int )token->length, token->start );
-  }
-  // finish with adding message
-  fprintf( stderr, ": %s\r\n", message );
-}
+
+#if ! defined( _BOSL_PARSER_H )
+#define _BOSL_PARSER_H
+
+typedef struct {
+  list_manager_t* token;
+  list_item_t* current;
+  list_manager_t* ast;
+} bosl_parser_t;
+
+bool parser_init( list_manager_t* );
+void parser_free( void );
+list_manager_t* parser_scan( void );
+void parser_print( void );
+
+#endif

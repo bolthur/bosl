@@ -1,11 +1,10 @@
 
-ACLOCAL_AMFLAGS = -I build-aux/m4
+ACLOCAL_AMFLAGS = -I aux/m4
 
-SUBDIRS = library cli tests
+SUBDIRS = library cli
 
 # coverage stuff
 if CODE_COVERAGE_ENABLED
-CODE_COVERAGE_OUTPUT_DIRECTORY=$(ROOT_SRC_DIR)/coverage
 CODE_COVERAGE_IGNORE_PATTERN="/usr/*"
 CODE_COVERAGE_GENHTML_OPTIONS=--prefix $(ROOT_SRC_DIR)
 # include coverage stuff
@@ -27,5 +26,3 @@ cppcheck:
 	cppcheck -UCMC --inline-suppr --enable=all --force \
 		--suppress=missingIncludeSystem $(top_srcdir)
 
-# pkg config installation stuff
-pkgconfig_DATA = library/bosl.pc

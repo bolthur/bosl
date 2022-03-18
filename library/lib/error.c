@@ -17,15 +17,28 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "interpreter.h"
+#include "error.h"
+#include "scanner.h"
+#include <stdio.h>
 
-bool interpreter_init( __unused list_manager_t* ast ) {
-  return true;
-}
-
-void interpreter_free( void ) {
-}
-
-bool interpreter_execute( void ) {
-  return true;
+/**
+ * @brief Method to raise error
+ *
+ * @param token
+ * @param message
+ */
+#if defined( __linux__ ) || defined( __bolthur__ )
+__weak // weak reference only for linux and bolthur
+#endif
+void error_raise( bosl_token_t* token, const char* message ) {
+  // start error output
+  fprintf( stderr, "[line %u] Error", token->line );
+  // position / token information
+  if ( TOKEN_EOF == token->type ) {
+    fprintf( stderr, " at end" );
+  } else if ( TOKEN_ERROR != token->type ) {
+    fprintf( stderr, " at '%.*s'", ( int )token->length, token->start );
+  }
+  // finish with adding message
+  fprintf( stderr, ": %s\r\n", message );
 }

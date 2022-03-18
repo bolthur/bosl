@@ -19,9 +19,12 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "parser.h"
-#include "lexer.h"
+#include "scanner.h"
 #include "error.h"
+#include "ast/expression.h"
+#include "ast/statement.h"
 
 static bosl_parser_t* parser = NULL;
 
@@ -48,9 +51,9 @@ static void advance( void ) {
  * @param type
  * @return
  */
-static bool match( bosl_token_type_t type ) {
+__unused static bool match( bosl_token_type_t type ) {
   // return false if not matching
-  if ( type != get_token( parser->current->data )->type ) {
+  if ( type != get_token( parser->current )->type ) {
     return false;
   }
   // push to next
@@ -66,7 +69,7 @@ static bool match( bosl_token_type_t type ) {
  * @param error_message
  * @return
  */
-static bool consume( bosl_token_type_t type, const char* error_message ) {
+__unused static bool consume( bosl_token_type_t type, const char* error_message ) {
   // get token
   bosl_token_t* token = get_token( parser->current );
   // check for mismatch
@@ -81,105 +84,8 @@ static bool consume( bosl_token_type_t type, const char* error_message ) {
   return true;
 }
 
-static bool handle_print( void ) {
-  // consume left parenthesis
-  if ( ! consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after print." ) ) {
-    return false;
-  }
-  // FIXME: CONSUME EXPRESSION
-  // consume right parenthesis
-  if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after parameter." ) ) {
-    return false;
-  }
-  // consume semicolon
-  if ( ! consume( TOKEN_SEMICOLON, "Expect ';' at the end." ) ) {
-    return false;
-  }
-  // FIXME: PUSH SOME OP CODE STUFF
-  // return success
-  return true;
-}
-
-static bool handle_for( void ) {
-  return true;
-}
-
-static bool handle_while( void ) {
-  return true;
-}
-
-static bool handle_if( void ) {
-  return true;
-}
-
-static bool handle_return( void ) {
-  return true;
-}
-
-static bool handle_block( void ) {
-  return true;
-}
-
-static bool handle_expression( void ) {
-  return true;
-}
-
-static bool handle_statement( void ) {
-  // handle print
-  if ( match( TOKEN_PRINT ) ) {
-    return handle_print();
-  // handle if
-  } else if ( match( TOKEN_IF ) ) {
-    return handle_if();
-  // handle for
-  } else if ( match( TOKEN_FOR ) ) {
-    return handle_for();
-  // handle while
-  } else if ( match( TOKEN_WHILE ) ) {
-    return handle_while();
-  // handle return
-  } else if ( match( TOKEN_RETURN ) ) {
-    return handle_return();
-  // handle group start
-  } else if ( match( TOKEN_LEFT_BRACE ) ) {
-    return handle_block();
-  // handle expression
-  } else {
-    return handle_expression();
-  }
-  return false;
-}
-
-static bool handle_variable_declaration( void ) {
-  return true;
-}
-
-static bool handle_constant_declaration( void ) {
-  return true;
-}
-
-static bool handle_function_declaration( void ) {
-  return true;
-}
-
-/**
- * @brief Process the sequence starting at current
- *
- * @return
- */
-static bool process_sequence( void ) {
-  // handle variable creation
-  if ( match( TOKEN_LET ) ) {
-    return handle_variable_declaration();
-  // handle constant creation
-  } else if ( match( TOKEN_CONST ) ) {
-    return handle_constant_declaration();
-  // handle function declaration
-  } else if ( match( TOKEN_FUNCTION ) ) {
-    return handle_function_declaration();
-  } else {
-    return handle_statement();
-  }
+__unused static bosl_ast_expression_t* primary( void ) {
+  return NULL;
 }
 
 /**
@@ -190,12 +96,12 @@ static bool process_sequence( void ) {
  */
 bool parser_init( list_manager_t* token ) {
   // allocate parser structure
-  parser = malloc( sizeof( bosl_parser_t ) );
+  parser = malloc( sizeof( *parser ) );
   if ( ! parser ) {
     return false;
   }
   // clear out
-  memset( parser, 0, sizeof( bosl_parser_t ) );
+  memset( parser, 0, sizeof( *parser ) );
   // push in token list
   parser->token = token;
   parser->current = token->first;
@@ -234,13 +140,12 @@ list_manager_t* parser_scan( void ) {
   if ( ! parser ) {
     return NULL;
   }
-  // loop until eof
-  while ( ! match( TOKEN_EOF ) ) {
-    // try to process sequence
-    if ( ! process_sequence() ) {
-      return false;
-    }
-  }
   // return built byte code
   return parser->ast;
+}
+
+/**
+ * @brief Method to print parsed ast
+ */
+void parser_print( void ) {
 }

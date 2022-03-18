@@ -22,7 +22,7 @@
 #include <check.h>
 #include <unistd.h>
 #include <time.h>
-#include "../../library/collection/list.h"
+#include "../lib/collection/list.h"
 
 typedef struct {
   size_t data;
@@ -703,7 +703,7 @@ START_TEST( test_list_custom_insert ) {
 }
 END_TEST
 
-static Suite* lexer_suite( void ) {
+static Suite* list_suite( void ) {
   Suite* s;
   TCase* tc_core;
 
@@ -748,7 +748,7 @@ int main( void ) {
   // init random
   srand( ( unsigned int )time( NULL ) );
   // create suite and runner
-  s = lexer_suite();
+  s = list_suite();
   sr = srunner_create( s );
 
   srunner_run_all( sr, CK_VERBOSE );

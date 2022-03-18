@@ -21,7 +21,7 @@
 #include <check.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "../../library/error.h"
+#include "../lib/error.h"
 
 static char* buffer;
 static char* expected;
@@ -49,7 +49,7 @@ static void teardown( void ) {
   // restore stderr
   f = freopen( "/dev/null", "a", stderr );
   ck_assert_ptr_nonnull( f );
-  ck_assert_int_ne( -1, dup2( stderr_backup, STDOUT_FILENO ) );
+  ck_assert_int_ne( -1, dup2( stderr_backup, STDERR_FILENO ) );
   ck_assert_int_eq( 0, setvbuf( stderr, NULL, _IOFBF, BUFSIZ ) );
   // free buffers
   free( expected );
@@ -119,7 +119,7 @@ START_TEST( test_error_normal ) {
 }
 END_TEST
 
-static Suite* lexer_suite( void ) {
+static Suite* error_suite( void ) {
   Suite* s;
   TCase* tc_core;
 
@@ -141,7 +141,7 @@ int main( void ) {
   Suite *s;
   SRunner *sr;
 
-  s = lexer_suite();
+  s = error_suite();
   sr = srunner_create( s );
 
   srunner_run_all( sr, CK_NORMAL );

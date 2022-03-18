@@ -2,8 +2,8 @@
 # ---> Custom
 /build
 *~
-/aminclude_static.am
-/coverage
+aminclude_static.am
+aux/config
 
 # ---> Autotools
 # http://www.gnu.org/software/automake

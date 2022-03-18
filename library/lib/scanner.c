@@ -21,9 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "lexer.h"
+#include "scanner.h"
 
-static bosl_lexer_t* lexer = NULL;
+static bosl_scanner_t* scanner = NULL;
 
 /**
  * @brief Push current to next character and return previous
@@ -31,8 +31,8 @@ static bosl_lexer_t* lexer = NULL;
  * @return
  */
 static char advance( void ) {
-  lexer->current++;
-  return lexer->current[ -1 ];
+  scanner->current++;
+  return scanner->current[ -1 ];
 }
 
 /**
@@ -41,10 +41,10 @@ static char advance( void ) {
  * @return
  */
 static char next( void ) {
-  if ( '\0' == lexer->current[ 0 ] ) {
+  if ( '\0' == scanner->current[ 0 ] ) {
     return '\0';
   }
-  return lexer->current[ 1 ];
+  return scanner->current[ 1 ];
 }
 
 /**
@@ -55,12 +55,12 @@ static char next( void ) {
  */
 static bool match( char expected ) {
   if (
-    '\0' == lexer->current[ 0 ]
-    || lexer->current[ 0 ] != expected
+    '\0' == scanner->current[ 0 ]
+    || scanner->current[ 0 ] != expected
   ) {
     return false;
   }
-  lexer->current++;
+  scanner->current++;
   return true;
 }
 
@@ -76,7 +76,7 @@ static bool add_token(
   const char* message
 ) {
   // handle not initialized
-  if ( ! lexer || ! lexer->token ) {
+  if ( ! scanner || ! scanner->token ) {
     return false;
   }
   // message parameter is for error token only
@@ -103,14 +103,14 @@ static bool add_token(
     strcpy( ( char* )token->start, message );
     token->length = len;
   } else {
-    token->start = lexer->start;
-    token->length = ( size_t )( lexer->current - lexer->start );
+    token->start = scanner->start;
+    token->length = ( size_t )( scanner->current - scanner->start );
   }
   // fill token
   token->type = type;
-  token->line = lexer->line;
+  token->line = scanner->line;
   // try to push back
-  if ( ! list_push_back_data( lexer->token, token ) ) {
+  if ( ! list_push_back_data( scanner->token, token ) ) {
     if ( message ) {
       free( ( void* )token->start );
     }
@@ -128,19 +128,19 @@ static bool add_token(
  */
 static bool scan_string( void ) {
   // handle not initialized
-  if ( ! lexer || ! lexer->token ) {
+  if ( ! scanner || ! scanner->token ) {
     return false;
   }
   // loop until second double quotes
-  while ( *lexer->current && '"' != *lexer->current ) {
+  while ( *scanner->current && '"' != *scanner->current ) {
     // handle line break
-    if ( '\n' == *lexer->current ) {
-      lexer->line++;
+    if ( '\n' == *scanner->current ) {
+      scanner->line++;
     }
     advance();
   }
   // handle end reached
-  if ( '\0' == lexer->current[ 0 ] ) {
+  if ( '\0' == scanner->current[ 0 ] ) {
     return add_token( TOKEN_ERROR, "Unterminated string found" );
   }
   // get beyond closing double quotes
@@ -156,21 +156,21 @@ static bool scan_string( void ) {
  */
 static bool scan_identifier( void ) {
   // handle not initialized
-  if ( ! lexer || ! lexer->token ) {
+  if ( ! scanner || ! scanner->token ) {
     return false;
   }
   // get beyond alpha numeric
   while (
-    *lexer->current
+    *scanner->current
     && (
-      isalnum( ( int )*lexer->current )
-      || '_' == *lexer->current
+      isalnum( ( int )*scanner->current )
+      || '_' == *scanner->current
     )
   ) {
     advance();
   }
   // try to get type
-  void* raw_type = hashmap_value_get( lexer->keyword, lexer->start );
+  void* raw_type = hashmap_value_get( scanner->keyword, scanner->start );
   // transform to token type
   bosl_token_type_t type = TOKEN_IDENTIFIER;
   if ( raw_type ) {
@@ -187,15 +187,15 @@ static bool scan_identifier( void ) {
  */
 static bool scan_number( void ) {
   // handle not initialized
-  if ( ! lexer || ! lexer->token ) {
+  if ( ! scanner || ! scanner->token ) {
     return false;
   }
   // loop until non digit
-  while ( isdigit( ( int )*lexer->current ) ) {
+  while ( isdigit( ( int )*scanner->current ) ) {
     advance();
   }
-  bool is_hex = 'x' == *lexer->current || 'X' == *lexer->current;
-  bool is_float = '.' == *lexer->current;
+  bool is_hex = 'x' == *scanner->current || 'X' == *scanner->current;
+  bool is_float = '.' == *scanner->current;
   // continue loop if hex or float
   if (
     ( is_float && isdigit( ( int )next() ) )
@@ -205,8 +205,8 @@ static bool scan_number( void ) {
     advance();
     // loop until non digit
     while (
-      ( is_float && isdigit( ( int )*lexer->current ) )
-      || ( is_hex && isalnum( ( int )*lexer->current ) )
+      ( is_float && isdigit( ( int )*scanner->current ) )
+      || ( is_hex && isalnum( ( int )*scanner->current ) )
     ) {
       advance();
     }
@@ -255,7 +255,7 @@ static bool scan_token( void ) {
     case '/': {
       // handle comment ( skip )
       if ( match( '/' ) ) {
-        while ( *lexer->current && '\n' != *lexer->current ) {
+        while ( *scanner->current && '\n' != *scanner->current ) {
           advance();
         }
       // normal slash token
@@ -287,7 +287,7 @@ static bool scan_token( void ) {
       // ignore
       break;
     case '\n':
-      lexer->line++;
+      scanner->line++;
       break;
     // unknown token
     default: return add_token( TOKEN_ERROR, "Unknown token" );
@@ -313,74 +313,74 @@ static void token_list_cleanup( list_item_t* a ) {
 }
 
 /**
- * @brief Prepare and setup lexer
+ * @brief Prepare and setup scanner
  *
  * @param source
  * @return
  */
-bool lexer_init( const char* source ) {
+bool scanner_init( const char* source ) {
   // prevent duplicate init
-  if ( lexer ) {
+  if ( scanner ) {
     return false;
   }
   // allocate and handle error
-  lexer = malloc( sizeof( *lexer ) );
-  if ( ! lexer ) {
+  scanner = malloc( sizeof( *scanner ) );
+  if ( ! scanner ) {
     return false;
   }
   // clear out
-  memset( lexer, 0, sizeof( *lexer ) );
+  memset( scanner, 0, sizeof( *scanner ) );
   // populate
-  lexer->source = source;
-  lexer->start = source;
-  lexer->current = source;
-  lexer->line = 1;
+  scanner->source = source;
+  scanner->start = source;
+  scanner->current = source;
+  scanner->line = 1;
   // generate token list
-  lexer->token = list_construct( NULL, token_list_cleanup, NULL );
-  if ( ! lexer->token ) {
-    free( lexer );
+  scanner->token = list_construct( NULL, token_list_cleanup, NULL );
+  if ( ! scanner->token ) {
+    free( scanner );
     return false;
   }
   // create and fill hash map
-  lexer->keyword = hashmap_construct();
-  if ( ! lexer->keyword ) {
-    list_destruct( lexer->token );
-    free( lexer );
+  scanner->keyword = hashmap_construct();
+  if ( ! scanner->keyword ) {
+    list_destruct( scanner->token );
+    free( scanner );
     return false;
   }
   // populate hashmap with key words
   if (
-    ! hashmap_value_set( lexer->keyword, "let", ( void* )TOKEN_LET )
-    || ! hashmap_value_set( lexer->keyword, "const", ( void* )TOKEN_CONST )
-    || ! hashmap_value_set( lexer->keyword, "pointer", ( void* )TOKEN_POINTER )
-    || ! hashmap_value_set( lexer->keyword, "true", ( void* )TOKEN_TRUE )
-    || ! hashmap_value_set( lexer->keyword, "false", ( void* )TOKEN_FALSE )
-    || ! hashmap_value_set( lexer->keyword, "null", ( void* )TOKEN_NULL )
-    || ! hashmap_value_set( lexer->keyword, "if", ( void* )TOKEN_IF )
-    || ! hashmap_value_set( lexer->keyword, "elseif", ( void* )TOKEN_ELSEIF )
-    || ! hashmap_value_set( lexer->keyword, "else", ( void* )TOKEN_ELSE )
-    || ! hashmap_value_set( lexer->keyword, "while", ( void* )TOKEN_WHILE )
-    || ! hashmap_value_set( lexer->keyword, "for", ( void* )TOKEN_FOR )
-    || ! hashmap_value_set( lexer->keyword, "fn", ( void* )TOKEN_FUNCTION )
-    || ! hashmap_value_set( lexer->keyword, "return", ( void* )TOKEN_RETURN )
-    || ! hashmap_value_set( lexer->keyword, "load", ( void* )TOKEN_LOAD )
-    || ! hashmap_value_set( lexer->keyword, "int8", ( void* )TOKEN_TYPE_INT8 )
-    || ! hashmap_value_set( lexer->keyword, "int16", ( void* )TOKEN_TYPE_INT16 )
-    || ! hashmap_value_set( lexer->keyword, "int32", ( void* )TOKEN_TYPE_INT32 )
-    || ! hashmap_value_set( lexer->keyword, "int64", ( void* )TOKEN_TYPE_INT64 )
-    || ! hashmap_value_set( lexer->keyword, "uint8", ( void* )TOKEN_TYPE_UINT8 )
-    || ! hashmap_value_set( lexer->keyword, "uint16", ( void* )TOKEN_TYPE_UINT16 )
-    || ! hashmap_value_set( lexer->keyword, "uint32", ( void* )TOKEN_TYPE_UINT32 )
-    || ! hashmap_value_set( lexer->keyword, "uint64", ( void* )TOKEN_TYPE_UINT64 )
-    || ! hashmap_value_set( lexer->keyword, "float", ( void* )TOKEN_TYPE_FLOAT )
-    || ! hashmap_value_set( lexer->keyword, "string", ( void* )TOKEN_TYPE_STRING )
-    || ! hashmap_value_set( lexer->keyword, "void", ( void* )TOKEN_TYPE_VOID )
-    || ! hashmap_value_set( lexer->keyword, "bool", ( void* )TOKEN_TYPE_BOOL )
-    || ! hashmap_value_set( lexer->keyword, "print", ( void* )TOKEN_PRINT )
+    ! hashmap_value_set( scanner->keyword, "let", ( void* )TOKEN_LET )
+    || ! hashmap_value_set( scanner->keyword, "const", ( void* )TOKEN_CONST )
+    || ! hashmap_value_set( scanner->keyword, "pointer", ( void* )TOKEN_POINTER )
+    || ! hashmap_value_set( scanner->keyword, "true", ( void* )TOKEN_TRUE )
+    || ! hashmap_value_set( scanner->keyword, "false", ( void* )TOKEN_FALSE )
+    || ! hashmap_value_set( scanner->keyword, "null", ( void* )TOKEN_NULL )
+    || ! hashmap_value_set( scanner->keyword, "if", ( void* )TOKEN_IF )
+    || ! hashmap_value_set( scanner->keyword, "elseif", ( void* )TOKEN_ELSEIF )
+    || ! hashmap_value_set( scanner->keyword, "else", ( void* )TOKEN_ELSE )
+    || ! hashmap_value_set( scanner->keyword, "while", ( void* )TOKEN_WHILE )
+    || ! hashmap_value_set( scanner->keyword, "for", ( void* )TOKEN_FOR )
+    || ! hashmap_value_set( scanner->keyword, "fn", ( void* )TOKEN_FUNCTION )
+    || ! hashmap_value_set( scanner->keyword, "return", ( void* )TOKEN_RETURN )
+    || ! hashmap_value_set( scanner->keyword, "load", ( void* )TOKEN_LOAD )
+    || ! hashmap_value_set( scanner->keyword, "int8", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "int16", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "int32", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "int64", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "uint8", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "uint16", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "uint32", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "uint64", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "float", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "string", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "void", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "bool", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || ! hashmap_value_set( scanner->keyword, "print", ( void* )TOKEN_PRINT )
   ) {
-    hashmap_destruct( lexer->keyword );
-    list_destruct( lexer->token );
-    free( lexer );
+    hashmap_destruct( scanner->keyword );
+    list_destruct( scanner->token );
+    free( scanner );
     return false;
   }
   // return success
@@ -388,18 +388,18 @@ bool lexer_init( const char* source ) {
 }
 
 /**
- * @brief Destroy lexer if initialized
+ * @brief Destroy scanner if initialized
  */
-void lexer_free( void ) {
+void scanner_free( void ) {
   // skip if no instance allocated
-  if ( ! lexer ) {
+  if ( ! scanner ) {
     return;
   }
   // destroy list and hash map
-  list_destruct( lexer->token );
-  hashmap_destruct( lexer->keyword );
+  list_destruct( scanner->token );
+  hashmap_destruct( scanner->keyword );
   // finally free instance
-  free( lexer );
+  free( scanner );
 }
 
 /**
@@ -407,28 +407,28 @@ void lexer_free( void ) {
  *
  * @return
  */
-list_manager_t* lexer_scan( void ) {
+list_manager_t* scanner_scan( void ) {
   // handle call without init
-  if ( ! lexer ) {
+  if ( ! scanner ) {
     return NULL;
   }
   // loop until end
-  while ( *lexer->current ) {
+  while ( *scanner->current ) {
     // set start to current
-    lexer->start = lexer->current;
+    scanner->start = scanner->current;
     // scan token
     if ( ! scan_token() ) {
-      lexer_free();
+      scanner_free();
       return NULL;
     }
   }
-  // push lexer start one more time
-  lexer->start = lexer->current;
+  // push scanner start one more time
+  scanner->start = scanner->current;
   // add eof token
   if ( ! add_token( TOKEN_EOF, NULL ) ) {
-    lexer_free();
+    scanner_free();
     return NULL;
   }
   // return list of tokens
-  return lexer->token;
+  return scanner->token;
 }

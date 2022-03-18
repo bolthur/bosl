@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <check.h>
 #include <stdio.h>
-#include "../../library/collection/hashmap.h"
+#include "../lib/collection/hashmap.h"
 
 hashmap_table_t* table;
 

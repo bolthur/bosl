@@ -17,25 +17,11 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdbool.h>
+#if !defined( _LIBRARY_CONFIG_H )
+#define _LIBRARY_CONFIG_H
 
-#if defined( _COMPILING_BOSL )
-  #include "collection/list.h"
-#else
-  typedef struct list_manager list_manager_t;
+#if defined( HAVE_CONFIG_H )
+  #include <config.h>
 #endif
-
-#if ! defined( _PARSER_H )
-#define _PARSER_H
-
-typedef struct bosl_parser {
-  list_manager_t* token;
-  list_item_t* current;
-  list_manager_t* ast;
-} bosl_parser_t;
-
-bool parser_init( list_manager_t* );
-void parser_free( void );
-list_manager_t* parser_scan( void );
 
 #endif

@@ -28,8 +28,8 @@
   typedef struct hashmap_entry hashmap_entry_t;
 #endif
 
-#if ! defined( _LEXER_H )
-#define _LEXER_H
+#if ! defined( _BOSL_SCANNER_H )
+#define _BOSL_SCANNER_H
 
 typedef enum {
   // single character tokens
@@ -67,6 +67,7 @@ typedef enum {
   TOKEN_SHIFT_RIGHT,
 
   // literals
+  TOKEN_TYPE_IDENTIFIER,
   TOKEN_IDENTIFIER,
   TOKEN_STRING,
   TOKEN_NUMBER,
@@ -87,20 +88,6 @@ typedef enum {
   TOKEN_RETURN,
   TOKEN_LOAD,
 
-  // data types
-  TOKEN_TYPE_INT8,
-  TOKEN_TYPE_INT16,
-  TOKEN_TYPE_INT32,
-  TOKEN_TYPE_INT64,
-  TOKEN_TYPE_UINT8,
-  TOKEN_TYPE_UINT16,
-  TOKEN_TYPE_UINT32,
-  TOKEN_TYPE_UINT64,
-  TOKEN_TYPE_FLOAT,
-  TOKEN_TYPE_STRING,
-  TOKEN_TYPE_VOID,
-  TOKEN_TYPE_BOOL,
-
   // built-in functions
   TOKEN_PRINT,
 
@@ -117,17 +104,17 @@ typedef struct bosl_token {
   size_t length;
 } bosl_token_t;
 
-typedef struct bosl_lexer {
+typedef struct bosl_scanner {
   const char* source;
   const char* start;
   const char* current;
   uint32_t line;
   list_manager_t* token;
   hashmap_table_t* keyword;
-} bosl_lexer_t;
+} bosl_scanner_t;
 
-bool lexer_init( const char* );
-void lexer_free( void );
-list_manager_t* lexer_scan( void );
+bool scanner_init( const char* );
+void scanner_free( void );
+list_manager_t* scanner_scan( void );
 
 #endif

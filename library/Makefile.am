@@ -1,21 +1,25 @@
 
+ACLOCAL_AMFLAGS = -I aux/m4
+
 AM_CFLAGS = $(CODE_COVERAGE_CFLAGS)
 
-noinst_HEADERS = \
-  collection/list.h \
-  collection/hashmap.h
+SUBDIRS = lib tests
 
-pkginclude_HEADERS = \
-  error.h \
-  interpreter.h \
-  lexer.h \
-  parser.h
+# coverage stuff
+if CODE_COVERAGE_ENABLED
+CODE_COVERAGE_IGNORE_PATTERN="/usr/*"
+CODE_COVERAGE_GENHTML_OPTIONS=--prefix $(ROOT_SRC_DIR)
+# include coverage stuff
+include $(top_srcdir)/aminclude_static.am
+# extend clean-local and distclean-local
+clean-local: code-coverage-clean
+distclean-local: code-coverage-dist-clean
+endif
 
-pkglib_LTLIBRARIES = libbosl.la
-libbosl_la_SOURCES = \
-  collection/hashmap.c \
-  collection/list.c \
-  error.c \
-  interpreter.c \
-  lexer.c \
-  parser.c
+# add valgrind
+if VALGRIND_ENABLED
+check: check-valgrind
+endif
+
+# pkg config installation stuff
+pkgconfig_DATA = bosl.pc

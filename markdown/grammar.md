@@ -1,0 +1,64 @@
+
+# Syntax grammar
+
+```ebnf
+program               → declaration* EOF ;
+```
+
+## Declarations
+
+```ebnf
+declaration           → declaration_fn | declaration_const | declaration_let | statement;
+
+declaration_fn        → "fn" function ;
+declaration_const     → "const" IDENTIFIER ":" ( "pointer" )? TYPE_IDENTIFIER "=" expression ";" ;
+declaration_let       → "let" IDENTIFIER ":" ( "pointer" )? TYPE_IDENTIFIER ( "=" expression )? ";" ;
+
+## Statements
+
+statement             → statement_expression | statement_for | statement_if | statement_print | statement_return | statement_while | block;
+
+statement_expression  → expression ";" ;
+statement_for         → "for" "(" ( declaration_let | statement_expression | ";" ) expression? ";" expression? ")" statement ;
+statement_if          → "if" "(" expression ")" statement ( "elseif" "(" expression ")" statement )? ( "else" statement )? ;
+statement_print       → "print" "(" expression ")" ";" ;
+statement_return      → "return" expression? ";" ;
+statement_while       → "while" "(" expression ")" statement;
+block                 → "{" declaration "}"
+```
+
+## Expressions
+
+```ebnf
+expression            → assignment ;
+assignment            → IDENTIFIER "=" assignment | logic_or ;
+logic_or              → logic_and ( "||" logic_and )* ;
+logic_and             → equality ( "&&" equality )* ;
+equality              → comparison ( ( "!=" | "==" ) comparison )* ;
+comparison            → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+term                  → factor ( ( "-" | "+" ) factor )*
+factor                → unary ( ( "/" | "*" ) unary )* ;
+unary                 → ( "!" | "-" | "+" | "~" ) unary | call | load ;
+call                  → primary ( "(" arguments? ")" )* ;
+load                  → "load" IDENTIFIER ;
+primary               → "true" | "false" | "null" | NUMBER | STRING | IDENTIFIER | "(" expression ")" | "pointer" IDENTIFIER ;
+```
+
+## Utility rules
+
+```ebnf
+function              → IDENTIFIER "(" parameters? ")" block ( "=" "load" "fn" IDENTIFIER )? ;
+parameters            → ( IDENTIFIER ":" ( "pointer" )? TYPE_IDENTIFIER ) ( "," ( IDENTIFIER ":" ( "pointer" )? TYPE_IDENTIFIER ) )* ;
+arguments             → expression ( "," expression )* ;
+```
+
+## Lexical Grammar
+
+```ebnf
+NUMBER                → DIGIT+ ( ( "." DIGIT+ ) | ( "x" HEXNUMBER+ ) )? ;
+STRING                → "\"" <any char except "\"">* "\"" ;
+IDENTIFIER            → ALPHA ( ALPHA | DIGIT )* ;
+HEXNUMBER             → "a" ... "z" | "A" ... "Z" | "0" ... "9";
+ALPHA                 → "a" ... "z" | "A" ... "Z" | "_" ;
+DIGIT                 → "0" ... "9" ;
+```
