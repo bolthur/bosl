@@ -30,9 +30,9 @@ static void setup( void ) {
 
 static void teardown( void ) {
   // destroy scanner and parser
-  scanner_free();
-  parser_free();
-  check_free();
+  bosl_scanner_free();
+  bosl_parser_free();
+  bosl_check_free();
 }
 
 START_TEST( test_dummy ) {

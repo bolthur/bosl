@@ -41,10 +41,7 @@ typedef enum {
   STATEMENT_WHILE,
 } bosl_ast_statement_type_t;
 
-typedef struct {
-  bosl_ast_statement_type_t type;
-  void* data;
-} bosl_ast_statement_t;
+typedef struct bosl_ast_statement bosl_ast_statement_t;
 
 typedef struct {
   list_manager_t* statements;
@@ -98,6 +95,24 @@ typedef struct {
   bosl_ast_statement_t* body;
 } bosl_ast_statement_while_t;
 
-void* ast_statement_allocate( bosl_ast_statement_type_t ) ;
+typedef struct bosl_ast_statement {
+  bosl_ast_statement_type_t type;
+  union {
+    bosl_ast_statement_block_t* block;
+    bosl_ast_statement_expression_t* expression;
+    bosl_ast_statement_parameter_t* parameter;
+    bosl_ast_statement_function_t* function;
+    bosl_ast_statement_if_t* if_;
+    bosl_ast_statement_print_t* print;
+    bosl_ast_statement_return_t* return_;
+    bosl_ast_statement_variable_t* variable;
+    bosl_ast_statement_const_t* const_;
+    bosl_ast_statement_while_t* while_;
+    void* data;
+  };
+  size_t size;
+} bosl_ast_statement_t;
+
+void* bosl_ast_statement_allocate( bosl_ast_statement_type_t ) ;
 
 #endif

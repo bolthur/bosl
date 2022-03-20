@@ -29,11 +29,22 @@ static void setup( void ) {
 
 static void teardown( void ) {
   // destroy scanner and parser
-  scanner_free();
-  parser_free();
+  bosl_scanner_free();
+  bosl_parser_free();
 }
 
 START_TEST( test_simple_expression ) {
+  const char expression[] = "3 + 2 * 7;";
+  // init scanner
+  ck_assert( bosl_scanner_init( expression ) );
+  // parse token
+  list_manager_t* token = bosl_scanner_scan();
+  ck_assert_ptr_nonnull( token );
+  // init parser
+  ck_assert( bosl_parser_init( token ) );
+  // parse ast
+  list_manager_t* ast = bosl_parser_scan();
+  ck_assert_ptr_nonnull( ast );
 }
 END_TEST
 

@@ -36,9 +36,9 @@ typedef struct {
   list_manager_t* ast;
 } bosl_parser_t;
 
-bool parser_init( list_manager_t* );
-void parser_free( void );
-list_manager_t* parser_scan( void );
-void parser_print( void );
+bool bosl_parser_init( list_manager_t* );
+void bosl_parser_free( void );
+list_manager_t* bosl_parser_scan( void );
+void bosl_parser_print( void );
 
 #endif

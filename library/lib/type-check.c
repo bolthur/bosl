@@ -25,14 +25,14 @@
  * @param ast
  * @return
  */
-bool check_init( __unused list_manager_t* ast ) {
+bool bosl_check_init( __unused list_manager_t* ast ) {
   return true;
 }
 
 /**
  * @brief Free type checking
  */
-void check_free( void ) {
+void bosl_check_free( void ) {
 }
 
 /**
@@ -40,6 +40,6 @@ void check_free( void ) {
  *
  * @return
  */
-bool check_types( void ) {
+bool bosl_check_types( void ) {
   return true;
 }

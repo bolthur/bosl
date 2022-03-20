@@ -318,7 +318,7 @@ static void token_list_cleanup( list_item_t* a ) {
  * @param source
  * @return
  */
-bool scanner_init( const char* source ) {
+bool bosl_scanner_init( const char* source ) {
   // prevent duplicate init
   if ( scanner ) {
     return false;
@@ -390,7 +390,7 @@ bool scanner_init( const char* source ) {
 /**
  * @brief Destroy scanner if initialized
  */
-void scanner_free( void ) {
+void bosl_scanner_free( void ) {
   // skip if no instance allocated
   if ( ! scanner ) {
     return;
@@ -407,7 +407,7 @@ void scanner_free( void ) {
  *
  * @return
  */
-list_manager_t* scanner_scan( void ) {
+list_manager_t* bosl_scanner_scan( void ) {
   // handle call without init
   if ( ! scanner ) {
     return NULL;
@@ -418,7 +418,7 @@ list_manager_t* scanner_scan( void ) {
     scanner->start = scanner->current;
     // scan token
     if ( ! scan_token() ) {
-      scanner_free();
+      bosl_scanner_free();
       return NULL;
     }
   }
@@ -426,7 +426,7 @@ list_manager_t* scanner_scan( void ) {
   scanner->start = scanner->current;
   // add eof token
   if ( ! add_token( TOKEN_EOF, NULL ) ) {
-    scanner_free();
+    bosl_scanner_free();
     return NULL;
   }
   // return list of tokens

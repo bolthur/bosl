@@ -287,9 +287,9 @@ It's possible to load values provided by container application using keyword
 
 ```js
 // import a pointer to some memory
-let p2: pointer uint32 = load pointer uint32 some_pointer_name;
+let p2: pointer uint32 = load some_pointer_name;
 // import some value
-let val: uint32 = load uint32 some_value_name;
+let val: uint32 = load some_value_name;
 
 // change content pointer is pointing to ( changes also content outside the container )
 p2 = 5;
@@ -301,17 +301,17 @@ let v: uint32 = p2;
 
 To use functions the container application is providing, some sort of function
 alias has to be added. The function is written as usual and the body is followed
-by assignment and `load fn` and a name. The body should be left empty as it's
+by assignment and `load` and a name. The body should be left empty as it's
 content is not going to be considered, but with empty body.
 
 ```js
 // make a function usable within script provided by container
-fn foo( parameter1: uint16, parameter2: uint16 ): void {} = load fn some_function_name_foo;
+fn foo( parameter1: uint16, parameter2: uint16 ): void {} = load some_function_name_foo;
 fn foo2( parameter1: uint16, parameter2: uint16 ): void {
   // this content is completely ignored here
   let never_executed: uint16 = 5;
 } = load fn some_function_name_foo;
-fn bar( parameter1: uint16 ): uint16 {} = load fn some_function_name_bar;
+fn bar( parameter1: uint16 ): uint16 {} = load some_function_name_bar;
 // call the aliased function
 foo( 5, 6 );
 let a = bar( 10 );
@@ -352,8 +352,8 @@ from within the script by creating an alias within the script.
 
 ### Providing variables from container at script
 
-It's possible to provide variables from container, which then can be laoded from
-within the script itself using the keyword `load <type>` or `load pointer <type>`.
+It's possible to provide variables from container, which then can be loaded from
+within the script itself using the keyword `load`.
 
 ```c
 // TBD

@@ -1,6 +1,8 @@
 
 # Syntax grammar
 
+## General
+
 ```ebnf
 program               → declaration* EOF ;
 ```
@@ -33,9 +35,12 @@ block                 → "{" declaration "}"
 expression            → assignment ;
 assignment            → IDENTIFIER "=" assignment | logic_or ;
 logic_or              → logic_and ( "||" logic_and )* ;
-logic_and             → equality ( "&&" equality )* ;
+logic_and             → or ( "&&" or )* ;
+or                    → xor ( "|" xor )* ;
+xor                   → and ( "^" and )* ;
+and                   → equality ( "&" equality )* ;
 equality              → comparison ( ( "!=" | "==" ) comparison )* ;
-comparison            → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+comparison            → term ( ( ">" | ">=" | "<" | "<=" | "<<" | ">>" ) term )* ;
 term                  → factor ( ( "-" | "+" ) factor )*
 factor                → unary ( ( "/" | "*" ) unary )* ;
 unary                 → ( "!" | "-" | "+" | "~" ) unary | call | load ;
@@ -47,7 +52,7 @@ primary               → "true" | "false" | "null" | NUMBER | STRING | IDENTIFI
 ## Utility rules
 
 ```ebnf
-function              → IDENTIFIER "(" parameters? ")" block ( "=" "load" "fn" IDENTIFIER )? ;
+function              → IDENTIFIER "(" parameters? ")" block ( "=" "load" IDENTIFIER )? ;
 parameters            → ( IDENTIFIER ":" ( "pointer" )? TYPE_IDENTIFIER ) ( "," ( IDENTIFIER ":" ( "pointer" )? TYPE_IDENTIFIER ) )* ;
 arguments             → expression ( "," expression )* ;
 ```

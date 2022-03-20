@@ -28,6 +28,6 @@
 #if ! defined( _BOSL_ERROR_H )
 #define _BOSL_ERROR_H
 
-void error_raise( bosl_token_t*, const char* );
+void bosl_error_raise( bosl_token_t*, const char* );
 
 #endif

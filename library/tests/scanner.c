@@ -25,19 +25,19 @@ static void setup( void ) {
 }
 
 static void teardown( void ) {
-  scanner_free();
+  bosl_scanner_free();
 }
 
 START_TEST( test_scanner_init ) {
-  ck_assert( scanner_init( "let foo: uint32_t = 5" ) );
+  ck_assert( bosl_scanner_init( "let foo: uint32_t = 5" ) );
 }
 END_TEST
 
 START_TEST( test_scanner_scan_string_single_line ) {
   char str[] = "\"some string\"";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -61,8 +61,8 @@ START_TEST( test_scanner_scan_string_multi_line ) {
   char str[] = "\"some\n\
 string\"";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -86,8 +86,8 @@ START_TEST( test_scanner_scan_string_invalid ) {
   char str[] = "\"some string";
   char* cmp = str;
   char error_cmp[] = "Unterminated string found";
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -110,8 +110,8 @@ END_TEST
 START_TEST( test_scanner_scan_int ) {
   char str[] = "1337";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -134,8 +134,8 @@ END_TEST
 START_TEST( test_scanner_scan_float ) {
   char str[] = "13.37";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -158,8 +158,8 @@ END_TEST
 START_TEST( test_scanner_scan_hex_lower ) {
   char str[] = "0x123abc";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -182,8 +182,8 @@ END_TEST
 START_TEST( test_scanner_scan_hex_upper ) {
   char str[] = "0X123ABC";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -206,8 +206,8 @@ END_TEST
 START_TEST( test_scanner_scan_hex_mixed_lower_x ) {
   char str[] = "0x123AbC";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -230,8 +230,8 @@ END_TEST
 START_TEST( test_scanner_scan_hex_mixed_upper_x ) {
   char str[] = "0X123AbC";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -254,8 +254,8 @@ END_TEST
 START_TEST( test_scanner_scan_literal_keyword_within ) {
   char str[] = "elseifabc";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -278,8 +278,8 @@ END_TEST
 START_TEST( test_scanner_scan_literal_no_keyword_within ) {
   char str[] = "isaac_newton";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -302,8 +302,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_let ) {
   char str[] = "let";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -326,8 +326,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_const ) {
   char str[] = "const";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -350,8 +350,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_pointer ) {
   char str[] = "pointer";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -374,8 +374,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_true ) {
   char str[] = "true";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -398,8 +398,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_false ) {
   char str[] = "false";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -422,8 +422,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_null ) {
   char str[] = "null";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -446,8 +446,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_if ) {
   char str[] = "if";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -470,8 +470,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_elseif ) {
   char str[] = "elseif";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -494,8 +494,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_else ) {
   char str[] = "else";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -518,8 +518,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_while ) {
   char str[] = "while";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -542,8 +542,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_for ) {
   char str[] = "for";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -566,8 +566,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_function ) {
   char str[] = "fn";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -590,8 +590,8 @@ END_TEST
 START_TEST( test_scanner_scan_keyword_return ) {
   char str[] = "return";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -614,8 +614,8 @@ END_TEST
 START_TEST( test_scanner_load ) {
   char str[] = "load";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -638,8 +638,8 @@ END_TEST
 START_TEST( test_scanner_scan_builtin_print ) {
   char str[] = "print";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -662,8 +662,8 @@ END_TEST
 START_TEST( test_scanner_scan_comment_skip ) {
   char str[] = "// asdf";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   cmp += 7;
@@ -679,8 +679,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_int8 ) {
   char str[] = "int8";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -703,8 +703,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_int16 ) {
   char str[] = "int16";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -727,8 +727,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_int32 ) {
   char str[] = "int32";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -751,8 +751,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_int64 ) {
   char str[] = "int64";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -775,8 +775,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_uint8 ) {
   char str[] = "uint8";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -799,8 +799,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_uint16 ) {
   char str[] = "uint16";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -823,8 +823,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_uint32 ) {
   char str[] = "uint32";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -847,8 +847,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_uint64 ) {
   char str[] = "uint64";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -871,8 +871,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_float ) {
   char str[] = "float";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -895,8 +895,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_string ) {
   char str[] = "string";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -919,8 +919,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_void ) {
   char str[] = "void";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -943,8 +943,8 @@ END_TEST
 START_TEST( test_scanner_scan_type_bool ) {
   char str[] = "bool";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -967,8 +967,8 @@ END_TEST
 START_TEST( test_scanner_scan_left_parenthesis ) {
   char str[] = "(";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -991,8 +991,8 @@ END_TEST
 START_TEST( test_scanner_scan_right_parenthesis ) {
   char str[] = ")";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1015,8 +1015,8 @@ END_TEST
 START_TEST( test_scanner_scan_left_brace ) {
   char str[] = "{";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1039,8 +1039,8 @@ END_TEST
 START_TEST( test_scanner_scan_right_brace ) {
   char str[] = "}";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1063,8 +1063,8 @@ END_TEST
 START_TEST( test_scanner_scan_comma ) {
   char str[] = ",";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1087,8 +1087,8 @@ END_TEST
 START_TEST( test_scanner_scan_colon ) {
   char str[] = ":";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1111,8 +1111,8 @@ END_TEST
 START_TEST( test_scanner_scan_semicolon ) {
   char str[] = ";";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1135,8 +1135,8 @@ END_TEST
 START_TEST( test_scanner_scan_minus ) {
   char str[] = "-";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1159,8 +1159,8 @@ END_TEST
 START_TEST( test_scanner_scan_plus ) {
   char str[] = "+";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1183,8 +1183,8 @@ END_TEST
 START_TEST( test_scanner_scan_star ) {
   char str[] = "*";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1207,8 +1207,8 @@ END_TEST
 START_TEST( test_scanner_scan_modulo ) {
   char str[] = "%";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1231,8 +1231,8 @@ END_TEST
 START_TEST( test_scanner_scan_slash ) {
   char str[] = "/";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1255,8 +1255,8 @@ END_TEST
 START_TEST( test_scanner_scan_xor ) {
   char str[] = "^";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1279,8 +1279,8 @@ END_TEST
 START_TEST( test_scanner_scan_binary_one_complement ) {
   char str[] = "~";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1303,8 +1303,8 @@ END_TEST
 START_TEST( test_scanner_scan_shift_left ) {
   char str[] = "<<";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1327,8 +1327,8 @@ END_TEST
 START_TEST( test_scanner_scan_shift_right ) {
   char str[] = ">>";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1351,8 +1351,8 @@ END_TEST
 START_TEST( test_scanner_scan_bang ) {
   char str[] = "!";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1375,8 +1375,8 @@ END_TEST
 START_TEST( test_scanner_scan_bang_equal ) {
   char str[] = "!=";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1399,8 +1399,8 @@ END_TEST
 START_TEST( test_scanner_scan_equal ) {
   char str[] = "=";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1423,8 +1423,8 @@ END_TEST
 START_TEST( test_scanner_scan_equal_equal ) {
   char str[] = "==";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1447,8 +1447,8 @@ END_TEST
 START_TEST( test_scanner_scan_greater ) {
   char str[] = ">";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1471,8 +1471,8 @@ END_TEST
 START_TEST( test_scanner_scan_greater_equal ) {
   char str[] = ">=";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1495,8 +1495,8 @@ END_TEST
 START_TEST( test_scanner_scan_less ) {
   char str[] = "<";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1519,8 +1519,8 @@ END_TEST
 START_TEST( test_scanner_scan_less_equal ) {
   char str[] = "<=";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1543,8 +1543,8 @@ END_TEST
 START_TEST( test_scanner_scan_and ) {
   char str[] = "&";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1567,8 +1567,8 @@ END_TEST
 START_TEST( test_scanner_scan_and_and ) {
   char str[] = "&&";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1591,8 +1591,8 @@ END_TEST
 START_TEST( test_scanner_scan_or ) {
   char str[] = "|";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1615,8 +1615,8 @@ END_TEST
 START_TEST( test_scanner_scan_or_or ) {
   char str[] = "||";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1640,8 +1640,8 @@ START_TEST( test_scanner_scan_invalid_character ) {
   char str[] = "$";
   char* cmp = str;
   char error_cmp[] = "Unknown token";
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   list_item_t* current = list->first;
@@ -1665,8 +1665,8 @@ START_TEST( test_scanner_scan_with_newline ) {
   char str[] = "\n\
 let";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   cmp += 1;
@@ -1690,8 +1690,8 @@ END_TEST
 START_TEST( test_scanner_scan_white_space_skip_space ) {
   char str[] = " let";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   cmp += 1;
@@ -1715,8 +1715,8 @@ END_TEST
 START_TEST( test_scanner_scan_white_space_skip_tab ) {
   char str[] = "\tlet";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   cmp += 1;
@@ -1740,8 +1740,8 @@ END_TEST
 START_TEST( test_scanner_scan_white_space_skip_carriage_return ) {
   char str[] = "\rlet";
   char* cmp = str;
-  ck_assert( scanner_init( str ) );
-  list_manager_t* list = scanner_scan();
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
 
   cmp += 1;

@@ -17,28 +17,26 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "error.h"
-#include "scanner.h"
-#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "common.h"
 
 /**
- * @brief Method to raise error
+ * @brief Helper to allocate a ast node
  *
- * @param token
- * @param message
+ * @param type
+ * @return
  */
-#if defined( __linux__ ) || defined( __bolthur__ )
-__weak // weak reference only for linux and bolthur
-#endif
-void bosl_error_raise( bosl_token_t* token, const char* message ) {
-  // start error output
-  fprintf( stderr, "[line %u] Error", token->line );
-  // position / token information
-  if ( TOKEN_EOF == token->type ) {
-    fprintf( stderr, " at end" );
-  } else if ( TOKEN_ERROR != token->type ) {
-    fprintf( stderr, " at '%.*s'", ( int )token->length, token->start );
+bosl_ast_node_t* bosl_ast_node_allocate( bosl_ast_node_type_t type ) {
+  // allocate new ast node
+  bosl_ast_node_t* node = malloc( sizeof( bosl_ast_node_t ) );
+  if ( ! node ) {
+    return NULL;
   }
-  // finish with adding message
-  fprintf( stderr, ": %s\r\n", message );
+  // clearout
+  memset( node, 0, sizeof( bosl_ast_node_t ) );
+  // set type
+  node->type = type;
+  // return data
+  return node;
 }

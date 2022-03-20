@@ -27,16 +27,16 @@
  * @param type
  * @return
  */
-void* ast_statement_allocate( bosl_ast_statement_type_t type ) {
+void* bosl_ast_statement_allocate( bosl_ast_statement_type_t type ) {
   size_t allocated_size = 0;
   void* inner_block = NULL;
   // allocate container
-  bosl_ast_statement_t* expression = malloc( sizeof( bosl_ast_statement_t ) );
-  if ( ! expression ) {
+  bosl_ast_statement_t* statement = malloc( sizeof( bosl_ast_statement_t ) );
+  if ( ! statement ) {
     return NULL;
   }
   // clear out
-  memset( expression, 0, sizeof( bosl_ast_statement_t ) );
+  memset( statement, 0, sizeof( bosl_ast_statement_t ) );
   // determine space for inner
   switch ( type ) {
     case STATEMENT_BLOCK:
@@ -68,19 +68,20 @@ void* ast_statement_allocate( bosl_ast_statement_type_t type ) {
       break;
   }
   // handle error
-  if ( ! inner_block ) {
+  if ( ! allocated_size ) {
     return NULL;
   }
   // allocate inner structure
   inner_block = malloc( allocated_size );
   if ( ! inner_block ) {
-    free( expression );
+    free( statement );
     return NULL;
   }
   memset( inner_block, 0, allocated_size );
-  // set expression content finally
-  expression->type = type;
-  expression->data = inner_block;
-  // return built expression
-  return expression;
+  // set statement content finally
+  statement->type = type;
+  statement->data = inner_block;
+  statement->size = allocated_size;
+  // return built statement
+  return statement;
 }

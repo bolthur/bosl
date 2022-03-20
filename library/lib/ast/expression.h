@@ -31,6 +31,7 @@ typedef enum {
   EXPRESSION_ASSIGN,
   EXPRESSION_BINARY,
   EXPRESSION_CALL,
+  EXPRESSION_LOAD,
   EXPRESSION_GROUPING,
   EXPRESSION_LITERAL,
   EXPRESSION_LOGICAL,
@@ -38,10 +39,7 @@ typedef enum {
   EXPRESSION_VARIABLE,
 } bosl_ast_expression_type_t;
 
-typedef struct {
-  bosl_ast_expression_type_t type;
-  void* data;
-} bosl_ast_expression_t;
+typedef struct bosl_ast_expression bosl_ast_expression_t;
 
 typedef struct {
   bosl_token_t* token;
@@ -66,6 +64,7 @@ typedef struct {
 
 typedef struct {
   void* value;
+  size_t size;
 } bosl_ast_expression_literal_t;
 
 typedef struct {
@@ -83,7 +82,32 @@ typedef struct {
   bosl_token_t* name;
 } bosl_ast_expression_variable_t;
 
-void* ast_expression_allocate( bosl_ast_expression_type_t );
-bool ast_expression_push_literal( bosl_ast_expression_t*, const void*, size_t );
+typedef struct {
+  bosl_token_t* name;
+} bosl_ast_expression_load_t;
+
+typedef struct bosl_ast_expression {
+  bosl_ast_expression_type_t type;
+  union {
+    void* data;
+    bosl_ast_expression_assign_t* assign;
+    bosl_ast_expression_binary_t* binary;
+    bosl_ast_expression_call_t* call;
+    bosl_ast_expression_grouping_t* grouping;
+    bosl_ast_expression_literal_t* literal;
+    bosl_ast_expression_logical_t* logical;
+    bosl_ast_expression_unary_t* unary;
+    bosl_ast_expression_variable_t* variable;
+    bosl_ast_expression_load_t* load;
+  };
+  size_t size;
+} bosl_ast_expression_t;
+
+void* bosl_ast_expression_allocate( bosl_ast_expression_type_t );
+bosl_ast_expression_t* bosl_ast_expression_allocate_binary(
+  bosl_ast_expression_t*, bosl_token_t*, bosl_ast_expression_t* );
+bosl_ast_expression_t* bosl_ast_expression_allocate_logical(
+  bosl_ast_expression_t*, bosl_token_t*, bosl_ast_expression_t* );
+bosl_ast_expression_t* bosl_ast_expression_allocate_literal( const void*, size_t );
 
 #endif

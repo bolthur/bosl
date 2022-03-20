@@ -70,7 +70,7 @@ START_TEST( test_error_at_eof ) {
     "foo bar foo"
   );
   // call raise
-  error_raise( &token, "foo bar foo" );
+  bosl_error_raise( &token, "foo bar foo" );
   // assert string equal
   ck_assert_str_eq( expected, buffer );
 }
@@ -90,7 +90,7 @@ START_TEST( test_error_token ) {
     "token error"
   );
   // call raise
-  error_raise( &token, "token error" );
+  bosl_error_raise( &token, "token error" );
   // assert string equal
   ck_assert_str_eq( expected, buffer );
 }
@@ -113,7 +113,7 @@ START_TEST( test_error_normal ) {
     "trailing comma"
   );
   // call raise
-  error_raise( &token, "trailing comma" );
+  bosl_error_raise( &token, "trailing comma" );
   // assert string equal
   ck_assert_str_eq( expected, buffer );
 }

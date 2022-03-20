@@ -113,8 +113,8 @@ typedef struct bosl_scanner {
   hashmap_table_t* keyword;
 } bosl_scanner_t;
 
-bool scanner_init( const char* );
-void scanner_free( void );
-list_manager_t* scanner_scan( void );
+bool bosl_scanner_init( const char* );
+void bosl_scanner_free( void );
+list_manager_t* bosl_scanner_scan( void );
 
 #endif

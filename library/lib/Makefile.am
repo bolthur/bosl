@@ -6,6 +6,7 @@ noinst_HEADERS = \
   collection/hashmap.h
 
 pkginclude_HEADERS = \
+  ast/common.h \
   ast/expression.h \
   ast/statement.h \
   error.h \
@@ -17,6 +18,7 @@ pkglib_LTLIBRARIES = libbosl.la
 libbosl_la_SOURCES = \
   collection/hashmap.c \
   collection/list.c \
+  ast/common.c \
   ast/expression.c \
   ast/statement.c \
   error.c \

@@ -28,8 +28,8 @@
 #if ! defined( _BOSL_TYPE_CHECK_H )
 #define _BOSL_TYPE_CHECK_H
 
-bool check_init( list_manager_t* );
-void check_free( void );
-bool check_types( void );
+bool bosl_check_init( list_manager_t* );
+void bosl_check_free( void );
+bool bosl_check_types( void );
 
 #endif
