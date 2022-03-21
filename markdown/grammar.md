@@ -18,11 +18,10 @@ declaration_let       → "let" IDENTIFIER ":" ( "pointer" )? TYPE_IDENTIFIER ( 
 
 ## Statements
 
-statement             → statement_expression | statement_for | statement_if | statement_print | statement_return | statement_while | block;
+statement             → statement_expression | statement_if | statement_print | statement_return | statement_while | block;
 
 statement_expression  → expression ";" ;
-statement_for         → "for" "(" ( declaration_let | statement_expression | ";" ) expression? ";" expression? ")" statement ;
-statement_if          → "if" "(" expression ")" statement ( "elseif" "(" expression ")" statement )? ( "else" statement )? ;
+statement_if          → "if" "(" expression ")" statement ( "else" statement )? ;
 statement_print       → "print" "(" expression ")" ";" ;
 statement_return      → "return" expression? ";" ;
 statement_while       → "while" "(" expression ")" statement;

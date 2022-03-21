@@ -32,6 +32,7 @@
 typedef enum {
   STATEMENT_BLOCK,
   STATEMENT_EXPRESSION,
+  STATEMENT_PARAMETER,
   STATEMENT_FUNCTION,
   STATEMENT_IF,
   STATEMENT_PRINT,
@@ -59,13 +60,14 @@ typedef struct {
 typedef struct {
   bosl_token_t* token;
   list_manager_t* parameter; // list of ast statement parameter
-  list_manager_t* body; // list of statements
+  bosl_token_t* return_type;
+  bosl_ast_statement_t* body; // list of statements
+  bosl_token_t* load_identifier;
 } bosl_ast_statement_function_t;
 
 typedef struct {
   bosl_ast_expression_t* if_condition;
   bosl_ast_statement_t* if_statement;
-  list_manager_t* elseif; // list of if statements
   bosl_ast_statement_t* else_statement;
 } bosl_ast_statement_if_t;
 
@@ -113,6 +115,6 @@ typedef struct bosl_ast_statement {
   size_t size;
 } bosl_ast_statement_t;
 
-void* bosl_ast_statement_allocate( bosl_ast_statement_type_t ) ;
+bosl_ast_statement_t* bosl_ast_statement_allocate( bosl_ast_statement_type_t ) ;
 
 #endif

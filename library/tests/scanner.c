@@ -467,30 +467,6 @@ START_TEST( test_scanner_scan_keyword_if ) {
 }
 END_TEST
 
-START_TEST( test_scanner_scan_keyword_elseif ) {
-  char str[] = "elseif";
-  char* cmp = str;
-  ck_assert( bosl_scanner_init( str ) );
-  list_manager_t* list = bosl_scanner_scan();
-  ck_assert_ptr_nonnull( list );
-
-  list_item_t* current = list->first;
-  bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_ELSEIF );
-  ck_assert( 6 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-
-  cmp += 6;
-  current = current->next;
-  token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_EOF );
-  ck_assert( 0 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-}
-END_TEST
-
 START_TEST( test_scanner_scan_keyword_else ) {
   char str[] = "else";
   char* cmp = str;
@@ -530,30 +506,6 @@ START_TEST( test_scanner_scan_keyword_while ) {
   ck_assert_int_eq( token->line, 1 );
 
   cmp += 5;
-  current = current->next;
-  token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_EOF );
-  ck_assert( 0 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-}
-END_TEST
-
-START_TEST( test_scanner_scan_keyword_for ) {
-  char str[] = "for";
-  char* cmp = str;
-  ck_assert( bosl_scanner_init( str ) );
-  list_manager_t* list = bosl_scanner_scan();
-  ck_assert_ptr_nonnull( list );
-
-  list_item_t* current = list->first;
-  bosl_token_t* token = current->data;
-  ck_assert_int_eq( token->type, TOKEN_FOR );
-  ck_assert( 3 ==  token->length );
-  ck_assert_str_eq( token->start, cmp );
-  ck_assert_int_eq( token->line, 1 );
-
-  cmp += 3;
   current = current->next;
   token = current->data;
   ck_assert_int_eq( token->type, TOKEN_EOF );
@@ -1792,10 +1744,8 @@ static Suite* scanner_suite( void ) {
   tcase_add_test( tc_core, test_scanner_scan_keyword_false );
   tcase_add_test( tc_core, test_scanner_scan_keyword_null );
   tcase_add_test( tc_core, test_scanner_scan_keyword_if );
-  tcase_add_test( tc_core, test_scanner_scan_keyword_elseif );
   tcase_add_test( tc_core, test_scanner_scan_keyword_else );
   tcase_add_test( tc_core, test_scanner_scan_keyword_while );
-  tcase_add_test( tc_core, test_scanner_scan_keyword_for );
   tcase_add_test( tc_core, test_scanner_scan_keyword_function );
   tcase_add_test( tc_core, test_scanner_scan_keyword_return );
   tcase_add_test( tc_core, test_scanner_load );

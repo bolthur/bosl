@@ -232,10 +232,10 @@ if ( expression ) {
   print "bar";
 }
 
-// if with elseif condition
+// if with multiple condition branches
 if ( expression1 ) {
   print "expression1";
-} elseif ( expression2 ) {
+} else if ( expression2 ) {
   print "expression2";
 } else {
   print "else";
@@ -246,11 +246,6 @@ let i: uint32 = 0;
 while ( i < 5 ) {
   print i * 2;
   i = i + 1;
-}
-
-// for loop
-for ( let i: uint32 = 0; i < 5; i = i + 1 ) {
-  print i * 2;
 }
 ```
 

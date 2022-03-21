@@ -30,6 +30,10 @@
 #if ! defined( _BOSL_PARSER_H )
 #define _BOSL_PARSER_H
 
+typedef bosl_token_t* ( *token_previous )( void );
+typedef bosl_token_t* ( *token_current )( void );
+typedef bosl_token_t* ( *token_next )( void );
+
 typedef struct {
   list_manager_t* token;
   list_item_t* current;

@@ -27,7 +27,7 @@
  * @param type
  * @return
  */
-void* bosl_ast_statement_allocate( bosl_ast_statement_type_t type ) {
+bosl_ast_statement_t* bosl_ast_statement_allocate( bosl_ast_statement_type_t type ) {
   size_t allocated_size = 0;
   void* inner_block = NULL;
   // allocate container
@@ -44,6 +44,9 @@ void* bosl_ast_statement_allocate( bosl_ast_statement_type_t type ) {
       break;
     case STATEMENT_EXPRESSION:
       allocated_size = sizeof( bosl_ast_statement_expression_t );
+      break;
+    case STATEMENT_PARAMETER:
+      allocated_size = sizeof( bosl_ast_statement_parameter_t );
       break;
     case STATEMENT_FUNCTION:
       allocated_size = sizeof( bosl_ast_statement_function_t );
