@@ -103,7 +103,8 @@ typedef struct bosl_ast_expression {
   size_t size;
 } bosl_ast_expression_t;
 
-void* bosl_ast_expression_allocate( bosl_ast_expression_type_t );
+bosl_ast_expression_t* bosl_ast_expression_allocate( bosl_ast_expression_type_t );
+void bosl_ast_expression_destroy( bosl_ast_expression_t* );
 bosl_ast_expression_t* bosl_ast_expression_allocate_binary(
   bosl_ast_expression_t*, bosl_token_t*, bosl_ast_expression_t* );
 bosl_ast_expression_t* bosl_ast_expression_allocate_logical(

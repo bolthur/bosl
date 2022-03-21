@@ -47,6 +47,10 @@ AS_IF([test "x$enable_debug" == "xyes" && test "x$enable_release" == "xyes"], [
   AC_MSG_ERROR([Enabled debug and release are not possible at the same time])
 ])
 
+# valgrind
+AX_VALGRIND_DFLT([sgcheck], [off])
+AX_VALGRIND_CHECK
+
 ## gettext
 #AM_GNU_GETTEXT([external])
 #AM_GNU_GETTEXT_VERSION([0.21])

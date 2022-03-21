@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "common.h"
+#include "expression.h"
+#include "statement.h"
 
 /**
  * @brief Helper to allocate a ast node
@@ -39,4 +41,24 @@ bosl_ast_node_t* bosl_ast_node_allocate( bosl_ast_node_type_t type ) {
   node->type = type;
   // return data
   return node;
+}
+
+/**
+ * @brief Helper to destroy a node
+ *
+ * @param node
+ */
+void bosl_ast_node_destroy( bosl_ast_node_t* node ) {
+  if ( ! node ) {
+    return;
+  }
+  switch ( node->type ) {
+    case NODE_EXPRESSION:
+      bosl_ast_expression_destroy( node->expression );
+      break;
+    case NODE_STATEMENT:
+      bosl_ast_statement_destroy( node->statement );
+      break;
+  }
+  free( node );
 }

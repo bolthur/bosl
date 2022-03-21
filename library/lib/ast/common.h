@@ -41,5 +41,6 @@ typedef struct {
 } bosl_ast_node_t;
 
 bosl_ast_node_t* bosl_ast_node_allocate( bosl_ast_node_type_t );
+void bosl_ast_node_destroy( bosl_ast_node_t* );
 
 #endif

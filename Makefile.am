@@ -16,11 +16,6 @@ distclean-local: code-coverage-dist-clean
 code-coverage-capture-hook: cppcheck
 endif
 
-# add valgrind
-if VALGRIND_ENABLED
-check: check-valgrind
-endif
-
 # cppcheck stuff
 cppcheck:
 	cppcheck -UCMC --inline-suppr --enable=all --force \

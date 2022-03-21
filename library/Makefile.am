@@ -16,10 +16,5 @@ clean-local: code-coverage-clean
 distclean-local: code-coverage-dist-clean
 endif
 
-# add valgrind
-if VALGRIND_ENABLED
-check: check-valgrind
-endif
-
 # pkg config installation stuff
 pkgconfig_DATA = bosl.pc

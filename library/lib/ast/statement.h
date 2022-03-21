@@ -115,6 +115,7 @@ typedef struct bosl_ast_statement {
   size_t size;
 } bosl_ast_statement_t;
 
-bosl_ast_statement_t* bosl_ast_statement_allocate( bosl_ast_statement_type_t ) ;
+bosl_ast_statement_t* bosl_ast_statement_allocate( bosl_ast_statement_type_t );
+void bosl_ast_statement_destroy( bosl_ast_statement_t* );
 
 #endif

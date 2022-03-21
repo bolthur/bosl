@@ -27,14 +27,48 @@
 #include "ast/statement.h"
 #include "ast/common.h"
 
-/// FIXME: ADD FREE UP MEMORY
-
 // necessary forward declaration
 static bosl_ast_expression_t* expression( void );
 static bosl_ast_node_t* declaration( void );
 static bosl_ast_node_t* statement( void );
 
 static bosl_parser_t* parser = NULL;
+
+/**
+ * @brief Cleanup helper for list of expressions
+ *
+ * @param item
+ */
+static void list_expression_cleanup( list_item_t* item ) {
+  // destroy expression
+  bosl_ast_expression_destroy( item->data );
+  // call default cleanup
+  list_default_cleanup( item );
+}
+
+/**
+ * @brief Cleanup helper for list of statements
+ *
+ * @param item
+ */
+static void list_statement_cleanup( list_item_t* item ) {
+  // destroy statement
+  bosl_ast_statement_destroy( item->data );
+  // call default cleanup
+  list_default_cleanup( item );
+}
+
+/**
+ * @brief Cleanup helper for list of nodes
+ *
+ * @param item
+ */
+static void list_node_cleanup( list_item_t* item ) {
+  // destroy node
+  bosl_ast_node_destroy( item->data );
+  // call default cleanup
+  list_default_cleanup( item );
+}
 
 /**
  * @brief Get the token object
@@ -121,7 +155,6 @@ static bosl_ast_expression_t* expression_primary( void ) {
     // create group expression
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate( EXPRESSION_VARIABLE );
     if ( ! new_e ) {
-      // FIXME: DESTROY e
       return NULL;
     }
     // get pointer to data
@@ -137,13 +170,13 @@ static bosl_ast_expression_t* expression_primary( void ) {
     }
     // expect closing parenthesis
     if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after expression." ) ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
     // create group expression
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate( EXPRESSION_GROUPING );
     if ( ! new_e ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
     // get pointer to data
@@ -167,7 +200,8 @@ static bosl_ast_expression_t* expression_call_finish(
 ) {
   bosl_token_t* current = get_token( parser->current );
   // create arguments list
-  list_manager_t* arguments = list_construct( NULL, NULL, NULL );
+  list_manager_t* arguments = list_construct(
+    NULL, list_expression_cleanup, NULL );
   if ( ! arguments ) {
     return NULL;
   }
@@ -177,18 +211,20 @@ static bosl_ast_expression_t* expression_call_finish(
       // get argument expression
       bosl_ast_expression_t* arg = expression();
       if ( ! arg ) {
-        // FIXME: DESTROY arguments
+        list_destruct( arguments );
         return NULL;
       }
       // push back
       if ( ! list_push_back_data( arguments, arg ) ) {
-        // FIXME: DESTROY arguments and arg
+        bosl_ast_expression_destroy( arg );
+        list_destruct( arguments );
         return NULL;
       }
     } while ( match( TOKEN_COMMA ) );
   }
   // check for closing parenthesis
   if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expected ')' after arguments." ) ) {
+    list_destruct( arguments );
     return NULL;
   }
   // get closing parenthesis token
@@ -196,7 +232,7 @@ static bosl_ast_expression_t* expression_call_finish(
   // allocate call expression
   bosl_ast_expression_t* e = bosl_ast_expression_allocate( EXPRESSION_CALL );
   if ( ! e ) {
-    // FIXME: DESTROY arguments
+    list_destruct( arguments );
     return NULL;
   }
   e->call->callee = callee;
@@ -221,7 +257,7 @@ static bosl_ast_expression_t* expression_call( void ) {
     if ( match( TOKEN_LEFT_PARENTHESIS ) ) {
       bosl_ast_expression_t* new_e = expression_call_finish( e );
       if ( ! new_e ) {
-        // FIXME: DESTROY e
+        bosl_ast_expression_destroy( e );
         return NULL;
       }
       // overwrite e
@@ -252,7 +288,6 @@ static bosl_ast_expression_t* expression_load( void ) {
     return new_e;
   }
   bosl_error_raise( get_token( parser->current ), "Expect identifier after load." );
-  //bosl_ast_expression_t
   return NULL;
 }
 
@@ -272,12 +307,11 @@ static bosl_ast_expression_t* expression_unary( void ) {
     bosl_token_t* operator = get_token( parser->current->previous );
     bosl_ast_expression_t* right = expression_unary();
     if ( ! right ) {
-      // FIXME: DESTROY e
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate( EXPRESSION_UNARY );
     if ( ! new_e ) {
-      // FIXME: DESTROY e and right
+      bosl_ast_expression_destroy( right );
       return NULL;
     }
     // populate
@@ -313,13 +347,14 @@ static bosl_ast_expression_t* expression_factor( void ) {
     bosl_token_t* operator = get_token( parser->current->previous );
     bosl_ast_expression_t* right = expression_unary();
     if ( ! right ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_binary(
       e, operator, right );
     if ( ! new_e ) {
-      // FIXME: DESTROY e and right
+      bosl_ast_expression_destroy( e );
+      bosl_ast_expression_destroy( right );
       return NULL;
     }
     // overwrite e
@@ -344,13 +379,14 @@ static bosl_ast_expression_t* expression_term( void ) {
     bosl_token_t* operator = get_token( parser->current->previous );
     bosl_ast_expression_t* right = expression_factor();
     if ( ! right ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_binary(
       e, operator, right );
     if ( ! new_e ) {
-      // FIXME: DESTROY e and right
+      bosl_ast_expression_destroy( e );
+      bosl_ast_expression_destroy( right );
       return NULL;
     }
     // overwrite e
@@ -382,13 +418,14 @@ static bosl_ast_expression_t* expression_comparison( void ) {
     bosl_token_t* operator = get_token( parser->current->previous );
     bosl_ast_expression_t* right = expression_term();
     if ( ! right ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_binary(
       e, operator, right );
     if ( ! new_e ) {
-      // FIXME: DESTROY e and right
+      bosl_ast_expression_destroy( e );
+      bosl_ast_expression_destroy( right );
       return NULL;
     }
     // overwrite e
@@ -413,13 +450,14 @@ static bosl_ast_expression_t* expression_equality( void ) {
     bosl_token_t* operator = get_token( parser->current->previous );
     bosl_ast_expression_t* right = expression_comparison();
     if ( ! right ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_binary(
       e, operator, right );
     if ( ! new_e ) {
-      // FIXME: DESTROY e and right
+      bosl_ast_expression_destroy( e );
+      bosl_ast_expression_destroy( right );
       return NULL;
     }
     // overwrite e
@@ -448,13 +486,14 @@ static bosl_ast_expression_t* expression_and( void ) {
     // evaluate right expression
     bosl_ast_expression_t* right = expression_equality();
     if ( ! right ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_logical(
       e, operator, right );
     if ( ! new_e ) {
-      // FIXME: DESTROY e and right
+      bosl_ast_expression_destroy( e );
+      bosl_ast_expression_destroy( right );
       return NULL;
     }
     // overwrite e
@@ -482,13 +521,14 @@ static bosl_ast_expression_t* expression_xor( void ) {
     // evaluate right expression
     bosl_ast_expression_t* right = expression_and();
     if ( ! right ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_logical(
       e, operator, right );
     if ( ! new_e ) {
-      // FIXME: DESTROY e and right
+      bosl_ast_expression_destroy( e );
+      bosl_ast_expression_destroy( right );
       return NULL;
     }
     // overwrite e
@@ -516,13 +556,14 @@ static bosl_ast_expression_t* expression_or( void ) {
     // evaluate right expression
     bosl_ast_expression_t* right = expression_xor();
     if ( ! right ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_logical(
       e, operator, right );
     if ( ! new_e ) {
-      // FIXME: DESTROY e and right
+      bosl_ast_expression_destroy( e );
+      bosl_ast_expression_destroy( right );
       return NULL;
     }
     // overwrite e
@@ -549,13 +590,14 @@ static bosl_ast_expression_t* expression_logic_and( void ) {
     // evaluate right expression
     bosl_ast_expression_t* right = expression_or();
     if ( ! right ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_logical(
       e, operator, right );
     if ( ! new_e ) {
-      // FIXME: DESTROY e and right
+      bosl_ast_expression_destroy( e );
+      bosl_ast_expression_destroy( right );
       return NULL;
     }
     // overwrite e
@@ -582,13 +624,14 @@ static bosl_ast_expression_t* expression_logic_or( void ) {
     // evaluate right expression
     bosl_ast_expression_t* right = expression_logic_and();
     if ( ! right ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_logical(
       e, operator, right );
     if ( ! new_e ) {
-      // FIXME: DESTROY e and right
+      bosl_ast_expression_destroy( e );
+      bosl_ast_expression_destroy( right );
       return NULL;
     }
     // overwrite e
@@ -616,7 +659,7 @@ static bosl_ast_expression_t* expression_assignment( void ) {
     // get value for assignment
     bosl_ast_expression_t* value = expression_assignment();
     if ( ! value ) {
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return NULL;
     }
 
@@ -625,19 +668,20 @@ static bosl_ast_expression_t* expression_assignment( void ) {
       // build and return assign expression
       bosl_ast_expression_t* new_e = bosl_ast_expression_allocate( EXPRESSION_ASSIGN );
       if ( ! new_e ) {
-        // FIXME: DESTROY e
+        bosl_ast_expression_destroy( e );
+        bosl_ast_expression_destroy( value );
         return NULL;
       }
       // populate inner data
       new_e->assign->token = e->variable->name;
       new_e->assign->value = value;
       // return assign expression
-      // FIXME: DESTROY e
+      bosl_ast_expression_destroy( e );
       return new_e;
     }
-
+    // raise error
     bosl_error_raise( previous, "Invalid assignment target." );
-    // FIXME: DESTROY e
+    bosl_ast_expression_destroy( e );
     return NULL;
   }
   // return expression
@@ -667,35 +711,31 @@ static bosl_ast_node_t* statement_if( void ) {
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_IF );
   if ( ! node->statement ) {
-    // FIXME: DESTROY node
+    bosl_ast_node_destroy( node );
     return NULL;
   }
   // expect opening parenthesis
   if ( ! consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after 'if'." ) ) {
-    // FIXME: DESTROY node
-    // FIXME: DESTROY node->statement
+    bosl_ast_node_destroy( node );
     return NULL;
   }
   // evaluate expression
   bosl_ast_expression_t* if_expression = expression();
   if ( ! if_expression ) {
-    // FIXME: DESTROY node
-    // FIXME: DESTROY node->statement
+    bosl_ast_node_destroy( node );
     return NULL;
   }
   // expect parenthesis
   if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after 'if'." ) ) {
-    // FIXME: DESTROY node
-    // FIXME: DESTROY node->statement
-    // FIXME: DESTROY if_expression
+    bosl_ast_node_destroy( node );
+    bosl_ast_expression_destroy( if_expression );
     return NULL;
   }
   // consume statement
   bosl_ast_node_t* if_statement = statement();
   if ( ! if_statement ) {
-    // FIXME: DESTROY node
-    // FIXME: DESTROY node->statement
-    // FIXME: DESTROY if_expression
+    bosl_ast_node_destroy( node );
+    bosl_ast_expression_destroy( if_expression );
     return NULL;
   }
   // populate node
@@ -708,10 +748,7 @@ static bosl_ast_node_t* statement_if( void ) {
     // get else branch
     else_branch = statement();
     if ( ! else_branch ) {
-      // FIXME: DESTROY node
-      // FIXME: DESTROY node->statement
-      // FIXME: DESTROY if_expression
-      // FIXME: DESTROY if_statement
+      bosl_ast_node_destroy( node );
       return NULL;
     }
     // add to node
@@ -740,25 +777,25 @@ static bosl_ast_node_t* statement_print( void ) {
   }
   // expect closing parenthesis
   if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after expression." ) ) {
-    // FIXME: DESTROY e
+    bosl_ast_expression_destroy( e );
     return NULL;
   }
   // expect semicolon
   if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expect ';' at end of print." ) ) {
-    // FIXME: DESTROY e
+    bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new node
   bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
   if ( ! node ) {
-    // FIXME: DESTROY e
+    bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_PRINT );
   if ( ! node->statement ) {
-    // FIXME: DESTROY e
-    // FIXME: DESTROY node
+    bosl_ast_expression_destroy( e );
+    bosl_ast_node_destroy( node );
     return NULL;
   }
   // populate
@@ -783,20 +820,26 @@ static bosl_ast_node_t* statement_return( void ) {
   }
   // expect semicolon
   if ( ! consume( TOKEN_SEMICOLON, "Expect ';' after return value." ) ) {
-    // FIXME: DESTROY value
+    if ( value ) {
+      bosl_ast_expression_destroy( value );
+    }
     return NULL;
   }
   // allocate new node
   bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
   if ( ! node ) {
-    // FIXME: DESTROY value
+    if ( value ) {
+      bosl_ast_expression_destroy( value );
+    }
     return NULL;
   }
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_RETURN );
   if ( ! node->statement ) {
-    // FIXME: DESTROY value
-    // FIXME: DESTROY node
+    if ( value ) {
+      bosl_ast_expression_destroy( value );
+    }
+    bosl_ast_node_destroy( node );
     return NULL;
   }
   // populate
@@ -821,28 +864,28 @@ static bosl_ast_node_t* statement_while( void ) {
     return NULL;
   }
   if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after condition." ) ) {
-    // FIXME: DESTROY e
+    bosl_ast_expression_destroy( e );
     return NULL;
   }
   // get body
   bosl_ast_node_t* body = statement();
   if ( ! body ) {
-    // FIXME: DESTROY e
+    bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new node
   bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
   if ( ! node ) {
-    // FIXME: DESTROY e
-    // FIXME: DESTROY body
+    bosl_ast_expression_destroy( e );
+    bosl_ast_node_destroy( body );
     return NULL;
   }
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_WHILE );
   if ( ! node->statement ) {
-    // FIXME: DESTROY e
-    // FIXME: DESTROY body
-    // FIXME: DESTROY node
+    bosl_ast_expression_destroy( e );
+    bosl_ast_node_destroy( body );
+    bosl_ast_node_destroy( node );
     return NULL;
   }
   // populate
@@ -868,14 +911,14 @@ static bosl_ast_node_t* statement_block( void ) {
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_EXPRESSION );
   if ( ! node->statement ) {
-    // FIXME: DESTROY node
+    bosl_ast_node_destroy( node );
     return NULL;
   }
   // construct list
-  node->statement->block->statements = list_construct( NULL, NULL, NULL );
+  node->statement->block->statements = list_construct(
+    NULL, list_statement_cleanup, NULL );
   if ( ! node->statement ) {
-    // FIXME: DESTROY node->statement
-    // FIXME: DESTROY node
+    bosl_ast_node_destroy( node );
     return NULL;
   }
   while (
@@ -885,23 +928,23 @@ static bosl_ast_node_t* statement_block( void ) {
     // evaluate
     bosl_ast_node_t* inner = declaration();
     if ( ! inner ) {
-      // FIXME: DESTROY node->statement->block->statements
-      // FIXME: DESTROY node->statement
-      // FIXME: DESTROY node
+      bosl_ast_node_destroy( node );
       return NULL;
     }
-    if ( ! list_push_back_data( node->statement->block->statements, inner ) ) {
-      // FIXME: DESTROY node->statement->block->statements
-      // FIXME: DESTROY node->statement
-      // FIXME: DESTROY node
+    if ( ! list_push_back_data(
+      node->statement->block->statements,
+      inner->statement
+    ) ) {
+      bosl_ast_node_destroy( node );
+      bosl_ast_node_destroy( inner );
       return NULL;
     }
+    // free container around statement
+    free( inner );
   }
   // expect closing brace
   if ( ! consume( TOKEN_RIGHT_BRACE, "Expect '}' after block." ) ) {
-    // FIXME: DESTROY node->statement->block->statements
-    // FIXME: DESTROY node->statement
-    // FIXME: DESTROY node
+    bosl_ast_node_destroy( node );
     return NULL;
   }
   // return node
@@ -918,20 +961,20 @@ static bosl_ast_node_t* statement_expression( void ) {
   bosl_ast_expression_t* e = expression();
   // check for trailing semicolon
   if ( ! consume( TOKEN_SEMICOLON, "Expect ';' after expression." ) ) {
-    // FIXME: DESTROY EXPRESSION
+    bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new ast node
   bosl_ast_node_t* new_node = bosl_ast_node_allocate( NODE_STATEMENT );
   if ( ! new_node ) {
-    // FIXME: DESTROY EXPRESSION
+    bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new ast node
   new_node->statement = bosl_ast_statement_allocate( STATEMENT_EXPRESSION );
   if ( ! new_node->statement ) {
-    // FIXME: DESTROY EXPRESSION
-    // FIXME: DESTROY NEW NODE
+    bosl_ast_expression_destroy( e );
+    bosl_ast_node_destroy( new_node );
     return NULL;
   }
   // get pointer to data
@@ -991,19 +1034,25 @@ static bosl_ast_node_t* declaration_const( void ) {
   }
   // get initializer
   bosl_ast_expression_t* initializer = expression();
+  if ( ! initializer ) {
+    return NULL;
+  }
   // assert semicolon at the end
   if ( ! consume( TOKEN_SEMICOLON, "Expect ';' after variable declaration." ) ) {
+    bosl_ast_expression_destroy( initializer );
     return NULL;
   }
   // allocate node
   bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
   if ( ! node ) {
+    bosl_ast_expression_destroy( initializer );
     return NULL;
   }
   // allocate statement
   node->statement = bosl_ast_statement_allocate( STATEMENT_VARIABLE );
   if ( ! node->statement ) {
-    // FIXME: DESTROY node
+    bosl_ast_expression_destroy( initializer );
+    bosl_ast_node_destroy( node );
     return NULL;
   }
   // populate
@@ -1039,17 +1088,26 @@ static bosl_ast_node_t* declaration_let( void ) {
   }
   // assert semicolon at the end
   if ( ! consume( TOKEN_SEMICOLON, "Expect ';' after variable declaration." ) ) {
+    if ( initializer ) {
+      bosl_ast_expression_destroy( initializer );
+    }
     return NULL;
   }
   // allocate node
   bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
   if ( ! node ) {
+    if ( initializer ) {
+      bosl_ast_expression_destroy( initializer );
+    }
     return NULL;
   }
   // allocate statement
   node->statement = bosl_ast_statement_allocate( STATEMENT_VARIABLE );
   if ( ! node->statement ) {
-    // FIXME: DESTROY node
+    if ( initializer ) {
+      bosl_ast_expression_destroy( initializer );
+    }
+    bosl_ast_node_destroy( node );
     return NULL;
   }
   // populate
@@ -1073,13 +1131,14 @@ static bosl_ast_node_t* declaration_function( void ) {
   // cache function name
   bosl_token_t* name = get_token( parser->current->previous );
   // create parameter list
-  list_manager_t* parameter = list_construct( NULL, NULL, NULL );
+  list_manager_t* parameter = list_construct(
+    NULL, list_statement_cleanup, NULL );
   if ( ! parameter ) {
     return NULL;
   }
   // expect opening parenthesis
   if ( ! consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after function name." ) ) {
-    // FIXME: DESTROY parameter
+    list_destruct( parameter );
     return NULL;
   }
   // get current token
@@ -1089,19 +1148,19 @@ static bosl_ast_node_t* declaration_function( void ) {
     do {
       // expect parameter name
       if ( ! consume( TOKEN_IDENTIFIER, "Expect parameter name." ) ) {
-        // FIXME: DESTROY parameter
+        list_destruct( parameter );
         return NULL;
       }
       // cache name
       bosl_token_t* parameter_name = get_token( parser->current->previous );
       // expect colon
       if ( ! consume( TOKEN_COLON, "Expect colon after parameter name." ) ) {
-        // FIXME: DESTROY parameter
+        list_destruct( parameter );
         return NULL;
       }
       // expect type identifier
       if ( ! consume( TOKEN_TYPE_IDENTIFIER, "Expect type identifier after colon." ) ) {
-        // FIXME: DESTROY parameter
+        list_destruct( parameter );
         return NULL;
       }
       // cache type identifier
@@ -1110,7 +1169,7 @@ static bosl_ast_node_t* declaration_function( void ) {
       bosl_ast_statement_t* p = bosl_ast_statement_allocate(
         STATEMENT_PARAMETER );
       if ( ! p ) {
-        // FIXME: DESTROY parameter
+        list_destruct( parameter );
         return NULL;
       }
       // populate
@@ -1118,52 +1177,51 @@ static bosl_ast_node_t* declaration_function( void ) {
       p->parameter->type = parameter_type;
       // push back
       if ( ! list_push_back_data( parameter, p ) ) {
-        // FIXME: DESTROY p
-        // FIXME: DESTROY parameter
+        bosl_ast_statement_destroy( p );
+        list_destruct( parameter );
         return NULL;
       }
     } while ( match( TOKEN_COMMA ) );
   }
   // check for closing parenthesis
   if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expected ')' after arguments." ) ) {
-    // FIXME: DESTROY parameter
+    list_destruct( parameter );
     return NULL;
   }
   // expect colon
   if ( ! consume( TOKEN_COLON, "Expect colon after closing parenthesis." ) ) {
-    // FIXME: DESTROY parameter
+    list_destruct( parameter );
     return NULL;
   }
   // expect type identifier
   if ( ! consume( TOKEN_TYPE_IDENTIFIER, "Expect return type identifier." ) ) {
-    // FIXME: DESTROY parameter
+    list_destruct( parameter );
     return NULL;
   }
   // cache return type
   bosl_token_t* return_type = get_token( parser->current->previous );
   // check opening brace
   if ( ! consume( TOKEN_LEFT_BRACE, "Expected '{' before body." ) ) {
-    // FIXME: DESTROY parameter
+    list_destruct( parameter );
     return NULL;
   }
   // build object to push
   bosl_ast_statement_t* f = bosl_ast_statement_allocate(
     STATEMENT_FUNCTION );
   if ( ! f ) {
-    // FIXME: DESTROY parameter
-    // FIXME: DESTROY body
+    list_destruct( parameter );
     return NULL;
   }
   // handle possible load
   if ( match( TOKEN_EQUAL ) ) {
     if ( ! consume( TOKEN_LOAD, "Expect load type after equal." ) ) {
-      // FIXME: DESTROY parameter
-      // FIXME: DESTROY f
+      list_destruct( parameter );
+      bosl_ast_statement_destroy( f );
       return NULL;
     }
     if ( ! consume( TOKEN_IDENTIFIER, "Expect identifier after load." ) ) {
-      // FIXME: DESTROY parameter
-      // FIXME: DESTROY f
+      list_destruct( parameter );
+      bosl_ast_statement_destroy( f );
       return NULL;
     }
     // set load identifier
@@ -1172,8 +1230,8 @@ static bosl_ast_node_t* declaration_function( void ) {
     // create block for body
     bosl_ast_node_t* body = statement_block();
     if ( ! body ) {
-      // FIXME: DESTROY parameter
-      // FIXME: DESTROY f
+      list_destruct( parameter );
+      bosl_ast_statement_destroy( f );
       return NULL;
     }
     // set body
@@ -1227,7 +1285,7 @@ bool bosl_parser_init( list_manager_t* token ) {
   // push in token list
   parser->token = token;
   parser->current = token->first;
-  parser->ast = list_construct( NULL, NULL, NULL );
+  parser->ast = list_construct( NULL, list_node_cleanup, NULL );
   if ( ! parser->ast ) {
     free( parser );
     return false;
@@ -1272,7 +1330,9 @@ list_manager_t* bosl_parser_scan( void ) {
     // evaluate
     bosl_ast_node_t* tmp = declaration();
     if ( ! tmp ) {
-      // FIXME: CLEAR AST LIST
+      // free parser stuff
+      bosl_parser_free();
+      // return null
       return NULL;
     }
     // add to list
@@ -1281,7 +1341,11 @@ list_manager_t* bosl_parser_scan( void ) {
         get_token( parser->current ),
         "Unable to push back ast node!"
       );
-      // FIXME: CLEAR AST LIST
+      // destroy node
+      bosl_ast_node_destroy( tmp );
+      // free parser stuff
+      bosl_parser_free();
+      // return null
       return NULL;
     }
   }

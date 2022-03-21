@@ -27,7 +27,7 @@
  * @param type
  * @return
  */
-void* bosl_ast_expression_allocate( bosl_ast_expression_type_t type ) {
+bosl_ast_expression_t* bosl_ast_expression_allocate( bosl_ast_expression_type_t type ) {
   size_t allocated_size = 0;
   void* inner_block = NULL;
   // allocate container
@@ -101,7 +101,6 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_binary(
 ) {
   bosl_ast_expression_t* e = bosl_ast_expression_allocate( EXPRESSION_BINARY );
   if ( ! e ) {
-    // FIXME: DESTROY e and right
     return NULL;
   }
   // get inner data
@@ -128,7 +127,6 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_logical(
 ) {
   bosl_ast_expression_t* e = bosl_ast_expression_allocate( EXPRESSION_LOGICAL );
   if ( ! e ) {
-    // FIXME: DESTROY e and right
     return NULL;
   }
   // get inner data
@@ -162,7 +160,7 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_literal(
   // allocate space for literal
   literal->value = malloc( size );
   if ( ! literal->value ) {
-    // FIXME: DESTROY e
+    bosl_ast_expression_destroy( e );
     return NULL;
   }
   // copy over data
@@ -171,4 +169,53 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_literal(
   literal->size = size;
   // return succes
   return e;
+}
+
+/**
+ * @brief Helper to destroy ast expression
+ *
+ * @param expression
+ */
+void bosl_ast_expression_destroy( bosl_ast_expression_t* expression ) {
+  if ( ! expression ) {
+    return;
+  }
+  if ( expression->data ) {
+    switch ( expression->type ) {
+      case EXPRESSION_ASSIGN:
+        bosl_ast_expression_destroy( expression->assign->value );
+        break;
+      case EXPRESSION_BINARY:
+        bosl_ast_expression_destroy( expression->binary->left );
+        bosl_ast_expression_destroy( expression->binary->right );
+        break;
+      case EXPRESSION_CALL:
+        list_destruct( expression->call->arguments );
+        bosl_ast_expression_destroy( expression->call->callee );
+        break;
+      case EXPRESSION_LOAD:
+        // contains only token reference
+        break;
+      case EXPRESSION_GROUPING:
+        bosl_ast_expression_destroy( expression->grouping->expression );
+        break;
+      case EXPRESSION_LITERAL:
+        free( expression->literal->value );
+        break;
+      case EXPRESSION_LOGICAL:
+        bosl_ast_expression_destroy( expression->logical->left );
+        bosl_ast_expression_destroy( expression->logical->right );
+        break;
+      case EXPRESSION_UNARY:
+        bosl_ast_expression_destroy( expression->unary->right );
+        break;
+      case EXPRESSION_VARIABLE:
+        // contains only token reference
+        break;
+    }
+    // free data
+    free( expression->data );
+  }
+  // free expression itself
+  free( expression );
 }

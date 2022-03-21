@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+//#include "../collection/list.h"
 #include "statement.h"
 
 /**
@@ -87,4 +88,57 @@ bosl_ast_statement_t* bosl_ast_statement_allocate( bosl_ast_statement_type_t typ
   statement->size = allocated_size;
   // return built statement
   return statement;
+}
+
+/**
+ * @brief Helper to destroy a statement
+ *
+ * @param statement
+ */
+void bosl_ast_statement_destroy( bosl_ast_statement_t* statement ) {
+  if ( ! statement ) {
+    return;
+  }
+  if ( statement->data ) {
+    switch ( statement->type ) {
+      case STATEMENT_BLOCK:
+        list_destruct( statement->block->statements );
+        break;
+      case STATEMENT_EXPRESSION:
+        bosl_ast_expression_destroy( statement->expression->expression );
+        break;
+      case STATEMENT_PARAMETER:
+        // do nothing as only token references are in here
+        break;
+      case STATEMENT_FUNCTION:
+        list_destruct( statement->function->parameter );
+        bosl_ast_statement_destroy( statement->function->body );
+        break;
+      case STATEMENT_IF:
+        bosl_ast_expression_destroy( statement->if_->if_condition );
+        bosl_ast_statement_destroy( statement->if_->if_statement );
+        bosl_ast_statement_destroy( statement->if_->else_statement );
+        break;
+      case STATEMENT_PRINT:
+        bosl_ast_expression_destroy( statement->print->expression );
+        break;
+      case STATEMENT_RETURN:
+        bosl_ast_expression_destroy( statement->return_->value );
+        break;
+      case STATEMENT_VARIABLE:
+        bosl_ast_expression_destroy( statement->variable->initializer );
+        break;
+      case STATEMENT_CONST:
+        bosl_ast_expression_destroy( statement->const_->initializer );
+        break;
+      case STATEMENT_WHILE:
+        bosl_ast_expression_destroy( statement->while_->condition );
+        bosl_ast_statement_destroy( statement->while_->body );
+        break;
+    }
+    // finally free data
+    free( statement->data );
+  }
+  // free statement
+  free( statement );
 }
