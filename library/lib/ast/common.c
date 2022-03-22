@@ -26,10 +26,9 @@
 /**
  * @brief Helper to allocate a ast node
  *
- * @param type
  * @return
  */
-bosl_ast_node_t* bosl_ast_node_allocate( bosl_ast_node_type_t type ) {
+bosl_ast_node_t* bosl_ast_node_allocate( void ) {
   // allocate new ast node
   bosl_ast_node_t* node = malloc( sizeof( bosl_ast_node_t ) );
   if ( ! node ) {
@@ -37,8 +36,6 @@ bosl_ast_node_t* bosl_ast_node_allocate( bosl_ast_node_type_t type ) {
   }
   // clearout
   memset( node, 0, sizeof( bosl_ast_node_t ) );
-  // set type
-  node->type = type;
   // return data
   return node;
 }
@@ -52,13 +49,6 @@ void bosl_ast_node_destroy( bosl_ast_node_t* node ) {
   if ( ! node ) {
     return;
   }
-  switch ( node->type ) {
-    case NODE_EXPRESSION:
-      bosl_ast_expression_destroy( node->expression );
-      break;
-    case NODE_STATEMENT:
-      bosl_ast_statement_destroy( node->statement );
-      break;
-  }
+  bosl_ast_statement_destroy( node->statement );
   free( node );
 }

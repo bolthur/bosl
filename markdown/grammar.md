@@ -18,13 +18,14 @@ declaration_let       → "let" IDENTIFIER ":" ( "pointer" )? TYPE_IDENTIFIER ( 
 
 ## Statements
 
-statement             → statement_expression | statement_if | statement_print | statement_return | statement_while | block;
+statement             → statement_expression | statement_if | statement_print | statement_return | statement_while | statement_pointer | block;
 
 statement_expression  → expression ";" ;
 statement_if          → "if" "(" expression ")" statement ( "else" statement )? ;
 statement_print       → "print" "(" expression ")" ";" ;
 statement_return      → "return" expression? ";" ;
 statement_while       → "while" "(" expression ")" statement;
+statement_pointer     → "pointer" IDENTIFIER statement;
 block                 → "{" declaration "}"
 ```
 
@@ -42,10 +43,11 @@ equality              → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison            → term ( ( ">" | ">=" | "<" | "<=" | "<<" | ">>" ) term )* ;
 term                  → factor ( ( "-" | "+" ) factor )*
 factor                → unary ( ( "/" | "*" ) unary )* ;
-unary                 → ( "!" | "-" | "+" | "~" ) unary | call | load ;
+unary                 → ( "!" | "-" | "+" | "~" ) unary | call | load | pointer ;
 call                  → primary ( "(" arguments? ")" )* ;
 load                  → "load" IDENTIFIER ;
-primary               → "true" | "false" | "null" | NUMBER | STRING | IDENTIFIER | "(" expression ")" | "pointer" IDENTIFIER ;
+pointer               → "pointer" IDENTIFIER ;
+primary               → "true" | "false" | "null" | NUMBER | STRING | IDENTIFIER | "(" expression ")";
 ```
 
 ## Utility rules

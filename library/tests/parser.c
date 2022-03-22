@@ -54,7 +54,7 @@ START_TEST( test_simple_expression ) {
   // token should be expression statement ( + 3 ( * 2 7 ) )
   // get node
   n = current->data;
-  ck_assert( n->type == NODE_STATEMENT );
+  ck_assert_ptr_nonnull( n->statement );
   // check statement and expression
   ck_assert( n->statement->type == STATEMENT_EXPRESSION );
   ck_assert( n->statement->expression->expression->type == EXPRESSION_BINARY );

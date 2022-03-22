@@ -32,6 +32,7 @@ typedef enum {
   EXPRESSION_BINARY,
   EXPRESSION_CALL,
   EXPRESSION_LOAD,
+  EXPRESSION_POINTER,
   EXPRESSION_GROUPING,
   EXPRESSION_LITERAL,
   EXPRESSION_LOGICAL,
@@ -96,6 +97,10 @@ typedef struct {
   bosl_token_t* name;
 } bosl_ast_expression_load_t;
 
+typedef struct {
+  bosl_token_t* name;
+} bosl_ast_expression_pointer_t;
+
 typedef struct bosl_ast_expression {
   bosl_ast_expression_type_t type;
   union {
@@ -109,6 +114,7 @@ typedef struct bosl_ast_expression {
     bosl_ast_expression_unary_t* unary;
     bosl_ast_expression_variable_t* variable;
     bosl_ast_expression_load_t* load;
+    bosl_ast_expression_pointer_t* pointer;
   };
   size_t size;
 } bosl_ast_expression_t;

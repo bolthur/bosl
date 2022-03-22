@@ -40,6 +40,7 @@ typedef enum {
   STATEMENT_VARIABLE,
   STATEMENT_CONST,
   STATEMENT_WHILE,
+  STATEMENT_POINTER,
 } bosl_ast_statement_type_t;
 
 typedef struct bosl_ast_statement bosl_ast_statement_t;
@@ -97,6 +98,11 @@ typedef struct {
   bosl_ast_statement_t* body;
 } bosl_ast_statement_while_t;
 
+typedef struct {
+  bosl_token_t* name;
+  bosl_ast_statement_t* statement;
+} bosl_ast_statement_pointer_t;
+
 typedef struct bosl_ast_statement {
   bosl_ast_statement_type_t type;
   union {
@@ -110,6 +116,7 @@ typedef struct bosl_ast_statement {
     bosl_ast_statement_variable_t* variable;
     bosl_ast_statement_const_t* constant;
     bosl_ast_statement_while_t* while_loop;
+    bosl_ast_statement_pointer_t* pointer;
     void* data;
   };
   size_t size;

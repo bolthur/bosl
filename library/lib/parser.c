@@ -224,8 +224,9 @@ static bosl_ast_expression_t* expression_primary( void ) {
   }
 
   if ( match( TOKEN_IDENTIFIER ) ) {
-    // create group expression
-    bosl_ast_expression_t* new_e = bosl_ast_expression_allocate( EXPRESSION_VARIABLE );
+    // create variable expression
+    bosl_ast_expression_t* new_e = bosl_ast_expression_allocate(
+      EXPRESSION_VARIABLE );
     if ( ! new_e ) {
       return NULL;
     }
@@ -233,13 +234,6 @@ static bosl_ast_expression_t* expression_primary( void ) {
     new_e->variable->name = parser->previous();
     // return built expression
     return new_e;
-  }
-
-  if ( match( TOKEN_POINTER ) ) {
-    // FIXME: Add pointer expression handling
-    bosl_error_raise(
-      parser->previous(), "Pointer expressions not yet supported." );
-    return NULL;
   }
 
   if ( match( TOKEN_LEFT_PARENTHESIS ) ) {
@@ -372,6 +366,28 @@ static bosl_ast_expression_t* expression_load( void ) {
 }
 
 /**
+ * @brief Handle load expression
+ *
+ * @return
+ */
+static bosl_ast_expression_t* expression_pointer( void ) {
+  if ( match( TOKEN_IDENTIFIER ) ) {
+    // create pointer expression
+    bosl_ast_expression_t* new_e = bosl_ast_expression_allocate(
+      EXPRESSION_POINTER );
+    if ( ! new_e ) {
+      return NULL;
+    }
+    // populate data
+    new_e->load->name = parser->previous();
+    // return built expression
+    return new_e;
+  }
+  bosl_error_raise( parser->current(), "Expect identifier after load." );
+  return NULL;
+}
+
+/**
  * @brief Handle unary expression
  *
  * @return
@@ -403,6 +419,10 @@ static bosl_ast_expression_t* expression_unary( void ) {
   // handle load
   if ( match( TOKEN_LOAD ) ) {
     return expression_load();
+  }
+  // handle pointer
+  if ( match ( TOKEN_POINTER ) ) {
+    return expression_pointer();
   }
   // continue with call expression
   return expression_call();
@@ -784,7 +804,7 @@ static bosl_ast_expression_t* expression( void ) {
  */
 static bosl_ast_node_t* statement_if( void ) {
   // allocate new node
-  bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
+  bosl_ast_node_t* node = bosl_ast_node_allocate();
   if ( ! node ) {
     return NULL;
   }
@@ -866,7 +886,7 @@ static bosl_ast_node_t* statement_print( void ) {
     return NULL;
   }
   // allocate new node
-  bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
+  bosl_ast_node_t* node = bosl_ast_node_allocate();
   if ( ! node ) {
     bosl_ast_expression_destroy( e );
     return NULL;
@@ -906,7 +926,7 @@ static bosl_ast_node_t* statement_return( void ) {
     return NULL;
   }
   // allocate new node
-  bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
+  bosl_ast_node_t* node = bosl_ast_node_allocate();
   if ( ! node ) {
     if ( value ) {
       bosl_ast_expression_destroy( value );
@@ -954,7 +974,7 @@ static bosl_ast_node_t* statement_while( void ) {
     return NULL;
   }
   // allocate new node
-  bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
+  bosl_ast_node_t* node = bosl_ast_node_allocate();
   if ( ! node ) {
     bosl_ast_expression_destroy( e );
     bosl_ast_node_destroy( body );
@@ -984,7 +1004,7 @@ static bosl_ast_node_t* statement_while( void ) {
  */
 static bosl_ast_node_t* statement_block( void ) {
   // allocate new ast node
-  bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
+  bosl_ast_node_t* node = bosl_ast_node_allocate();
   if ( ! node ) {
     return NULL;
   }
@@ -997,7 +1017,7 @@ static bosl_ast_node_t* statement_block( void ) {
   // construct list
   node->statement->block->statements = list_construct(
     NULL, list_statement_cleanup, NULL );
-  if ( ! node->statement ) {
+  if ( ! node->statement->block->statements ) {
     bosl_ast_node_destroy( node );
     return NULL;
   }
@@ -1037,10 +1057,34 @@ static bosl_ast_node_t* statement_block( void ) {
  * @return
  */
 static bosl_ast_node_t* statement_pointer( void ) {
-  // FIXME: Add pointer expression handling
-  bosl_error_raise(
-    parser->previous(), "Pointer statements not yet supported." );
-  return NULL;
+  // get identifier
+  bosl_token_t* identifier = consume(
+    TOKEN_IDENTIFIER, "Expect identifier after pointer." );
+  if ( ! identifier ) {
+    return NULL;
+  }
+  // get statement
+  bosl_ast_node_t* pointer_ast = statement();
+  if ( ! pointer_ast ) {
+    return NULL;
+  }
+  // allocate new ast node
+  bosl_ast_node_t* node = bosl_ast_node_allocate();
+  if ( ! node ) {
+    return NULL;
+  }
+  // allocate new ast node
+  node->statement = bosl_ast_statement_allocate( STATEMENT_POINTER );
+  if ( ! node->statement ) {
+    bosl_ast_node_destroy( node );
+    return NULL;
+  }
+  // populate node
+  node->statement->pointer->name = identifier;
+  node->statement->pointer->statement = pointer_ast->statement;
+  free( pointer_ast );
+  // return node
+  return node;
 }
 
 /**
@@ -1057,7 +1101,7 @@ static bosl_ast_node_t* statement_expression( void ) {
     return NULL;
   }
   // allocate new ast node
-  bosl_ast_node_t* new_node = bosl_ast_node_allocate( NODE_STATEMENT );
+  bosl_ast_node_t* new_node = bosl_ast_node_allocate();
   if ( ! new_node ) {
     bosl_ast_expression_destroy( e );
     return NULL;
@@ -1139,7 +1183,7 @@ static bosl_ast_node_t* declaration_const( void ) {
     return NULL;
   }
   // allocate node
-  bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
+  bosl_ast_node_t* node = bosl_ast_node_allocate();
   if ( ! node ) {
     bosl_ast_expression_destroy( initializer );
     return NULL;
@@ -1193,7 +1237,7 @@ static bosl_ast_node_t* declaration_let( void ) {
     return NULL;
   }
   // allocate node
-  bosl_ast_node_t* node = bosl_ast_node_allocate( NODE_STATEMENT );
+  bosl_ast_node_t* node = bosl_ast_node_allocate();
   if ( ! node ) {
     if ( initializer ) {
       bosl_ast_expression_destroy( initializer );
@@ -1519,6 +1563,14 @@ static void print_expression( bosl_ast_expression_t* e ) {
       );
       break;
     }
+    case EXPRESSION_POINTER: {
+      fprintf(
+        stdout, "(p %.*s)",
+        ( int )e->load->name->length,
+        e->load->name->start
+      );
+      break;
+    }
     case EXPRESSION_GROUPING: {
       // opening block
       fprintf( stdout, "(group " );
@@ -1555,7 +1607,7 @@ static void print_expression( bosl_ast_expression_t* e ) {
         case EXPRESSION_LITERAL_TYPE_NUMBER_INT: {
           unsigned long long num;
           memcpy( &num, e->literal->value, sizeof( unsigned long long ) );
-          fprintf( stdout, "%lld", num );
+          fprintf( stdout, "%llu", num );
           break;
         }
         case EXPRESSION_LITERAL_TYPE_NUMBER_HEX: {
@@ -1773,6 +1825,19 @@ static void print_statement( bosl_ast_statement_t* s ) {
       fprintf( stdout, ")" );
       break;
     }
+    case STATEMENT_POINTER: {
+      // opening block
+      fprintf(
+        stdout, "(p %.*s ",
+        ( int )s->pointer->name->length,
+        s->pointer->name->start
+      );
+      // condition
+      print_statement( s->pointer->statement );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
   }
 }
 
@@ -1782,14 +1847,7 @@ static void print_statement( bosl_ast_statement_t* s ) {
  * @param n
  */
 static void print_node( bosl_ast_node_t* n ) {
-  switch ( n->type ) {
-    case NODE_STATEMENT:
-      print_statement( n->statement );
-      break;
-    case NODE_EXPRESSION:
-      print_expression( n->expression );
-      break;
-  }
+  print_statement( n->statement );
   // flush output
   fflush( stdout );
 }

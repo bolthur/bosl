@@ -27,20 +27,11 @@
 #if ! defined( _BOSL_AST_COMMON_H )
 #define _BOSL_AST_COMMON_H
 
-typedef enum {
-  NODE_STATEMENT,
-  NODE_EXPRESSION,
-} bosl_ast_node_type_t;
-
 typedef struct {
-  bosl_ast_node_type_t type;
-  union {
-    bosl_ast_expression_t* expression;
-    bosl_ast_statement_t* statement;
-  };
+  bosl_ast_statement_t* statement;
 } bosl_ast_node_t;
 
-bosl_ast_node_t* bosl_ast_node_allocate( bosl_ast_node_type_t );
+bosl_ast_node_t* bosl_ast_node_allocate( void );
 void bosl_ast_node_destroy( bosl_ast_node_t* );
 
 #endif

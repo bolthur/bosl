@@ -51,6 +51,9 @@ bosl_ast_expression_t* bosl_ast_expression_allocate( bosl_ast_expression_type_t 
     case EXPRESSION_LOAD:
       allocated_size = sizeof( bosl_ast_expression_load_t );
       break;
+    case EXPRESSION_POINTER:
+      allocated_size = sizeof( bosl_ast_expression_pointer_t );
+      break;
     case EXPRESSION_GROUPING:
       allocated_size = sizeof( bosl_ast_expression_grouping_t );
       break;
@@ -196,6 +199,9 @@ void bosl_ast_expression_destroy( bosl_ast_expression_t* expression ) {
         bosl_ast_expression_destroy( expression->call->callee );
         break;
       case EXPRESSION_LOAD:
+        // contains only token reference
+        break;
+      case EXPRESSION_POINTER:
         // contains only token reference
         break;
       case EXPRESSION_GROUPING:

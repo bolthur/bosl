@@ -9,9 +9,6 @@ AC_DEFUN([BOSL_SET_FLAG], [
 
   # Compilation flags
   AX_APPEND_COMPILE_FLAGS([-fstack-protector-all -Wstack-protector])
-  #FIXME: ENABLE ADDRESS SINITIZER
-  #AX_APPEND_COMPILE_FLAGS([-fsanitize=address])
-  #AX_APPEND_LINK_FLAGS([-lasan])
   # warnings
   AX_APPEND_COMPILE_FLAGS([-Wall -Werror -Wextra -Wpedantic])
   AX_APPEND_COMPILE_FLAGS([-Wconversion -Wpacked -Wredundant-decls])
