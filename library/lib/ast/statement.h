@@ -104,12 +104,12 @@ typedef struct bosl_ast_statement {
     bosl_ast_statement_expression_t* expression;
     bosl_ast_statement_parameter_t* parameter;
     bosl_ast_statement_function_t* function;
-    bosl_ast_statement_if_t* if_;
+    bosl_ast_statement_if_t* if_else;
     bosl_ast_statement_print_t* print;
-    bosl_ast_statement_return_t* return_;
+    bosl_ast_statement_return_t* return_value;
     bosl_ast_statement_variable_t* variable;
-    bosl_ast_statement_const_t* const_;
-    bosl_ast_statement_while_t* while_;
+    bosl_ast_statement_const_t* constant;
+    bosl_ast_statement_while_t* while_loop;
     void* data;
   };
   size_t size;

@@ -21,6 +21,9 @@
 #include <check.h>
 #include <stdio.h>
 #include <unistd.h>
+#include "../lib/ast/common.h"
+#include "../lib/ast/statement.h"
+#include "../lib/ast/expression.h"
 #include "../lib/scanner.h"
 #include "../lib/parser.h"
 
@@ -45,6 +48,26 @@ START_TEST( test_simple_expression ) {
   // parse ast
   list_manager_t* ast = bosl_parser_scan();
   ck_assert_ptr_nonnull( ast );
+  // check tokens
+  list_item_t* current = ast->first;
+  bosl_ast_node_t* n;
+  // token should be expression statement ( + 3 ( * 2 7 ) )
+  // get node
+  n = current->data;
+  ck_assert( n->type == NODE_STATEMENT );
+  // check statement and expression
+  ck_assert( n->statement->type == STATEMENT_EXPRESSION );
+  ck_assert( n->statement->expression->expression->type == EXPRESSION_BINARY );
+  // get expression
+  bosl_ast_expression_t* e = n->statement->expression->expression;
+  // left has to be a literal and operator '+'
+  ck_assert( e->binary->left->type == EXPRESSION_LITERAL );
+  ck_assert( e->binary->operator->type == TOKEN_PLUS );
+  // right is another expression ( * 2 7 )
+  ck_assert( e->binary->right->type == EXPRESSION_BINARY );
+  ck_assert( e->binary->right->binary->left->type == EXPRESSION_LITERAL );
+  ck_assert( e->binary->right->binary->operator->type == TOKEN_STAR );
+  ck_assert( e->binary->right->binary->right->type == EXPRESSION_LITERAL );
 }
 END_TEST
 

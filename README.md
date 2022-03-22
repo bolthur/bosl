@@ -27,7 +27,6 @@ int64 // 64 bit signed integer
 uint64 // 64 bit unsigned integer
 // float
 float
-ufloat
 // string
 string
 // bool
@@ -194,8 +193,7 @@ the variable as pointer to something other.
 Similar scheme is also used for constants. Here we've exchange only `let` by `const`:
 `const <name>: [pointer] <type>`.
 
-Possible types are `int[8|16|32|64]`, `uint[8|16|32|64]`, `float`, `ufloat`
-and `string`.
+Possible types are `int[8|16|32|64]`, `uint[8|16|32|64]`, `float` and `string`.
 
 ```js
 // normal variables are reserved by using 'let' followed by bit width

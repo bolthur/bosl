@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <argtable2.h>
 #include "../library/lib/error.h"
 #include "../library/lib/scanner.h"
@@ -78,15 +79,90 @@ int main( int argc, char* argv[] ) {
     return EXIT_SUCCESS;
   }
 
-  arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
-  return EXIT_SUCCESS;
-
-
-
-  ( void )argv;
-  if ( 2 != argc ) {
-    printf( "Usage: bosl [script]\r\n" );
+  // open script
+  FILE* f = fopen( infile->filename[ 0 ], "r" );
+  if ( ! f ) {
+    perror( infile->filename[ 0 ] );
+    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
     return EXIT_FAILURE;
   }
+  // switch to end, get size and rewind to beginning
+  fseek( f, 0, SEEK_END );
+  // get position
+  long l_size = ftell( f );
+  if ( -1L == l_size ) {
+    fclose( f );
+    fprintf( stderr, "ftell failed!\r\n" );
+    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    return EXIT_FAILURE;
+  }
+  size_t size = ( size_t )l_size;
+  // rewind to begin
+  rewind( f );
+  // allocate memory
+  char* buffer = malloc( sizeof( char ) * size );
+  if ( ! buffer ) {
+    fclose( f );
+    fprintf( stderr, "Buffer allocation failed!\r\n" );
+    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    return EXIT_FAILURE;
+  }
+  // clearout
+  memset( buffer, 0, sizeof( char ) * size );
+  // read whole file into buffer
+  if ( 1 != fread( buffer, size, 1, f ) ) {
+    fclose( f );
+    free( buffer );
+    fprintf( stderr, "Unable to read file into buffer!\r\n" );
+    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    return EXIT_FAILURE;
+  }
+
+  // initialize scanner
+  if ( ! bosl_scanner_init( buffer ) ) {
+    fclose( f );
+    free( buffer );
+    fprintf( stderr, "Unable to init scanner!\r\n" );
+    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    return EXIT_FAILURE;
+  }
+  // scan token
+  list_manager_t* token_list = bosl_scanner_scan();
+  if ( ! token_list ) {
+    fclose( f );
+    free( buffer );
+    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    return EXIT_FAILURE;
+  }
+  // init parser
+  if ( ! bosl_parser_init( token_list ) ) {
+    fclose( f );
+    free( buffer );
+    fprintf( stderr, "Unable to init parser!\r\n" );
+    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    return EXIT_FAILURE;
+  }
+  // parse ast
+  __unused list_manager_t* ast_list = bosl_parser_scan();
+  if ( ! ast_list ) {
+    fclose( f );
+    free( buffer );
+    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    return EXIT_FAILURE;
+  }
+
+  if ( ast->count ) {
+    bosl_parser_print();
+  } else {
+    fprintf( stderr, "Execution not yet supported\r\n" );
+  }
+
+  // destroy parser and scanner
+  bosl_parser_free();
+  bosl_scanner_free();
+  // close file, free buffer and free argtable
+  fclose( f );
+  free( buffer );
+  arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
   return EXIT_SUCCESS;
 }

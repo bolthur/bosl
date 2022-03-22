@@ -148,7 +148,8 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_logical(
  */
 bosl_ast_expression_t* bosl_ast_expression_allocate_literal(
   const void* data,
-  size_t size
+  size_t size,
+  bosl_ast_expression_literal_type_t type
 ) {
   // allocate expression
   bosl_ast_expression_t* e = bosl_ast_expression_allocate( EXPRESSION_LITERAL );
@@ -167,6 +168,7 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_literal(
   memcpy( literal->value, data, size );
   // set size
   literal->size = size;
+  literal->type = type;
   // return succes
   return e;
 }

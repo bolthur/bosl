@@ -39,6 +39,15 @@ typedef enum {
   EXPRESSION_VARIABLE,
 } bosl_ast_expression_type_t;
 
+typedef enum {
+  EXPRESSION_LITERAL_TYPE_NULL,
+  EXPRESSION_LITERAL_TYPE_NUMBER_INT,
+  EXPRESSION_LITERAL_TYPE_NUMBER_HEX,
+  EXPRESSION_LITERAL_TYPE_NUMBER_FLOAT,
+  EXPRESSION_LITERAL_TYPE_STRING,
+  EXPRESSION_LITERAL_TYPE_BOOL,
+} bosl_ast_expression_literal_type_t;
+
 typedef struct bosl_ast_expression bosl_ast_expression_t;
 
 typedef struct {
@@ -65,6 +74,7 @@ typedef struct {
 typedef struct {
   void* value;
   size_t size;
+  bosl_ast_expression_literal_type_t type;
 } bosl_ast_expression_literal_t;
 
 typedef struct {
@@ -109,6 +119,7 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_binary(
   bosl_ast_expression_t*, bosl_token_t*, bosl_ast_expression_t* );
 bosl_ast_expression_t* bosl_ast_expression_allocate_logical(
   bosl_ast_expression_t*, bosl_token_t*, bosl_ast_expression_t* );
-bosl_ast_expression_t* bosl_ast_expression_allocate_literal( const void*, size_t );
+bosl_ast_expression_t* bosl_ast_expression_allocate_literal(
+  const void*, size_t, bosl_ast_expression_literal_type_t );
 
 #endif

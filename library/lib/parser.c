@@ -71,20 +71,33 @@ static void list_node_cleanup( list_item_t* item ) {
 }
 
 /**
- * @brief Get the token object
+ * @brief Previous token helper
  *
- * @param item
  * @return
  */
-static bosl_token_t* get_token( list_item_t* item ) {
-  return item->data;
+static bosl_token_t* parser_token_previous( void ) {
+  return ( bosl_token_t* )( parser->_current->previous->data );
 }
 
 /**
- * @brief Method to push to next token
+ * @brief current token helper
+ *
+ * @return
  */
-static void advance( void ) {
-  parser->current = parser->current->next;
+static bosl_token_t* parser_token_current( void ) {
+  return ( bosl_token_t* )( parser->_current->data );
+}
+
+/**
+ * @brief Next token helper
+ *
+ * @return
+ */
+static bosl_token_t* parser_token_next( void ) {
+  if ( TOKEN_EOF != parser->current()->type ) {
+    parser->_current = parser->_current->next;
+  }
+  return parser->previous();
 }
 
 /**
@@ -95,11 +108,11 @@ static void advance( void ) {
  */
 static bool match( bosl_token_type_t type ) {
   // return false if not matching
-  if ( type != get_token( parser->current )->type ) {
+  if ( type != parser->current()->type ) {
     return false;
   }
   // push to next
-  advance();
+  parser->next();
   // return success
   return true;
 }
@@ -111,44 +124,103 @@ static bool match( bosl_token_type_t type ) {
  * @param error_message
  * @return
  */
-static bool consume( bosl_token_type_t type, const char* error_message ) {
-  // get token
-  bosl_token_t* token = get_token( parser->current );
+static bosl_token_t* consume( bosl_token_type_t type, const char* error_message ) {
   // check for mismatch
-  if ( token->type != type ) {
+  if ( parser->current()->type != type ) {
     // raise error and return false
-    bosl_error_raise( token, error_message );
-    return false;
+    bosl_error_raise( parser->current(), error_message );
+    // return null
+    return NULL;
   }
-  // head over to next
-  advance();
-  // return success
-  return true;
+  // return next
+  return parser->next();
 }
 
 /**
  * @brief Handle primary expression
  *
  * @return
+ *
+ * @todo raise errors where NULL is returned if necessary
  */
 static bosl_ast_expression_t* expression_primary( void ) {
   if ( match( TOKEN_FALSE ) ) {
-    return bosl_ast_expression_allocate_literal( ( void* )false, sizeof( false ) );
+    return bosl_ast_expression_allocate_literal(
+      ( void* )false,
+      sizeof( false ),
+      EXPRESSION_LITERAL_TYPE_BOOL
+    );
   }
   if ( match( TOKEN_TRUE ) ) {
-    return bosl_ast_expression_allocate_literal( ( void* )true, sizeof( true ) );
+    return bosl_ast_expression_allocate_literal(
+      ( void* )true,
+      sizeof( true ),
+      EXPRESSION_LITERAL_TYPE_BOOL
+    );
   }
   if ( match( TOKEN_NULL ) ) {
-    return bosl_ast_expression_allocate_literal( NULL, sizeof( NULL ) );
+    return bosl_ast_expression_allocate_literal(
+      NULL,
+      sizeof( NULL ),
+      EXPRESSION_LITERAL_TYPE_NULL
+    );
   }
 
-  if ( match( TOKEN_NUMBER ) || match( TOKEN_STRING ) ) {
-    bosl_token_t* token = get_token( parser->current->previous );
-    // FIXME: TRANSLATE TOKEN TO NUMBER IN CASE OF NUMBER
+  if ( match( TOKEN_STRING ) ) {
+    bosl_token_t* token = parser->previous();
     return bosl_ast_expression_allocate_literal(
       token->start,
-      sizeof( char ) * ( token->length )
+      sizeof( char ) * ( token->length ),
+      EXPRESSION_LITERAL_TYPE_STRING
     );
+  }
+
+  if ( match( TOKEN_NUMBER ) ) {
+    // get token
+    bosl_token_t* token = parser->previous();
+    const char* s = token->start;
+    const char* se = token->start + token->length;
+    // detect float / hex
+    bool is_float = false;
+    bool is_hex = false;
+    while ( s < se ) {
+      if ( '.' == *s ) {
+        is_float = true;
+      }
+      if ( 'x' == *s ) {
+        is_hex = true;
+      }
+      s++;
+    }
+    // float and hex is not possible
+    if ( is_float && is_hex ) {
+      return NULL;
+    }
+
+    char* end;
+    // push float literal
+    if ( is_float ) {
+      // translate to number
+      float num = strtof( token->start, &end );
+      if ( end != token->start + token->length ) {
+        return NULL;
+      }
+      // push to literal
+      return bosl_ast_expression_allocate_literal(
+        &num, sizeof( num ), EXPRESSION_LITERAL_TYPE_NUMBER_FLOAT );
+    // push number literal
+    } else {
+      // translate to number
+      unsigned long long num = strtoull( token->start, &end, 0 );
+      if ( end != token->start + token->length ) {
+        return NULL;
+      }
+      // push to literal
+      return bosl_ast_expression_allocate_literal(
+        &num, sizeof( num ), is_hex
+          ? EXPRESSION_LITERAL_TYPE_NUMBER_HEX
+          : EXPRESSION_LITERAL_TYPE_NUMBER_INT );
+    }
   }
 
   if ( match( TOKEN_IDENTIFIER ) ) {
@@ -158,10 +230,18 @@ static bosl_ast_expression_t* expression_primary( void ) {
       return NULL;
     }
     // get pointer to data
-    new_e->variable->name = get_token( parser->current->previous );
+    new_e->variable->name = parser->previous();
     // return built expression
     return new_e;
   }
+
+  if ( match( TOKEN_POINTER ) ) {
+    // FIXME: Add pointer expression handling
+    bosl_error_raise(
+      parser->previous(), "Pointer expressions not yet supported." );
+    return NULL;
+  }
+
   if ( match( TOKEN_LEFT_PARENTHESIS ) ) {
     // translate expression
     bosl_ast_expression_t* e = expression();
@@ -185,7 +265,7 @@ static bosl_ast_expression_t* expression_primary( void ) {
     return new_e;
   }
   // raise error
-  bosl_error_raise( get_token( parser->current ), "Expected expression." );
+  bosl_error_raise( parser->current(), "Expected expression." );
   return NULL;
 }
 
@@ -198,7 +278,7 @@ static bosl_ast_expression_t* expression_primary( void ) {
 static bosl_ast_expression_t* expression_call_finish(
   bosl_ast_expression_t* callee
 ) {
-  bosl_token_t* current = get_token( parser->current );
+  bosl_token_t* current = parser->current();
   // create arguments list
   list_manager_t* arguments = list_construct(
     NULL, list_expression_cleanup, NULL );
@@ -222,13 +302,13 @@ static bosl_ast_expression_t* expression_call_finish(
       }
     } while ( match( TOKEN_COMMA ) );
   }
+  bosl_token_t* previous = consume(
+    TOKEN_RIGHT_PARENTHESIS, "Expected ')' after arguments." );
   // check for closing parenthesis
-  if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expected ')' after arguments." ) ) {
+  if ( ! previous ) {
     list_destruct( arguments );
     return NULL;
   }
-  // get closing parenthesis token
-  bosl_token_t* previous = get_token( parser->current->previous );
   // allocate call expression
   bosl_ast_expression_t* e = bosl_ast_expression_allocate( EXPRESSION_CALL );
   if ( ! e ) {
@@ -283,11 +363,11 @@ static bosl_ast_expression_t* expression_load( void ) {
       return NULL;
     }
     // populate data
-    new_e->load->name = get_token( parser->current->previous );
+    new_e->load->name = parser->previous();
     // return built expression
     return new_e;
   }
-  bosl_error_raise( get_token( parser->current ), "Expect identifier after load." );
+  bosl_error_raise( parser->current(), "Expect identifier after load." );
   return NULL;
 }
 
@@ -304,7 +384,7 @@ static bosl_ast_expression_t* expression_unary( void ) {
     || match( TOKEN_PLUS )
     || match( TOKEN_BINARY_ONE_COMPLEMENT )
   ) {
-    bosl_token_t* operator = get_token( parser->current->previous );
+    bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_unary();
     if ( ! right ) {
       return NULL;
@@ -344,7 +424,7 @@ static bosl_ast_expression_t* expression_factor( void ) {
     || match( TOKEN_STAR )
     || match( TOKEN_MODULO )
   ) {
-    bosl_token_t* operator = get_token( parser->current->previous );
+    bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_unary();
     if ( ! right ) {
       bosl_ast_expression_destroy( e );
@@ -376,7 +456,7 @@ static bosl_ast_expression_t* expression_term( void ) {
     return NULL;
   }
   while ( match( TOKEN_MINUS ) || match( TOKEN_PLUS ) ) {
-    bosl_token_t* operator = get_token( parser->current->previous );
+    bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_factor();
     if ( ! right ) {
       bosl_ast_expression_destroy( e );
@@ -415,7 +495,7 @@ static bosl_ast_expression_t* expression_comparison( void ) {
     || match( TOKEN_SHIFT_LEFT )
     || match( TOKEN_SHIFT_RIGHT )
   ) {
-    bosl_token_t* operator = get_token( parser->current->previous );
+    bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_term();
     if ( ! right ) {
       bosl_ast_expression_destroy( e );
@@ -447,7 +527,7 @@ static bosl_ast_expression_t* expression_equality( void ) {
     return NULL;
   }
   while( match( TOKEN_BANG_EQUAL ) || match( TOKEN_EQUAL_EQUAL ) ) {
-    bosl_token_t* operator = get_token( parser->current->previous );
+    bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_comparison();
     if ( ! right ) {
       bosl_ast_expression_destroy( e );
@@ -482,7 +562,7 @@ static bosl_ast_expression_t* expression_and( void ) {
   while ( match( TOKEN_AND ) ) {
     return NULL;
     // get operator
-    bosl_token_t* operator = get_token( parser->current->previous );
+    bosl_token_t* operator = parser->previous();
     // evaluate right expression
     bosl_ast_expression_t* right = expression_equality();
     if ( ! right ) {
@@ -517,7 +597,7 @@ static bosl_ast_expression_t* expression_xor( void ) {
   while ( match( TOKEN_XOR ) ) {
     return NULL;
     // get operator
-    bosl_token_t* operator = get_token( parser->current->previous );
+    bosl_token_t* operator = parser->previous();
     // evaluate right expression
     bosl_ast_expression_t* right = expression_and();
     if ( ! right ) {
@@ -552,7 +632,7 @@ static bosl_ast_expression_t* expression_or( void ) {
   while ( match( TOKEN_OR ) ) {
     return NULL;
     // get operator
-    bosl_token_t* operator = get_token( parser->current->previous );
+    bosl_token_t* operator = parser->previous();
     // evaluate right expression
     bosl_ast_expression_t* right = expression_xor();
     if ( ! right ) {
@@ -586,7 +666,7 @@ static bosl_ast_expression_t* expression_logic_and( void ) {
   // loop through all possible anded conditions
   while ( match( TOKEN_AND_AND ) ) {
     // get operator
-    bosl_token_t* operator = get_token( parser->current->previous );
+    bosl_token_t* operator = parser->previous();
     // evaluate right expression
     bosl_ast_expression_t* right = expression_or();
     if ( ! right ) {
@@ -620,7 +700,7 @@ static bosl_ast_expression_t* expression_logic_or( void ) {
   // loop through all possible orred conditions
   while ( match( TOKEN_OR_OR ) ) {
     // get operator
-    bosl_token_t* operator = get_token( parser->current->previous );
+    bosl_token_t* operator = parser->previous();
     // evaluate right expression
     bosl_ast_expression_t* right = expression_logic_and();
     if ( ! right ) {
@@ -655,7 +735,7 @@ static bosl_ast_expression_t* expression_assignment( void ) {
   // handle assignment
   if ( match( TOKEN_EQUAL ) ) {
     // get previous token
-    bosl_token_t* previous = get_token( parser->current->previous );
+    bosl_token_t* previous = parser->previous();
     // get value for assignment
     bosl_ast_expression_t* value = expression_assignment();
     if ( ! value ) {
@@ -739,8 +819,8 @@ static bosl_ast_node_t* statement_if( void ) {
     return NULL;
   }
   // populate node
-  node->statement->if_->if_condition = if_expression;
-  node->statement->if_->if_statement = if_statement->statement;
+  node->statement->if_else->if_condition = if_expression;
+  node->statement->if_else->if_statement = if_statement->statement;
   free( if_statement );
   // get possible else branch
   bosl_ast_node_t* else_branch = NULL;
@@ -752,7 +832,7 @@ static bosl_ast_node_t* statement_if( void ) {
       return NULL;
     }
     // add to node
-    node->statement->if_->else_statement = else_branch->statement;
+    node->statement->if_else->else_statement = else_branch->statement;
     // free container
     free( else_branch );
   }
@@ -811,11 +891,11 @@ static bosl_ast_node_t* statement_print( void ) {
  */
 static bosl_ast_node_t* statement_return( void ) {
   // get keyword
-  bosl_token_t* keyword = get_token( parser->current->previous );
+  bosl_token_t* keyword = parser->previous();
   // default no return
   bosl_ast_expression_t* value = NULL;
   // evaluate expression
-  if ( TOKEN_SEMICOLON != get_token( parser->current )->type ) {
+  if ( TOKEN_SEMICOLON != parser->current()->type ) {
     value = expression();
   }
   // expect semicolon
@@ -843,8 +923,8 @@ static bosl_ast_node_t* statement_return( void ) {
     return NULL;
   }
   // populate
-  node->statement->return_->keyword = keyword;
-  node->statement->return_->value = value;
+  node->statement->return_value->keyword = keyword;
+  node->statement->return_value->value = value;
   // return
   return node;
 }
@@ -889,8 +969,8 @@ static bosl_ast_node_t* statement_while( void ) {
     return NULL;
   }
   // populate
-  node->statement->while_->condition = e;
-  node->statement->while_->body = body->statement;
+  node->statement->while_loop->condition = e;
+  node->statement->while_loop->body = body->statement;
   // free container for body statment
   free( body );
   // return
@@ -922,8 +1002,8 @@ static bosl_ast_node_t* statement_block( void ) {
     return NULL;
   }
   while (
-    TOKEN_RIGHT_BRACE != get_token( parser->current )->type
-    && TOKEN_EOF != get_token( parser->current )->type
+    TOKEN_RIGHT_BRACE != parser->current()->type
+    && TOKEN_EOF != parser->current()->type
   ) {
     // evaluate
     bosl_ast_node_t* inner = declaration();
@@ -949,6 +1029,18 @@ static bosl_ast_node_t* statement_block( void ) {
   }
   // return node
   return node;
+}
+
+/**
+ * @brief Handle pointer statement
+ *
+ * @return
+ */
+static bosl_ast_node_t* statement_pointer( void ) {
+  // FIXME: Add pointer expression handling
+  bosl_error_raise(
+    parser->previous(), "Pointer statements not yet supported." );
+  return NULL;
 }
 
 /**
@@ -1006,6 +1098,9 @@ static bosl_ast_node_t* statement( void ) {
   if ( match( TOKEN_LEFT_BRACE ) ) {
     return statement_block();
   }
+  if ( match( TOKEN_POINTER ) ) {
+    return statement_pointer();
+  }
   return statement_expression();
 }
 
@@ -1015,18 +1110,19 @@ static bosl_ast_node_t* statement( void ) {
  * @return
  */
 static bosl_ast_node_t* declaration_const( void ) {
-  if ( ! consume( TOKEN_IDENTIFIER, "Expect variable name." ) ) {
+  bosl_token_t* name = consume( TOKEN_IDENTIFIER, "Expect variable name." );
+  if ( ! name ) {
     return NULL;
   }
-  bosl_token_t* name = get_token( parser->current->previous );
   if ( ! consume( TOKEN_COLON, "Expect colon after variable name." ) ) {
     return NULL;
   }
-  if ( ! consume( TOKEN_TYPE_IDENTIFIER, "Expect type identifier after colon." ) ) {
+  // get type identifier
+  bosl_token_t* type = consume(
+    TOKEN_TYPE_IDENTIFIER, "Expect type identifier after colon." );
+  if ( ! type ) {
     return NULL;
   }
-  // get type identifier
-  bosl_token_t* type = get_token( parser->current->previous );
   // handle missing initializer
   if ( ! match( TOKEN_EQUAL ) ) {
     bosl_error_raise( name, "Constants need an initializer." );
@@ -1049,16 +1145,16 @@ static bosl_ast_node_t* declaration_const( void ) {
     return NULL;
   }
   // allocate statement
-  node->statement = bosl_ast_statement_allocate( STATEMENT_VARIABLE );
+  node->statement = bosl_ast_statement_allocate( STATEMENT_CONST );
   if ( ! node->statement ) {
     bosl_ast_expression_destroy( initializer );
     bosl_ast_node_destroy( node );
     return NULL;
   }
   // populate
-  node->statement->variable->name = name;
-  node->statement->variable->initializer = initializer;
-  node->statement->variable->type = type;
+  node->statement->constant->name = name;
+  node->statement->constant->initializer = initializer;
+  node->statement->constant->type = type;
   // return built node
   return node;
 }
@@ -1069,18 +1165,21 @@ static bosl_ast_node_t* declaration_const( void ) {
  * @return
  */
 static bosl_ast_node_t* declaration_let( void ) {
-  if ( ! consume( TOKEN_IDENTIFIER, "Expect variable name." ) ) {
+  // cache name
+  bosl_token_t* name = consume( TOKEN_IDENTIFIER, "Expect variable name." );
+  // expect name
+  if ( ! name ) {
     return NULL;
   }
-  bosl_token_t* name = get_token( parser->current->previous );
   if ( ! consume( TOKEN_COLON, "Expect colon after variable name." ) ) {
     return NULL;
   }
-  if ( ! consume( TOKEN_TYPE_IDENTIFIER, "Expect type identifier after colon." ) ) {
+  // get type identifier
+  bosl_token_t* type = consume(
+    TOKEN_TYPE_IDENTIFIER, "Expect type identifier after colon." );
+  if ( ! type ) {
     return NULL;
   }
-  // get type identifier
-  bosl_token_t* type = get_token( parser->current->previous );
   // get possible initializer
   bosl_ast_expression_t* initializer = NULL;
   if ( match( TOKEN_EQUAL ) ) {
@@ -1124,12 +1223,12 @@ static bosl_ast_node_t* declaration_let( void ) {
  * @return
  */
 static bosl_ast_node_t* declaration_function( void ) {
+  // cache function name
+  bosl_token_t* name = consume( TOKEN_IDENTIFIER, "Expect function name." );
   // expect function name
-  if ( ! consume( TOKEN_IDENTIFIER, "Expect function name." ) ) {
+  if ( ! name ) {
     return NULL;
   }
-  // cache function name
-  bosl_token_t* name = get_token( parser->current->previous );
   // create parameter list
   list_manager_t* parameter = list_construct(
     NULL, list_statement_cleanup, NULL );
@@ -1142,29 +1241,31 @@ static bosl_ast_node_t* declaration_function( void ) {
     return NULL;
   }
   // get current token
-  bosl_token_t* current = get_token( parser->current );
+  bosl_token_t* current = parser->current();
   // handle possible parameter
   if ( TOKEN_RIGHT_PARENTHESIS != current->type ) {
     do {
+      // cache name
+      bosl_token_t* parameter_name = consume(
+        TOKEN_IDENTIFIER, "Expect parameter name." );
       // expect parameter name
-      if ( ! consume( TOKEN_IDENTIFIER, "Expect parameter name." ) ) {
+      if ( ! parameter_name ) {
         list_destruct( parameter );
         return NULL;
       }
-      // cache name
-      bosl_token_t* parameter_name = get_token( parser->current->previous );
       // expect colon
       if ( ! consume( TOKEN_COLON, "Expect colon after parameter name." ) ) {
         list_destruct( parameter );
         return NULL;
       }
+      // cache parameter type
+      bosl_token_t* parameter_type = consume(
+        TOKEN_TYPE_IDENTIFIER, "Expect type identifier after colon." );
       // expect type identifier
-      if ( ! consume( TOKEN_TYPE_IDENTIFIER, "Expect type identifier after colon." ) ) {
+      if ( ! parameter_type ) {
         list_destruct( parameter );
         return NULL;
       }
-      // cache type identifier
-      bosl_token_t* parameter_type = get_token( parser->current->previous );
       // build object to push
       bosl_ast_statement_t* p = bosl_ast_statement_allocate(
         STATEMENT_PARAMETER );
@@ -1193,13 +1294,14 @@ static bosl_ast_node_t* declaration_function( void ) {
     list_destruct( parameter );
     return NULL;
   }
+  // cache return type
+  bosl_token_t* return_type = consume(
+    TOKEN_TYPE_IDENTIFIER, "Expect return type identifier." );
   // expect type identifier
-  if ( ! consume( TOKEN_TYPE_IDENTIFIER, "Expect return type identifier." ) ) {
+  if ( ! return_type ) {
     list_destruct( parameter );
     return NULL;
   }
-  // cache return type
-  bosl_token_t* return_type = get_token( parser->current->previous );
   // check opening brace
   if ( ! consume( TOKEN_LEFT_BRACE, "Expected '{' before body." ) ) {
     list_destruct( parameter );
@@ -1219,13 +1321,14 @@ static bosl_ast_node_t* declaration_function( void ) {
       bosl_ast_statement_destroy( f );
       return NULL;
     }
-    if ( ! consume( TOKEN_IDENTIFIER, "Expect identifier after load." ) ) {
+    // set load identifier
+    f->function->load_identifier = consume(
+      TOKEN_IDENTIFIER, "Expect identifier after load." );
+    if ( ! f->function->load_identifier ) {
       list_destruct( parameter );
       bosl_ast_statement_destroy( f );
       return NULL;
     }
-    // set load identifier
-    f->function->load_identifier = get_token( parser->current->previous );
   } else {
     // create block for body
     bosl_ast_node_t* body = statement_block();
@@ -1282,14 +1385,19 @@ bool bosl_parser_init( list_manager_t* token ) {
   }
   // clear out
   memset( parser, 0, sizeof( *parser ) );
-  // push in token list
-  parser->token = token;
-  parser->current = token->first;
+  // construct ast list
   parser->ast = list_construct( NULL, list_node_cleanup, NULL );
   if ( ! parser->ast ) {
     free( parser );
     return false;
   }
+  // push in token list and set current to first element
+  parser->_token = token;
+  parser->_current = token->first;
+  // push back convenience helper
+  parser->current = parser_token_current;
+  parser->next = parser_token_next;
+  parser->previous = parser_token_previous;
   // return success
   return true;
 }
@@ -1321,9 +1429,9 @@ list_manager_t* bosl_parser_scan( void ) {
     return NULL;
   }
   // loop until end
-  while ( parser->current ) {
+  while ( parser->_current && TOKEN_EOF != parser->current()->type ) {
     // handle eof by break
-    bosl_token_t* token = get_token( parser->current );
+    bosl_token_t* token = parser->current();
     if ( TOKEN_EOF == token->type ) {
       break;
     }
@@ -1338,7 +1446,7 @@ list_manager_t* bosl_parser_scan( void ) {
     // add to list
     if ( ! list_push_back_data( parser->ast, tmp ) ) {
       bosl_error_raise(
-        get_token( parser->current ),
+        parser->current(),
         "Unable to push back ast node!"
       );
       // destroy node
@@ -1354,7 +1462,354 @@ list_manager_t* bosl_parser_scan( void ) {
 }
 
 /**
+ * @brief Helper to print an expression
+ *
+ * @param e
+ * @return
+ */
+static void print_expression( bosl_ast_expression_t* e ) {
+  switch ( e->type ) {
+    case EXPRESSION_ASSIGN: {
+      // opening block
+      fprintf(
+        stdout, "(= %.*s ",
+        ( int )e->assign->token->length,
+        e->assign->token->start
+      );
+      // print expression
+      print_expression( e->assign->value );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case EXPRESSION_BINARY: {
+      // opening block
+      fprintf(
+        stdout, "(%.*s ",
+        ( int )e->binary->operator->length,
+        e->binary->operator->start
+      );
+      // print expression
+      print_expression( e->binary->left );
+      fprintf( stdout, " " );
+      print_expression( e->binary->right );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case EXPRESSION_CALL: {
+      // opening block
+      fprintf( stdout, "(call " );
+      // print callee expression
+      print_expression( e->call->callee );
+      fprintf( stdout, " " );
+      // print parameter
+      for ( list_item_t* c = e->call->arguments->first; c; c = c->next ) {
+        print_expression( c->data );
+      }
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case EXPRESSION_LOAD: {
+      fprintf(
+        stdout, "(load %.*s)",
+        ( int )e->load->name->length,
+        e->load->name->start
+      );
+      break;
+    }
+    case EXPRESSION_GROUPING: {
+      // opening block
+      fprintf( stdout, "(group " );
+      // print expression
+      print_expression( e->grouping->expression );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case EXPRESSION_LITERAL: {
+      switch ( e->literal->type ) {
+        case EXPRESSION_LITERAL_TYPE_NULL:
+          fprintf( stdout, "null" );
+          break;
+        case EXPRESSION_LITERAL_TYPE_STRING:
+          fprintf(
+            stdout, "%.*s",
+            ( int )e->literal->size,
+            ( char* )e->literal->value
+          );
+          break;
+        case EXPRESSION_LITERAL_TYPE_BOOL:
+          fprintf(
+            stdout, "%s",
+            ( *( ( bool* )e->literal->value ) ? "true" : "false" )
+          );
+          break;
+        case EXPRESSION_LITERAL_TYPE_NUMBER_FLOAT: {
+          float num;
+          memcpy( &num, e->literal->value, sizeof( float ) );
+          fprintf( stdout, "%f", num );
+          break;
+        }
+        case EXPRESSION_LITERAL_TYPE_NUMBER_INT: {
+          unsigned long long num;
+          memcpy( &num, e->literal->value, sizeof( unsigned long long ) );
+          fprintf( stdout, "%lld", num );
+          break;
+        }
+        case EXPRESSION_LITERAL_TYPE_NUMBER_HEX: {
+          unsigned long long num;
+          memcpy( &num, e->literal->value, sizeof( unsigned long long ) );
+          fprintf( stdout, "%#llx", num );
+          break;
+        }
+      }
+
+      // opening block
+      fprintf(
+        stdout, "%.*s",
+        ( int )e->literal->size,
+        ( char* )e->literal->value
+      );
+      break;
+    }
+    case EXPRESSION_LOGICAL: {
+      // opening block
+      fprintf(
+        stdout, "(%.*s ",
+        ( int )e->logical->operator->length,
+        e->logical->operator->start
+      );
+      // print expression
+      print_expression( e->logical->left );
+      fprintf( stdout, " " );
+      print_expression( e->logical->right );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case EXPRESSION_UNARY: {
+      // opening block
+      fprintf(
+        stdout, "(%.*s ",
+        ( int )e->unary->operator->length,
+        e->unary->operator->start
+      );
+      // print expression
+      print_expression( e->unary->right );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case EXPRESSION_VARIABLE: {
+      fprintf(
+        stdout, "%*.s",
+        ( int )e->variable->name->length,
+        e->variable->name->start
+      );
+      break;
+    }
+  }
+}
+
+/**
+ * @brief Helper to print a statement
+ *
+ * @param s
+ */
+static void print_statement( bosl_ast_statement_t* s ) {
+  switch ( s->type ) {
+    case STATEMENT_BLOCK: {
+      // opening block
+      fprintf( stdout, "(block " );
+      // print all inner statements
+      for ( list_item_t* c = s->block->statements->first; c; c = c->next ) {
+        if ( c != s->block->statements->first ) {
+          fprintf( stdout, " " );
+        }
+        print_statement( c->data );
+      }
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_EXPRESSION: {
+      // opening block
+      fprintf( stdout, "(; " );
+      // print expression
+      print_expression( s->expression->expression );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_PARAMETER: {
+      // handled by function
+      break;
+    }
+    case STATEMENT_FUNCTION: {
+      // opening block
+      fprintf(
+        stdout, "(fn %.*s (",
+        ( int )s->function->token->length,
+        s->function->token->start
+      );
+      // print parameter
+      for ( list_item_t* c = s->function->parameter->first; c; c = c->next ) {
+        if ( c != s->function->parameter->first ) {
+          fprintf( stdout, " " );
+        }
+        bosl_ast_statement_parameter_t* p = c->data;
+        fprintf(
+          stdout, "%.*s:%.*s",
+          ( int )p->name->length, p->name->start,
+          ( int )p->type->length, p->type->start
+        );
+      }
+      // close parameter parenthesis
+      fprintf( stdout, ")" );
+      // print return type
+      if ( s->function->return_type ) {
+        fprintf(
+          stdout, ": %*.s",
+          ( int )s->function->return_type->length,
+          s->function->return_type->start
+        );
+      }
+      // print body
+      print_statement( s->function->body );
+      // print load stuff
+      if ( s->function->load_identifier ) {
+        fprintf(
+          stdout, " = load %*.s",
+          ( int )s->function->load_identifier->length,
+          s->function->load_identifier->start
+        );
+      }
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_IF: {
+      if ( ! s->if_else->else_statement ) {
+        // opening block
+        fprintf( stdout, "(if " );
+        // condition and statement
+        print_expression( s->if_else->if_condition );
+        print_statement( s->if_else->if_statement );
+      } else {
+        // opening block
+        fprintf( stdout, "(if-else " );
+        // condition and statement
+        print_expression( s->if_else->if_condition );
+        print_statement( s->if_else->if_statement );
+        print_statement( s->if_else->else_statement );
+      }
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_PRINT: {
+      // opening block
+      fprintf( stdout, "(print " );
+      // print expression
+      print_expression( s->print->expression );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_RETURN: {
+      if ( ! s->return_value->value ) {
+        fprintf( stdout, "(return)" );
+      } else {
+        // opening block
+        fprintf( stdout, "(return " );
+        // print expression
+        print_expression( s->return_value->value );
+        // closing block
+        fprintf( stdout, ")" );
+      }
+      break;
+    }
+    case STATEMENT_VARIABLE: {
+      // opening block
+      fprintf(
+        stdout, "(let %.*s",
+        ( int )s->variable->name->length,
+        s->variable->name->start
+      );
+      // possible initializer
+      if ( s->variable->initializer ) {
+        fprintf( stdout, " = " );
+        print_expression( s->variable->initializer );
+      }
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_CONST: {
+      // opening block
+      fprintf(
+        stdout, "(const %.*s = ",
+        ( int )s->constant->name->length,
+        s->constant->name->start
+      );
+      // initializer
+      print_expression( s->constant->initializer );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_WHILE: {
+      // opening block
+      fprintf( stdout, "(while " );
+      // condition
+      print_expression( s->while_loop->condition );
+      // space
+      fprintf( stdout, " " );
+      // body
+      print_statement( s->while_loop->body );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+  }
+}
+
+/**
+ * @brief Helper to print a node
+ *
+ * @param n
+ */
+static void print_node( bosl_ast_node_t* n ) {
+  switch ( n->type ) {
+    case NODE_STATEMENT:
+      print_statement( n->statement );
+      break;
+    case NODE_EXPRESSION:
+      print_expression( n->expression );
+      break;
+  }
+  // flush output
+  fflush( stdout );
+}
+
+/**
  * @brief Method to print parsed ast
  */
 void bosl_parser_print( void ) {
+  // handle not initialized
+  if ( ! parser ) {
+    return;
+  }
+  // loop through nodes and print them
+  for (
+    list_item_t* current = parser->ast->first;
+    current;
+    current = current->next
+  ) {
+    print_node( current->data );
+  }
+  // final newline
+  fprintf( stdout, "\r\n" );
 }

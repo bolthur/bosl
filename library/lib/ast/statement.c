@@ -115,25 +115,25 @@ void bosl_ast_statement_destroy( bosl_ast_statement_t* statement ) {
         bosl_ast_statement_destroy( statement->function->body );
         break;
       case STATEMENT_IF:
-        bosl_ast_expression_destroy( statement->if_->if_condition );
-        bosl_ast_statement_destroy( statement->if_->if_statement );
-        bosl_ast_statement_destroy( statement->if_->else_statement );
+        bosl_ast_expression_destroy( statement->if_else->if_condition );
+        bosl_ast_statement_destroy( statement->if_else->if_statement );
+        bosl_ast_statement_destroy( statement->if_else->else_statement );
         break;
       case STATEMENT_PRINT:
         bosl_ast_expression_destroy( statement->print->expression );
         break;
       case STATEMENT_RETURN:
-        bosl_ast_expression_destroy( statement->return_->value );
+        bosl_ast_expression_destroy( statement->return_value->value );
         break;
       case STATEMENT_VARIABLE:
         bosl_ast_expression_destroy( statement->variable->initializer );
         break;
       case STATEMENT_CONST:
-        bosl_ast_expression_destroy( statement->const_->initializer );
+        bosl_ast_expression_destroy( statement->constant->initializer );
         break;
       case STATEMENT_WHILE:
-        bosl_ast_expression_destroy( statement->while_->condition );
-        bosl_ast_statement_destroy( statement->while_->body );
+        bosl_ast_expression_destroy( statement->while_loop->condition );
+        bosl_ast_statement_destroy( statement->while_loop->body );
         break;
     }
     // finally free data
