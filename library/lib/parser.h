@@ -23,8 +23,8 @@
   #include "collection/list.h"
   #include "scanner.h"
 #else
+  #include <bosl/collection/list.h>
   #include <bosl/scanner.h>
-  typedef struct list_manager list_manager_t;
 #endif
 
 #if ! defined( _BOSL_PARSER_H )

@@ -21,8 +21,8 @@
   #include "../scanner.h"
   #include "../collection/list.h"
 #else
-  typedef struct list_manager list_manager_t;
   #include <bosl/scanner.h>
+  #include <bosl/collection/list.h>
 #endif
 #if ! defined( _BOSL_AST_EXPRESSION_H )
 #define _BOSL_AST_EXPRESSION_H

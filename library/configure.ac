@@ -1,7 +1,7 @@
 
 AC_PREREQ([2.71])
 
-AC_INIT([libbosl], [0.1.0-dev], [https://github.com/bolthur/bosl/issues], [libbosl], [https://github.com/bolthur/bosl])
+AC_INIT([libbosl], [0.1.0-dev], [https://github.com/bolthur/bosl/issues], [bosl], [https://github.com/bolthur/bosl])
 
 AC_COPYRIGHT([Copyright (C) 2022 bolthur project])
 

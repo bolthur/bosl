@@ -22,8 +22,8 @@
   #include "../collection/list.h"
   #include "expression.h"
 #else
-  typedef struct list_manager list_manager_t;
   #include <bosl/scanner.h>
+  #include <bosl/collection/list.h>
   #include <bosl/ast/expression.h>
 #endif
 #if ! defined( _BOSL_AST_STATEMENT_H )

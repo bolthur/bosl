@@ -22,7 +22,7 @@
 #if defined( _COMPILING_BOSL )
   #include "collection/list.h"
 #else
-  typedef struct list_manager list_manager_t;
+  #include <bosl/collection/list.h>
 #endif
 
 #if ! defined( _BOSL_TYPE_CHECK_H )

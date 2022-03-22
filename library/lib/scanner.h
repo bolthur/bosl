@@ -24,8 +24,8 @@
   #include "collection/list.h"
   #include "collection/hashmap.h"
 #else
-  typedef struct list_manager list_manager_t;
-  typedef struct hashmap_entry hashmap_entry_t;
+  #include <bosl/collection/list.h>
+  #include <bosl/collection/hashmap.h>
 #endif
 
 #if ! defined( _BOSL_SCANNER_H )
