@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include "ast/common.h"
 #include "ast/expression.h"
 #include "ast/statement.h"
@@ -114,21 +115,21 @@ static char* stringify( bosl_interpreter_object_t* object ) {
     memcpy( &num, object->data, sizeof( num ) );
     sprintf( buffer, "%Lf", num );
   } else if ( INTERPRETER_OBJECT_INT_SIGNED == object->type ) {
-    signed long long num;
+    int64_t num;
     memcpy( &num, object->data, sizeof( num ) );
-    sprintf( buffer, "%lld", num );
+    sprintf( buffer, "%"PRId64, num );
   } else if ( INTERPRETER_OBJECT_INT_UNSIGNED == object->type ) {
-    unsigned long long num;
+    uint64_t num;
     memcpy( &num, object->data, sizeof( num ) );
-    sprintf( buffer, "%llu", num );
+    sprintf( buffer, "%"PRIu64, num );
   } else if ( INTERPRETER_OBJECT_HEX_SIGNED == object->type ) {
-    signed long long num;
+    int64_t num;
     memcpy( &num, object->data, sizeof( num ) );
-    sprintf( buffer, "%llx", num );
+    sprintf( buffer, "%"PRIx64, num );
   } else if ( INTERPRETER_OBJECT_HEX_UNSIGNED == object->type ) {
-    unsigned long long num;
+    uint64_t num;
     memcpy( &num, object->data, sizeof( num ) );
-    sprintf( buffer, "%llx", num );
+    sprintf( buffer, "%"PRIx64, num );
   } else if ( INTERPRETER_OBJECT_BOOL == object->type ) {
     bool flag;
     memcpy( &flag, object->data, sizeof( flag ) );
@@ -275,8 +276,8 @@ static bosl_interpreter_object_t* object_equal(
  */
 static bool extract_number(
   bosl_interpreter_object_t* object,
-  unsigned long long* unum,
-  signed long long* num,
+  uint64_t* unum,
+  int64_t* num,
   long double* dnum
 ) {
   // only numbers are handled here
@@ -327,12 +328,39 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
   }
   // flag indicating different types
   bool same_type = left->type == right->type;
+  // enforce same type and number
+  if (
+    TOKEN_BANG_EQUAL != b->operator->type
+    && TOKEN_EQUAL_EQUAL != b->operator->type
+    && ! same_type
+  ) {
+    // change right if left is signed
+    if (
+      INTERPRETER_OBJECT_HEX_SIGNED == left->type
+      || INTERPRETER_OBJECT_INT_SIGNED == left->type
+    ) {
+      right->type = left->type;
+      same_type = true;
+    // change left if right is signed
+    } else if (
+      INTERPRETER_OBJECT_HEX_SIGNED == right->type
+      || INTERPRETER_OBJECT_INT_SIGNED == right->type
+    ) {
+      left->type = right->type;
+      same_type = true;
+    } else {
+      raise_error( b->operator, "Different types for binary." );
+      destroy_object( left );
+      destroy_object( right );
+      return NULL;
+    }
+  }
   // variables for values
-  signed long long lsnum = 0;
-  unsigned long long lunum = 0;
+  int64_t lsnum = 0;
+  uint64_t lunum = 0;
   long double ldnum = 0;
-  signed  long long rsnum = 0;
-  unsigned long long runum = 0;
+  int64_t rsnum = 0;
+  uint64_t runum = 0;
   long double rdnum = 0;
   // extract stuff
   if (
@@ -345,18 +373,6 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
     )
   ) {
     raise_error( b->operator, "Number extraction failed." );
-    destroy_object( left );
-    destroy_object( right );
-    return NULL;
-  }
-
-  // enforce same type and number
-  if (
-    TOKEN_BANG_EQUAL != b->operator->type
-    && TOKEN_EQUAL_EQUAL != b->operator->type
-    && ! same_type
-  ) {
-    raise_error( b->operator, "Different types for binary." );
     destroy_object( left );
     destroy_object( right );
     return NULL;
@@ -382,7 +398,7 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
       type == INTERPRETER_OBJECT_INT_UNSIGNED
       || type == INTERPRETER_OBJECT_HEX_UNSIGNED
     ) {
-      unsigned long long result = lunum - runum;
+      uint64_t result = lunum - runum;
       return allocate_object(
         type,
         &result,
@@ -394,7 +410,7 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
       type == INTERPRETER_OBJECT_INT_SIGNED
       || type == INTERPRETER_OBJECT_HEX_SIGNED
     ) {
-      signed long long result = lsnum - rsnum;
+      int64_t result = lsnum - rsnum;
       return allocate_object(
         type,
         &result,
@@ -423,7 +439,7 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
       type == INTERPRETER_OBJECT_INT_UNSIGNED
       || type == INTERPRETER_OBJECT_HEX_UNSIGNED
     ) {
-      unsigned long long result = lunum + runum;
+      uint64_t result = lunum + runum;
       return allocate_object(
         type,
         &result,
@@ -435,7 +451,7 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
       type == INTERPRETER_OBJECT_INT_SIGNED
       || type == INTERPRETER_OBJECT_HEX_SIGNED
     ) {
-      signed long long result = lsnum + rsnum;
+      int64_t result = lsnum + rsnum;
       return allocate_object(
         type,
         &result,
@@ -464,7 +480,7 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
       type == INTERPRETER_OBJECT_INT_UNSIGNED
       || type == INTERPRETER_OBJECT_HEX_UNSIGNED
     ) {
-      unsigned long long result = lunum / runum;
+      uint64_t result = lunum / runum;
       return allocate_object(
         type,
         &result,
@@ -476,7 +492,7 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
       type == INTERPRETER_OBJECT_INT_SIGNED
       || type == INTERPRETER_OBJECT_HEX_SIGNED
     ) {
-      signed long long result = lsnum / rsnum;
+      int64_t result = lsnum / rsnum;
       return allocate_object(
         type,
         &result,
@@ -505,7 +521,7 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
       type == INTERPRETER_OBJECT_INT_UNSIGNED
       || type == INTERPRETER_OBJECT_HEX_UNSIGNED
     ) {
-      unsigned long long result = lunum * runum;
+      uint64_t result = lunum * runum;
       return allocate_object(
         type,
         &result,
@@ -517,7 +533,7 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
       type == INTERPRETER_OBJECT_INT_SIGNED
       || type == INTERPRETER_OBJECT_HEX_SIGNED
     ) {
-      signed long long result = lsnum * rsnum;
+      int64_t result = lsnum * rsnum;
       return allocate_object(
         type,
         &result,
@@ -700,6 +716,7 @@ static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u
   }
   // apply operators
   if ( TOKEN_BANG == u->operator->type ) {
+    // FIXME: CHECK BEHAVIOUR HERE
     // truthy flag
     bosl_interpreter_object_t* truthy = object_truthy( right );
     // free object
@@ -714,8 +731,8 @@ static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u
       return NULL;
     }
     // variables for values
-    signed long long snum = 0;
-    unsigned long long unum = 0;
+    int64_t snum = 0;
+    uint64_t unum = 0;
     long double dnum = 0;
     // extract stuff
     if ( ! extract_number( right, &unum, &snum, &dnum ) ) {
@@ -738,8 +755,14 @@ static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u
       INTERPRETER_OBJECT_INT_UNSIGNED == type
       || INTERPRETER_OBJECT_HEX_UNSIGNED == type
     ) {
-      unum = -unum;
-      return allocate_object( type, &unum, sizeof( unum ) );
+      snum = -( ( int64_t )unum );
+      return allocate_object(
+        INTERPRETER_OBJECT_INT_UNSIGNED == type
+          ? INTERPRETER_OBJECT_INT_SIGNED
+          : INTERPRETER_OBJECT_HEX_SIGNED,
+        &snum,
+        sizeof( snum )
+      );
     }
     // just return right
     raise_error( u->operator, "Runtime error unknown" );
@@ -767,8 +790,8 @@ static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u
       return NULL;
     }
     // variables for values
-    signed long long snum = 0;
-    unsigned long long unum = 0;
+    int64_t snum = 0;
+    uint64_t unum = 0;
     long double dnum = 0;
     // extract stuff
     if ( ! extract_number( right, &unum, &snum, &dnum ) ) {

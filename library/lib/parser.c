@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include "parser.h"
 #include "scanner.h"
 #include "error.h"
@@ -204,7 +205,7 @@ static bosl_ast_expression_t* expression_primary( void ) {
     // push number literal
     } else {
       // translate to number
-      unsigned long long num = strtoull( token->start, &end, 0 );
+      uint64_t num = strtoull( token->start, &end, 0 );
       if ( end != token->start + token->length ) {
         return NULL;
       }
@@ -1602,15 +1603,15 @@ static void print_expression( bosl_ast_expression_t* e ) {
           break;
         }
         case EXPRESSION_LITERAL_TYPE_NUMBER_INT: {
-          unsigned long long num;
-          memcpy( &num, e->literal->value, sizeof( unsigned long long ) );
-          fprintf( stdout, "%llu", num );
+          uint64_t num;
+          memcpy( &num, e->literal->value, sizeof( uint64_t ) );
+          fprintf( stdout, "%"PRIu64, num );
           break;
         }
         case EXPRESSION_LITERAL_TYPE_NUMBER_HEX: {
-          unsigned long long num;
-          memcpy( &num, e->literal->value, sizeof( unsigned long long ) );
-          fprintf( stdout, "%#llx", num );
+          uint64_t num;
+          memcpy( &num, e->literal->value, sizeof( uint64_t ) );
+          fprintf( stdout, "%"PRIx64, num );
           break;
         }
       }
