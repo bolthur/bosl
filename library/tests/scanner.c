@@ -35,7 +35,7 @@ END_TEST
 
 START_TEST( test_scanner_scan_string_single_line ) {
   char str[] = "\"some string\"";
-  char* cmp = str;
+  char* cmp = &str[ 1 ];
   ck_assert( bosl_scanner_init( str ) );
   list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
@@ -43,11 +43,11 @@ START_TEST( test_scanner_scan_string_single_line ) {
   list_item_t* current = list->first;
   bosl_token_t* token = current->data;
   ck_assert_int_eq( token->type, TOKEN_STRING );
-  ck_assert( 13 ==  token->length );
+  ck_assert( 11 ==  token->length );
   ck_assert_str_eq( token->start, cmp );
   ck_assert_int_eq( token->line, 1 );
 
-  cmp += 13;
+  cmp += 12;
   current = current->next;
   token = current->data;
   ck_assert_int_eq( token->type, TOKEN_EOF );
@@ -60,7 +60,7 @@ END_TEST
 START_TEST( test_scanner_scan_string_multi_line ) {
   char str[] = "\"some\n\
 string\"";
-  char* cmp = str;
+  char* cmp = &str[ 1 ];
   ck_assert( bosl_scanner_init( str ) );
   list_manager_t* list = bosl_scanner_scan();
   ck_assert_ptr_nonnull( list );
@@ -68,11 +68,11 @@ string\"";
   list_item_t* current = list->first;
   bosl_token_t* token = current->data;
   ck_assert_int_eq( token->type, TOKEN_STRING );
-  ck_assert( 13 ==  token->length );
+  ck_assert( 11 ==  token->length );
   ck_assert_str_eq( token->start, cmp );
   ck_assert_int_eq( token->line, 2 );
 
-  cmp += 13;
+  cmp += 12;
   current = current->next;
   token = current->data;
   ck_assert_int_eq( token->type, TOKEN_EOF );
@@ -1714,6 +1714,44 @@ START_TEST( test_scanner_scan_white_space_skip_carriage_return ) {
 }
 END_TEST
 
+START_TEST( test_scanner_scan_builtin_print_string ) {
+  char str[] = "print( \"hello world\" );";
+  ck_assert( bosl_scanner_init( str ) );
+  list_manager_t* list = bosl_scanner_scan();
+  ck_assert_ptr_nonnull( list );
+
+  list_item_t* current = list->first;
+  bosl_token_t* token = current->data;
+  ck_assert_int_eq( token->type, TOKEN_PRINT );
+  ck_assert( 5 ==  token->length );
+
+  current = current->next;
+  token = current->data;
+  ck_assert_int_eq( token->type, TOKEN_LEFT_PARENTHESIS );
+  ck_assert( 1 ==  token->length );
+
+  current = current->next;
+  token = current->data;
+  ck_assert_int_eq( token->type, TOKEN_STRING );
+  ck_assert( 11 ==  token->length );
+
+  current = current->next;
+  token = current->data;
+  ck_assert_int_eq( token->type, TOKEN_RIGHT_PARENTHESIS );
+  ck_assert( 1 ==  token->length );
+
+  current = current->next;
+  token = current->data;
+  ck_assert_int_eq( token->type, TOKEN_SEMICOLON );
+  ck_assert( 1 ==  token->length );
+
+  current = current->next;
+  token = current->data;
+  ck_assert_int_eq( token->type, TOKEN_EOF );
+  ck_assert( 0 ==  token->length );
+}
+END_TEST
+
 static Suite* scanner_suite( void ) {
   Suite* s;
   TCase* tc_core;
@@ -1795,6 +1833,7 @@ static Suite* scanner_suite( void ) {
   tcase_add_test( tc_core, test_scanner_scan_shift_right );
   // built-in functions
   tcase_add_test( tc_core, test_scanner_scan_builtin_print );
+  tcase_add_test( tc_core, test_scanner_scan_builtin_print_string );
   // whitespace ignore
   tcase_add_test( tc_core, test_scanner_scan_white_space_skip_space );
   tcase_add_test( tc_core, test_scanner_scan_white_space_skip_tab );

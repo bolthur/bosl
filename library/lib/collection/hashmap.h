@@ -53,6 +53,7 @@ struct hashmap_iterator {
 hashmap_table_t* hashmap_construct( void );
 void hashmap_destruct( hashmap_table_t* );
 void* hashmap_value_get( hashmap_table_t*, const char* );
+void* hashmap_value_nget( hashmap_table_t*, const char*, size_t len );
 const char* hashmap_value_set( hashmap_table_t*, const char*, void* );
 size_t hashmap_length( hashmap_table_t* );
 hashmap_iterator_t hashmap_iterator( hashmap_table_t* );

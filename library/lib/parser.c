@@ -75,7 +75,7 @@ static void list_node_cleanup( list_item_t* item ) {
  *
  * @return
  */
-static bosl_token_t* parser_token_previous( void ) {
+static bosl_token_t* previous( void ) {
   return ( bosl_token_t* )( parser->_current->previous->data );
 }
 
@@ -84,7 +84,7 @@ static bosl_token_t* parser_token_previous( void ) {
  *
  * @return
  */
-static bosl_token_t* parser_token_current( void ) {
+static bosl_token_t* current( void ) {
   return ( bosl_token_t* )( parser->_current->data );
 }
 
@@ -93,7 +93,7 @@ static bosl_token_t* parser_token_current( void ) {
  *
  * @return
  */
-static bosl_token_t* parser_token_next( void ) {
+static bosl_token_t* next( void ) {
   if ( TOKEN_EOF != parser->current()->type ) {
     parser->_current = parser->_current->next;
   }
@@ -145,25 +145,18 @@ static bosl_token_t* consume( bosl_token_type_t type, const char* error_message 
  */
 static bosl_ast_expression_t* expression_primary( void ) {
   if ( match( TOKEN_FALSE ) ) {
+    bool b = false;
     return bosl_ast_expression_allocate_literal(
-      ( void* )false,
-      sizeof( false ),
-      EXPRESSION_LITERAL_TYPE_BOOL
-    );
+      &b, sizeof( false ), EXPRESSION_LITERAL_TYPE_BOOL );
   }
   if ( match( TOKEN_TRUE ) ) {
+    bool b = true;
     return bosl_ast_expression_allocate_literal(
-      ( void* )true,
-      sizeof( true ),
-      EXPRESSION_LITERAL_TYPE_BOOL
-    );
+      &b, sizeof( true ), EXPRESSION_LITERAL_TYPE_BOOL );
   }
   if ( match( TOKEN_NULL ) ) {
     return bosl_ast_expression_allocate_literal(
-      NULL,
-      sizeof( NULL ),
-      EXPRESSION_LITERAL_TYPE_NULL
-    );
+      NULL, 0, EXPRESSION_LITERAL_TYPE_NULL );
   }
 
   if ( match( TOKEN_STRING ) ) {
@@ -201,7 +194,7 @@ static bosl_ast_expression_t* expression_primary( void ) {
     // push float literal
     if ( is_float ) {
       // translate to number
-      float num = strtof( token->start, &end );
+      long double num = strtold( token->start, &end );
       if ( end != token->start + token->length ) {
         return NULL;
       }
@@ -881,7 +874,7 @@ static bosl_ast_node_t* statement_print( void ) {
     return NULL;
   }
   // expect semicolon
-  if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expect ';' at end of print." ) ) {
+  if ( ! consume( TOKEN_SEMICOLON, "Expect ';' at end of print." ) ) {
     bosl_ast_expression_destroy( e );
     return NULL;
   }
@@ -1422,6 +1415,10 @@ static bosl_ast_node_t* declaration( void ) {
  * @return
  */
 bool bosl_parser_init( list_manager_t* token ) {
+  // handle already initialized
+  if ( parser ) {
+    return true;
+  }
   // allocate parser structure
   parser = malloc( sizeof( *parser ) );
   if ( ! parser ) {
@@ -1439,9 +1436,9 @@ bool bosl_parser_init( list_manager_t* token ) {
   parser->_token = token;
   parser->_current = token->first;
   // push back convenience helper
-  parser->current = parser_token_current;
-  parser->next = parser_token_next;
-  parser->previous = parser_token_previous;
+  parser->current = current;
+  parser->next = next;
+  parser->previous = previous;
   // return success
   return true;
 }
@@ -1599,9 +1596,9 @@ static void print_expression( bosl_ast_expression_t* e ) {
           );
           break;
         case EXPRESSION_LITERAL_TYPE_NUMBER_FLOAT: {
-          float num;
-          memcpy( &num, e->literal->value, sizeof( float ) );
-          fprintf( stdout, "%f", num );
+          long double num;
+          memcpy( &num, e->literal->value, sizeof( num ) );
+          fprintf( stdout, "%Lf", num );
           break;
         }
         case EXPRESSION_LITERAL_TYPE_NUMBER_INT: {
@@ -1617,13 +1614,6 @@ static void print_expression( bosl_ast_expression_t* e ) {
           break;
         }
       }
-
-      // opening block
-      fprintf(
-        stdout, "%.*s",
-        ( int )e->literal->size,
-        ( char* )e->literal->value
-      );
       break;
     }
     case EXPRESSION_LOGICAL: {
@@ -1672,33 +1662,6 @@ static void print_expression( bosl_ast_expression_t* e ) {
  */
 static void print_statement( bosl_ast_statement_t* s ) {
   switch ( s->type ) {
-    case STATEMENT_BLOCK: {
-      // opening block
-      fprintf( stdout, "(block " );
-      // print all inner statements
-      for ( list_item_t* c = s->block->statements->first; c; c = c->next ) {
-        if ( c != s->block->statements->first ) {
-          fprintf( stdout, " " );
-        }
-        print_statement( c->data );
-      }
-      // closing block
-      fprintf( stdout, ")" );
-      break;
-    }
-    case STATEMENT_EXPRESSION: {
-      // opening block
-      fprintf( stdout, "(; " );
-      // print expression
-      print_expression( s->expression->expression );
-      // closing block
-      fprintf( stdout, ")" );
-      break;
-    }
-    case STATEMENT_PARAMETER: {
-      // handled by function
-      break;
-    }
     case STATEMENT_FUNCTION: {
       // opening block
       fprintf(
@@ -1738,6 +1701,35 @@ static void print_statement( bosl_ast_statement_t* s ) {
           s->function->load_identifier->start
         );
       }
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_VARIABLE: {
+      // opening block
+      fprintf(
+        stdout, "(let %.*s",
+        ( int )s->variable->name->length,
+        s->variable->name->start
+      );
+      // possible initializer
+      if ( s->variable->initializer ) {
+        fprintf( stdout, " = " );
+        print_expression( s->variable->initializer );
+      }
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_CONST: {
+      // opening block
+      fprintf(
+        stdout, "(const %.*s = ",
+        ( int )s->constant->name->length,
+        s->constant->name->start
+      );
+      // initializer
+      print_expression( s->constant->initializer );
       // closing block
       fprintf( stdout, ")" );
       break;
@@ -1783,35 +1775,6 @@ static void print_statement( bosl_ast_statement_t* s ) {
       }
       break;
     }
-    case STATEMENT_VARIABLE: {
-      // opening block
-      fprintf(
-        stdout, "(let %.*s",
-        ( int )s->variable->name->length,
-        s->variable->name->start
-      );
-      // possible initializer
-      if ( s->variable->initializer ) {
-        fprintf( stdout, " = " );
-        print_expression( s->variable->initializer );
-      }
-      // closing block
-      fprintf( stdout, ")" );
-      break;
-    }
-    case STATEMENT_CONST: {
-      // opening block
-      fprintf(
-        stdout, "(const %.*s = ",
-        ( int )s->constant->name->length,
-        s->constant->name->start
-      );
-      // initializer
-      print_expression( s->constant->initializer );
-      // closing block
-      fprintf( stdout, ")" );
-      break;
-    }
     case STATEMENT_WHILE: {
       // opening block
       fprintf( stdout, "(while " );
@@ -1821,6 +1784,20 @@ static void print_statement( bosl_ast_statement_t* s ) {
       fprintf( stdout, " " );
       // body
       print_statement( s->while_loop->body );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_BLOCK: {
+      // opening block
+      fprintf( stdout, "(block " );
+      // print all inner statements
+      for ( list_item_t* c = s->block->statements->first; c; c = c->next ) {
+        if ( c != s->block->statements->first ) {
+          fprintf( stdout, " " );
+        }
+        print_statement( c->data );
+      }
       // closing block
       fprintf( stdout, ")" );
       break;
@@ -1836,6 +1813,19 @@ static void print_statement( bosl_ast_statement_t* s ) {
       print_statement( s->pointer->statement );
       // closing block
       fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_EXPRESSION: {
+      // opening block
+      fprintf( stdout, "(; " );
+      // print expression
+      print_expression( s->expression->expression );
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_PARAMETER: {
+      // handled by function
       break;
     }
   }

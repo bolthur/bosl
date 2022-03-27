@@ -162,15 +162,20 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_literal(
   // get inner type
   bosl_ast_expression_literal_t* literal = e->data;
   // allocate space for literal
-  literal->value = malloc( size );
-  if ( ! literal->value ) {
-    bosl_ast_expression_destroy( e );
-    return NULL;
+  if ( data ) {
+    literal->value = malloc( size );
+    if ( ! literal->value ) {
+      bosl_ast_expression_destroy( e );
+      return NULL;
+    }
+    // copy over data
+    memcpy( literal->value, data, size );
+    // set size
+    literal->size = size;
+  } else {
+    literal->value = NULL;
+    literal->size = 0;
   }
-  // copy over data
-  memcpy( literal->value, data, size );
-  // set size
-  literal->size = size;
   literal->type = type;
   // return succes
   return e;

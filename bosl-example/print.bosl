@@ -1,0 +1,7 @@
+print( "hello world!" );
+print( true );
+print( false );
+print( null );
+print( 2 + 3 );
+print( 3 + 2 * 7 );
+print( 3 + 2 * -7 );

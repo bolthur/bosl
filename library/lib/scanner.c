@@ -146,7 +146,15 @@ static bool scan_string( void ) {
   // get beyond closing double quotes
   advance();
   // return string token
-  return add_token( TOKEN_STRING, NULL );
+  if ( ! add_token( TOKEN_STRING, NULL ) ) {
+    return false;
+  }
+  // get last added and get rid of beginning and ending quotes
+  bosl_token_t* token = scanner->token->last->data;
+  token->length -= 2;
+  token->start++;
+  // return success
+  return true;
 }
 
 /**
@@ -170,7 +178,11 @@ static bool scan_identifier( void ) {
     advance();
   }
   // try to get type
-  void* raw_type = hashmap_value_get( scanner->keyword, scanner->start );
+  void* raw_type = hashmap_value_nget(
+    scanner->keyword,
+    scanner->start,
+    ( size_t )( scanner->current - scanner->start )
+  );
   // transform to token type
   bosl_token_type_t type = TOKEN_IDENTIFIER;
   if ( raw_type ) {
@@ -319,9 +331,9 @@ static void token_list_cleanup( list_item_t* a ) {
  * @return
  */
 bool bosl_scanner_init( const char* source ) {
-  // prevent duplicate init
+  // handle already initialized
   if ( scanner ) {
-    return false;
+    return true;
   }
   // allocate and handle error
   scanner = malloc( sizeof( *scanner ) );

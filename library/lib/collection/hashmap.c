@@ -119,6 +119,46 @@ void* hashmap_value_get( hashmap_table_t* table, const char* key ) {
 }
 
 /**
+ * @brief Method to get hashmap entry by key with given size
+ *
+ * @param table
+ * @param key
+ * @param len
+ * @return Set value or NULL if not found
+ */
+void* hashmap_value_nget( hashmap_table_t* table, const char* key, size_t len ) {
+  // allocate temporary
+  char* tmp = malloc( len + 1 );
+  if ( ! tmp ) {
+    return NULL;
+  }
+  // clear out
+  memset( tmp, 0, len + 1 );
+  // copy content
+  strncpy( tmp, key, len );
+
+
+  size_t hash = hashmap_generate_hash( tmp );
+  size_t index = hash & ( table->capacity - 1 );
+
+  // loop until non empty
+  while ( table->entries[ index ].key ) {
+    // check if found and return
+    if ( ! strcmp( tmp, table->entries[ index ].key ) )  {
+      free( tmp );
+      return table->entries[ index ].value;
+    }
+    // increment if key wasn't in slot and check for end reached
+    if ( ++index >= table->capacity ) {
+      index = 0;
+    }
+  }
+  free( tmp );
+  // return NULL as nothing was found
+  return NULL;
+}
+
+/**
  * @brief Set a value in hashmap
  *
  * @param table

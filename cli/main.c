@@ -24,6 +24,108 @@
 #include "../library/lib/error.h"
 #include "../library/lib/scanner.h"
 #include "../library/lib/parser.h"
+#include "../library/lib/interpreter.h"
+
+/**
+ * @brief Helper to read file content
+ *
+ * @param path
+ * @return
+ */
+static char* read_file( const char* path ) {
+  // open script
+  FILE* f = fopen( path, "r" );
+  if ( ! f ) {
+    perror( path );
+    return NULL;
+  }
+  // switch to end, get size and rewind to beginning
+  fseek( f, 0, SEEK_END );
+  // get position
+  long l_size = ftell( f );
+  if ( -1L == l_size ) {
+    fclose( f );
+    return NULL;
+  }
+  size_t size = ( size_t )l_size;
+  // rewind to begin
+  rewind( f );
+  // allocate memory
+  char* buffer = malloc( sizeof( char ) * size );
+  if ( ! buffer ) {
+    fclose( f );
+    return NULL;
+  }
+  // clearout
+  memset( buffer, 0, sizeof( char ) * size );
+  // read whole file into buffer
+  if ( 1 != fread( buffer, size, 1, f ) ) {
+    fclose( f );
+    return NULL;
+  }
+  // close and return buffer
+  fclose( f );
+  return buffer;
+}
+
+/**
+ * @brief Interprete buffer
+ *
+ * @param print_ast print ast instead of interpreting
+ * @param buffer code to interprete
+ * @return
+ */
+static bool interprete( bool print_ast, char* buffer ) {
+  // initialize scanner
+  if ( ! bosl_scanner_init( buffer ) ) {
+    fprintf( stderr, "Unable to init scanner!\r\n" );
+    return false;
+  }
+  // scan token
+  list_manager_t* token_list = bosl_scanner_scan();
+  if ( ! token_list ) {
+    bosl_scanner_free();
+    return false;
+  }
+  // init parser
+  if ( ! bosl_parser_init( token_list ) ) {
+    bosl_scanner_free();
+    return false;
+  }
+  // parse ast
+  list_manager_t* ast_list = bosl_parser_scan();
+  if ( ! ast_list ) {
+    bosl_parser_free();
+    bosl_scanner_free();
+    return false;
+  }
+  // setup interpreter
+  if ( ! bosl_interpreter_init( ast_list ) ) {
+    bosl_parser_free();
+    bosl_scanner_free();
+    return false;
+  }
+
+  if ( print_ast ) {
+    // print ast
+    bosl_parser_print();
+  } else {
+    // run code
+    if ( ! bosl_interpreter_run() ) {
+      bosl_interpreter_free();
+      bosl_parser_free();
+      bosl_scanner_free();
+      return false;
+    }
+  }
+
+  // destroy parser, scanner and interpreter
+  bosl_parser_free();
+  bosl_scanner_free();
+  bosl_interpreter_free();
+  // return success
+  return true;
+}
 
 int main( int argc, char* argv[] ) {
   struct arg_lit* verbose = arg_lit0( "v", "verbose", "verbose output" );
@@ -78,90 +180,18 @@ int main( int argc, char* argv[] ) {
     arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
     return EXIT_SUCCESS;
   }
-
-  // open script
-  FILE* f = fopen( infile->filename[ 0 ], "r" );
-  if ( ! f ) {
-    perror( infile->filename[ 0 ] );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
-    return EXIT_FAILURE;
-  }
-  // switch to end, get size and rewind to beginning
-  fseek( f, 0, SEEK_END );
-  // get position
-  long l_size = ftell( f );
-  if ( -1L == l_size ) {
-    fclose( f );
-    fprintf( stderr, "ftell failed!\r\n" );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
-    return EXIT_FAILURE;
-  }
-  size_t size = ( size_t )l_size;
-  // rewind to begin
-  rewind( f );
-  // allocate memory
-  char* buffer = malloc( sizeof( char ) * size );
+  // read file into buffer
+  char* buffer = read_file( infile->filename[ 0 ] );
   if ( ! buffer ) {
-    fclose( f );
-    fprintf( stderr, "Buffer allocation failed!\r\n" );
     arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
     return EXIT_FAILURE;
   }
-  // clearout
-  memset( buffer, 0, sizeof( char ) * size );
-  // read whole file into buffer
-  if ( 1 != fread( buffer, size, 1, f ) ) {
-    fclose( f );
-    free( buffer );
-    fprintf( stderr, "Unable to read file into buffer!\r\n" );
+  // interprete it
+  if ( ! interprete( ast->count, buffer ) ) {
     arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
     return EXIT_FAILURE;
   }
-
-  // initialize scanner
-  if ( ! bosl_scanner_init( buffer ) ) {
-    fclose( f );
-    free( buffer );
-    fprintf( stderr, "Unable to init scanner!\r\n" );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
-    return EXIT_FAILURE;
-  }
-  // scan token
-  list_manager_t* token_list = bosl_scanner_scan();
-  if ( ! token_list ) {
-    fclose( f );
-    free( buffer );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
-    return EXIT_FAILURE;
-  }
-  // init parser
-  if ( ! bosl_parser_init( token_list ) ) {
-    fclose( f );
-    free( buffer );
-    fprintf( stderr, "Unable to init parser!\r\n" );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
-    return EXIT_FAILURE;
-  }
-  // parse ast
-  __unused list_manager_t* ast_list = bosl_parser_scan();
-  if ( ! ast_list ) {
-    fclose( f );
-    free( buffer );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
-    return EXIT_FAILURE;
-  }
-
-  if ( ast->count ) {
-    bosl_parser_print();
-  } else {
-    fprintf( stderr, "Execution not yet supported\r\n" );
-  }
-
-  // destroy parser and scanner
-  bosl_parser_free();
-  bosl_scanner_free();
-  // close file, free buffer and free argtable
-  fclose( f );
+  // free buffer and free argtable
   free( buffer );
   arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
   return EXIT_SUCCESS;

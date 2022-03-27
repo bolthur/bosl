@@ -6,6 +6,7 @@ astincludedir = $(pkgincludedir)/ast
 
 pkginclude_HEADERS = \
   error.h \
+  interpreter.h \
   parser.h \
   scanner.h \
   type-check.h
@@ -27,6 +28,7 @@ libbosl_la_SOURCES = \
   ast/expression.c \
   ast/statement.c \
   error.c \
+  interpreter.c \
   parser.c \
   scanner.c \
   type-check.c

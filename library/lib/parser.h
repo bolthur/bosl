@@ -30,14 +30,14 @@
 #if ! defined( _BOSL_PARSER_H )
 #define _BOSL_PARSER_H
 
-typedef bosl_token_t* ( *parser_token_previous_t )( void );
-typedef bosl_token_t* ( *parser_token_current_t )( void );
-typedef bosl_token_t* ( *parser_token_next_t )( void );
+typedef bosl_token_t* ( *parser_previous_t )( void );
+typedef bosl_token_t* ( *parser_current_t )( void );
+typedef bosl_token_t* ( *parser_next_t )( void );
 
 typedef struct {
-  parser_token_previous_t previous;
-  parser_token_current_t current;
-  parser_token_next_t next;
+  parser_previous_t previous;
+  parser_current_t current;
+  parser_next_t next;
 
   list_manager_t* ast;
   list_manager_t* _token;
