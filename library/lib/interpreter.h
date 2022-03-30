@@ -52,6 +52,7 @@ typedef struct bosl_interpreter_object {
   void* data;
   size_t size;
   bool environment;
+  bool constant;
 } bosl_interpreter_object_t;
 
 typedef struct bosl_interpreter {

@@ -290,6 +290,31 @@ static bool extract_number(
 }
 
 /**
+ * @brief Duplicate an object if from environment
+ *
+ * @param obj
+ * @return
+ */
+static bosl_interpreter_object_t* duplicate_if_environment(
+  bosl_interpreter_object_t* obj
+) {
+  // handle invalid pointer
+  if ( ! obj ) {
+    return NULL;
+  }
+  // no duplication necessary if not from environment
+  if ( ! obj->environment ) {
+    return obj;
+  }
+  // return duplicate
+  return bosl_interpreter_allocate_object(
+    obj->type,
+    obj->data,
+    obj->size
+  );
+}
+
+/**
  * @brief Helper to evaluate binary
  *
  * @param b
@@ -811,53 +836,33 @@ static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u
  * @return
  */
 static bosl_interpreter_object_t* evaluate_literal( bosl_ast_expression_literal_t* l ) {
-  // allocate object for return
-  bosl_interpreter_object_t* obj = malloc( sizeof( bosl_interpreter_object_t ) );
-  if ( ! obj ) {
-    raise_error( NULL, "Unable to allocate object for literal." );
-    return NULL;
-  }
-  // clearout
-  memset( obj, 0, sizeof( bosl_interpreter_object_type_t ) );
-  // populate type
+  // determine type
+  bosl_interpreter_object_type_t type;
   switch ( l->type ) {
     case EXPRESSION_LITERAL_TYPE_BOOL:
-      obj->type = INTERPRETER_OBJECT_BOOL;
+      type = INTERPRETER_OBJECT_BOOL;
       break;
     case EXPRESSION_LITERAL_TYPE_NULL:
-      obj->type = INTERPRETER_OBJECT_NULL;
+      type = INTERPRETER_OBJECT_NULL;
       break;
     case EXPRESSION_LITERAL_TYPE_NUMBER_FLOAT:
-      obj->type = INTERPRETER_OBJECT_FLOAT;
+      type = INTERPRETER_OBJECT_FLOAT;
       break;
     case EXPRESSION_LITERAL_TYPE_NUMBER_HEX:
-      obj->type = INTERPRETER_OBJECT_HEX_UNSIGNED;
+      type = INTERPRETER_OBJECT_HEX_UNSIGNED;
       break;
     case EXPRESSION_LITERAL_TYPE_NUMBER_INT:
-      obj->type = INTERPRETER_OBJECT_INT_UNSIGNED;
+      type = INTERPRETER_OBJECT_INT_UNSIGNED;
       break;
     case EXPRESSION_LITERAL_TYPE_STRING:
-      obj->type = INTERPRETER_OBJECT_STRING;
+      type = INTERPRETER_OBJECT_STRING;
       break;
+    default:
+      raise_error( NULL, "Unsupported object type in literal." );
+      return NULL;
   }
-  // allocate
-  obj->data = malloc( l->size );
-  if ( ! obj->data ) {
-    raise_error( NULL, "Unable to allocate object data for literal." );
-    free( obj );
-    return NULL;
-  }
-  // copy content
-  if ( INTERPRETER_OBJECT_BOOL != obj->type ) {
-    memcpy( obj->data, l->value, l->size );
-  } else {
-    *( ( bool* )( obj->data ) ) = *( ( bool* )( l->value ) );
-  }
-  // set size and environment property
-  obj->size = l->size;
-  obj->environment = false;
-  // return built object
-  return obj;
+  // allocate object
+  return bosl_interpreter_allocate_object( type, l->value, l->size );
 }
 
 /**
@@ -869,24 +874,29 @@ static bosl_interpreter_object_t* evaluate_literal( bosl_ast_expression_literal_
 static bosl_interpreter_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
   switch ( e->type ) {
     case EXPRESSION_ASSIGN: {
-      // evaluate assignment expression
-      bosl_interpreter_object_t* value = evaluate_expression( e->assign->value );
+      /// FIXME: CHECK WHETHER CONSTANT SHALL BE SET OR NOT
+      // evaluate expression and duplicate if from environment
+      bosl_interpreter_object_t* value = duplicate_if_environment(
+        evaluate_expression( e->assign->value ) );
+      // handle error
       if ( ! value ) {
         raise_error( e->assign->token, "Unable to evaluate assign expression." );
         return NULL;
       }
-      // Duplicate if expression is from a variable to prevent accidental free
-      // of a value that might be referenced somewhere else again.
-      if ( value->environment ) {
-        value = bosl_interpreter_allocate_object(
-          value->type,
-          value->data,
-          value->size
-        );
-        if ( ! value ) {
-          raise_error( e->assign->token, "Unable to duplicate environment object." );
-          return NULL;
-        }
+      // get current value
+      bosl_interpreter_object_t* current = bosl_environment_get_value(
+        interpreter->env, e->assign->token );
+      // handle error
+      if ( ! current ) {
+        raise_error( e->assign->token, "Variable not existing." );
+        destroy_object( value );
+        return NULL;
+      }
+      // check for constant
+      if ( current->constant ) {
+        raise_error( e->assign->token, "Change a constant is not allowed." );
+        destroy_object( value );
+        return NULL;
       }
       // try to assign value
       if ( ! bosl_environment_assign_value(
@@ -895,6 +905,7 @@ static bosl_interpreter_object_t* evaluate_expression( bosl_ast_expression_t* e 
         value
       ) ) {
         raise_error( e->assign->token, "Assignment failed." );
+        destroy_object( value );
         return NULL;
       }
       // NULL return is okay here
@@ -1076,7 +1087,9 @@ static void execute( bosl_ast_statement_t* s ) {
       bosl_interpreter_object_t* value = NULL;
       // evaluate initializer
       if ( s->variable->initializer ) {
-        value = evaluate_expression( s->variable->initializer );
+        value = duplicate_if_environment(
+          evaluate_expression( s->variable->initializer )
+        );
         if ( ! value ) {
           raise_error(
             s->variable->name,
@@ -1087,7 +1100,8 @@ static void execute( bosl_ast_statement_t* s ) {
       // default initializer null
       } else {
         const char n[] = "NULL";
-        value = bosl_interpreter_allocate_object( INTERPRETER_OBJECT_NULL, n, strlen( n ) + 1 );
+        value = bosl_interpreter_allocate_object(
+          INTERPRETER_OBJECT_NULL, n, strlen( n ) + 1 );
         if ( ! value ) {
           raise_error(
             s->variable->name,
@@ -1096,11 +1110,27 @@ static void execute( bosl_ast_statement_t* s ) {
           break;
         }
       }
-      bosl_environment_push_value(
-        interpreter->env, s->variable->name, value );
+      // push to environment
+      bosl_environment_push_value( interpreter->env, s->variable->name, value );
       break;
     }
     case STATEMENT_CONST: {
+      // evaluate initializer
+      bosl_interpreter_object_t* value = duplicate_if_environment(
+        evaluate_expression( s->variable->initializer )
+      );
+      // handle error
+      if ( ! value ) {
+        raise_error(
+          s->variable->name,
+          "Unable to evaluate initializer expression."
+        );
+        break;
+      }
+      // set constant flag
+      value->constant = true;
+      // push to environment
+      bosl_environment_push_value( interpreter->env, s->variable->name, value );
       break;
     }
     case STATEMENT_WHILE: {
@@ -1108,6 +1138,7 @@ static void execute( bosl_ast_statement_t* s ) {
         // evaluate condition
         bosl_interpreter_object_t* condition = evaluate_expression(
           s->while_loop->condition );
+        // handle error
         if ( ! condition ) {
           raise_error( NULL, "Unable to evaluate condition." );
           return;
@@ -1279,6 +1310,7 @@ bosl_interpreter_object_t* bosl_interpreter_allocate_object(
   o->size = size;
   o->type = type;
   o->environment = false;
+  o->constant = false;
   // copy over
   if ( INTERPRETER_OBJECT_BOOL == type ) {
     *( ( bool* )( o->data ) ) = *( ( bool* )data );
