@@ -354,7 +354,7 @@ bool bosl_scanner_init( const char* source ) {
     return false;
   }
   // create and fill hash map
-  scanner->keyword = hashmap_construct();
+  scanner->keyword = hashmap_construct( NULL );
   if ( ! scanner->keyword ) {
     list_destruct( scanner->token );
     free( scanner );

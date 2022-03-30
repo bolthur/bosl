@@ -25,6 +25,7 @@
 #include "../library/lib/scanner.h"
 #include "../library/lib/parser.h"
 #include "../library/lib/interpreter.h"
+#include "../library/lib/environment.h"
 
 /**
  * @brief Helper to read file content
@@ -47,7 +48,7 @@ static char* read_file( const char* path ) {
     fclose( f );
     return NULL;
   }
-  size_t size = ( size_t )l_size;
+  size_t size = ( size_t )l_size + 1;
   // rewind to begin
   rewind( f );
   // allocate memory
@@ -59,7 +60,7 @@ static char* read_file( const char* path ) {
   // clearout
   memset( buffer, 0, sizeof( char ) * size );
   // read whole file into buffer
-  if ( 1 != fread( buffer, size, 1, f ) ) {
+  if ( 1 != fread( buffer, size - 1, 1, f ) ) {
     fclose( f );
     return NULL;
   }

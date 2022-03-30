@@ -25,7 +25,7 @@
 hashmap_table_t* table;
 
 static void setup( void ) {
-  table = hashmap_construct();
+  table = hashmap_construct( NULL );
   ck_assert_ptr_nonnull( table );
 }
 
@@ -36,7 +36,7 @@ static void teardown( void ) {
 
 START_TEST( test_hashmap_create ) {
   hashmap_destruct( table );
-  table = hashmap_construct();
+  table = hashmap_construct( NULL );
   ck_assert_ptr_nonnull( table );
   ck_assert( 0 == table->length );
   ck_assert( HASHMAP_INITIAL_CAPACITY == table->capacity );

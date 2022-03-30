@@ -1003,7 +1003,7 @@ static bosl_ast_node_t* statement_block( void ) {
     return NULL;
   }
   // allocate new ast node
-  node->statement = bosl_ast_statement_allocate( STATEMENT_EXPRESSION );
+  node->statement = bosl_ast_statement_allocate( STATEMENT_BLOCK );
   if ( ! node->statement ) {
     bosl_ast_node_destroy( node );
     return NULL;
@@ -1514,7 +1514,8 @@ static void print_expression( bosl_ast_expression_t* e ) {
     case EXPRESSION_ASSIGN: {
       // opening block
       fprintf(
-        stdout, "(= %.*s ",
+        stdout, "(= %*.*s ",
+        ( int )e->assign->token->length,
         ( int )e->assign->token->length,
         e->assign->token->start
       );
@@ -1527,7 +1528,8 @@ static void print_expression( bosl_ast_expression_t* e ) {
     case EXPRESSION_BINARY: {
       // opening block
       fprintf(
-        stdout, "(%.*s ",
+        stdout, "(%*.*s ",
+        ( int )e->binary->operator->length,
         ( int )e->binary->operator->length,
         e->binary->operator->start
       );
@@ -1555,7 +1557,8 @@ static void print_expression( bosl_ast_expression_t* e ) {
     }
     case EXPRESSION_LOAD: {
       fprintf(
-        stdout, "(load %.*s)",
+        stdout, "(load %*.*s)",
+        ( int )e->load->name->length,
         ( int )e->load->name->length,
         e->load->name->start
       );
@@ -1563,7 +1566,8 @@ static void print_expression( bosl_ast_expression_t* e ) {
     }
     case EXPRESSION_POINTER: {
       fprintf(
-        stdout, "(p %.*s)",
+        stdout, "(p %*.*s)",
+        ( int )e->load->name->length,
         ( int )e->load->name->length,
         e->load->name->start
       );
@@ -1585,7 +1589,8 @@ static void print_expression( bosl_ast_expression_t* e ) {
           break;
         case EXPRESSION_LITERAL_TYPE_STRING:
           fprintf(
-            stdout, "%.*s",
+            stdout, "%*.*s",
+            ( int )e->literal->size,
             ( int )e->literal->size,
             ( char* )e->literal->value
           );
@@ -1620,7 +1625,8 @@ static void print_expression( bosl_ast_expression_t* e ) {
     case EXPRESSION_LOGICAL: {
       // opening block
       fprintf(
-        stdout, "(%.*s ",
+        stdout, "(%*.*s ",
+        ( int )e->logical->operator->length,
         ( int )e->logical->operator->length,
         e->logical->operator->start
       );
@@ -1635,7 +1641,8 @@ static void print_expression( bosl_ast_expression_t* e ) {
     case EXPRESSION_UNARY: {
       // opening block
       fprintf(
-        stdout, "(%.*s ",
+        stdout, "(%*.*s ",
+        ( int )e->unary->operator->length,
         ( int )e->unary->operator->length,
         e->unary->operator->start
       );
@@ -1647,7 +1654,8 @@ static void print_expression( bosl_ast_expression_t* e ) {
     }
     case EXPRESSION_VARIABLE: {
       fprintf(
-        stdout, "%*.s",
+        stdout, "%*.*s",
+        ( int )e->variable->name->length,
         ( int )e->variable->name->length,
         e->variable->name->start
       );
@@ -1666,7 +1674,8 @@ static void print_statement( bosl_ast_statement_t* s ) {
     case STATEMENT_FUNCTION: {
       // opening block
       fprintf(
-        stdout, "(fn %.*s (",
+        stdout, "(fn %*.*s (",
+        ( int )s->function->token->length,
         ( int )s->function->token->length,
         s->function->token->start
       );
@@ -1677,9 +1686,9 @@ static void print_statement( bosl_ast_statement_t* s ) {
         }
         bosl_ast_statement_parameter_t* p = c->data;
         fprintf(
-          stdout, "%.*s:%.*s",
-          ( int )p->name->length, p->name->start,
-          ( int )p->type->length, p->type->start
+          stdout, "%*.*s:%*.*s",
+          ( int )p->name->length, ( int )p->name->length, p->name->start,
+          ( int )p->type->length, ( int )p->name->length, p->type->start
         );
       }
       // close parameter parenthesis
@@ -1709,7 +1718,8 @@ static void print_statement( bosl_ast_statement_t* s ) {
     case STATEMENT_VARIABLE: {
       // opening block
       fprintf(
-        stdout, "(let %.*s",
+        stdout, "(let %*.*s",
+        ( int )s->variable->name->length,
         ( int )s->variable->name->length,
         s->variable->name->start
       );
@@ -1725,7 +1735,8 @@ static void print_statement( bosl_ast_statement_t* s ) {
     case STATEMENT_CONST: {
       // opening block
       fprintf(
-        stdout, "(const %.*s = ",
+        stdout, "(const %*.*s = ",
+        ( int )s->constant->name->length,
         ( int )s->constant->name->length,
         s->constant->name->start
       );
@@ -1806,7 +1817,8 @@ static void print_statement( bosl_ast_statement_t* s ) {
     case STATEMENT_POINTER: {
       // opening block
       fprintf(
-        stdout, "(p %.*s ",
+        stdout, "(p %*.*s ",
+        ( int )s->pointer->name->length,
         ( int )s->pointer->name->length,
         s->pointer->name->start
       );

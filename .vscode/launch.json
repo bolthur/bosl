@@ -5,9 +5,9 @@
       "name": "build and debug cli",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/cli/.libs/bosl",
-      "args": [ "-a", "${workspaceFolder}/bosl-example/print.bosl" ],
-      "stopAtEntry": true,
+      "program": "${workspaceFolder}/build/cli/bosl",
+      "args": [ "${workspaceFolder}/bosl-example/fibonacci.bosl" ],
+      "stopAtEntry": false,
       "cwd": "${workspaceFolder}/build/cli",
       "environment": [
         { "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/build/library/lib/.libs" }

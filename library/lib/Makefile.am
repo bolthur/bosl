@@ -5,6 +5,7 @@ collectionincludedir = $(pkgincludedir)/collection
 astincludedir = $(pkgincludedir)/ast
 
 pkginclude_HEADERS = \
+  environment.h \
   error.h \
   interpreter.h \
   parser.h \
@@ -27,6 +28,7 @@ libbosl_la_SOURCES = \
   ast/common.c \
   ast/expression.c \
   ast/statement.c \
+  environment.c \
   error.c \
   interpreter.c \
   parser.c \

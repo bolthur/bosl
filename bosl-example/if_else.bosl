@@ -1,0 +1,34 @@
+
+// if ( true ) {
+//   print( "if" );
+// } else {
+//   print( "else" );
+// }
+
+if ( true ) {
+  print( "true" );
+}
+
+if ( true == true ) {
+  print( "true == true" );
+}
+
+if ( true != false ) {
+  print( "true != false" );
+}
+
+if ( true == false ) {
+  print( "if true == false" );
+} else {
+  print( "else true == false" );
+}
+
+if ( ! false ) {
+  print( "! false is true" );
+}
+
+if ( 1 == 2 ) {
+  print( "if" );
+} else {
+  print( "else" );
+}

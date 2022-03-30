@@ -22,6 +22,8 @@
 #include <string.h>
 #include "hashmap.h"
 
+static void default_cleanup( __unused void* a ) {}
+
 /**
  * @brief Helper to generate a hash of key using Jenkin's one_at_a_time
  *
@@ -55,7 +57,7 @@ static size_t hashmap_generate_hash( const char* key ) {
  *
  * @return Allocated new hashmap or NULL on error
  */
-hashmap_table_t* hashmap_construct( void ) {
+hashmap_table_t* hashmap_construct( hashmap_entry_cleanup_t cleanup ) {
   // allocate hashmap table
   hashmap_table_t* table = malloc( sizeof( *table  ) );
   if ( ! table ) {
@@ -70,6 +72,7 @@ hashmap_table_t* hashmap_construct( void ) {
     free( table );
     return NULL;
   }
+  table->cleanup = cleanup ? cleanup : default_cleanup;
   // return built table
   return table;
 }
@@ -85,6 +88,10 @@ void hashmap_destruct( hashmap_table_t* table ) {
     // free key
     if ( table->entries[ idx ].key ) {
       free( ( void* )table->entries[ idx ].key );
+    }
+    // free value
+    if ( table->entries[ idx ].value ) {
+      table->cleanup( table->entries[ idx ].value );
     }
   }
   // free entries and finally table
@@ -205,6 +212,70 @@ const char* hashmap_value_set(
   strcpy( new_key, key );
   // push back data
   table->entries[ index ].key = new_key;
+  table->entries[ index ].value = value;
+  // increase length
+  table->length++;
+  // return new key
+  return table->entries[ index ].key;
+}
+
+/**
+ * @brief Set a value in hashmap
+ *
+ * @param table
+ * @param key
+ * @param len
+ * @param value
+ * @return
+ */
+const char* hashmap_value_nset(
+  hashmap_table_t* table,
+  const char* key,
+  size_t len,
+  void* value
+) {
+  // expand table if limit reached
+  if ( table->length >= table->capacity ) {
+    // FIXME: EXPAND
+    return NULL;
+  }
+  // get key length
+  size_t key_len = len + 1;
+
+  // allocate temporary
+  char* tmp = malloc( sizeof( char ) * key_len );
+  if ( ! tmp ) {
+    return NULL;
+  }
+  // clear out
+  memset( tmp, 0, sizeof( char ) * key_len );
+  // copy content
+  strncpy( tmp, key, len );
+
+  // generate hash and index
+  size_t hash = hashmap_generate_hash( tmp );
+  size_t index = hash & ( table->capacity - 1 );
+  // loop until empty entry was found
+  while ( table->entries[ index ].key ) {
+    // update if already exists
+    if ( ! strcmp( tmp, table->entries[ index ].key ) ) {
+      // cleanup key if cleanup is provided
+      table->cleanup( table->entries[ index ].value );
+      // set new value
+      table->entries[ index ].value = value;
+      // free temporary
+      free( tmp );
+      // return key
+      return table->entries[ index ].key;
+    }
+    // increment if key wasn't in slot and check for end reached
+    if ( ++index >= table->capacity ) {
+      index = 0;
+    }
+  }
+
+  // push back data
+  table->entries[ index ].key = tmp;
   table->entries[ index ].value = value;
   // increase length
   table->length++;

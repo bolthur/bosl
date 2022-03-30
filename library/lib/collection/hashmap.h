@@ -30,6 +30,8 @@ typedef struct hashmap_entry hashmap_entry_t;
 typedef struct hashmap_table hashmap_table_t;
 typedef struct hashmap_iterator hashmap_iterator_t;
 
+typedef void ( *hashmap_entry_cleanup_t )( void* a );
+
 struct hashmap_entry {
   const char* key;
   void* value;
@@ -39,6 +41,7 @@ struct hashmap_table {
   hashmap_entry_t* entries;
   size_t capacity;
   size_t length;
+  hashmap_entry_cleanup_t cleanup;
 };
 
 struct hashmap_iterator {
@@ -50,11 +53,12 @@ struct hashmap_iterator {
   size_t _index;
 };
 
-hashmap_table_t* hashmap_construct( void );
+hashmap_table_t* hashmap_construct( hashmap_entry_cleanup_t );
 void hashmap_destruct( hashmap_table_t* );
 void* hashmap_value_get( hashmap_table_t*, const char* );
 void* hashmap_value_nget( hashmap_table_t*, const char*, size_t len );
 const char* hashmap_value_set( hashmap_table_t*, const char*, void* );
+const char* hashmap_value_nset( hashmap_table_t*, const char*, size_t, void* );
 size_t hashmap_length( hashmap_table_t* );
 hashmap_iterator_t hashmap_iterator( hashmap_table_t* );
 bool hashmap_next( hashmap_iterator_t* );

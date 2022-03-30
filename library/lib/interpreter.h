@@ -22,9 +22,11 @@
 #if defined( _COMPILING_BOSL )
   #include "collection/list.h"
   #include "ast/statement.h"
+  typedef struct bosl_environment bosl_environment_t;
 #else
   #include <bosl/collection/list.h>
   #include <bosl/ast/statement.h>
+  typedef struct bosl_environment bosl_environment_t;
 #endif
 
 #if ! defined( _BOSL_INTERPRETER_H )
@@ -34,7 +36,7 @@ typedef bosl_ast_statement_t* ( *interpreter_previous_t )( void );
 typedef bosl_ast_statement_t* ( *interpreter_current_t )( void );
 typedef bosl_ast_statement_t* ( *interpreter_next_t )( void );
 
-typedef enum {
+typedef enum bosl_interpreter_object_type {
   INTERPRETER_OBJECT_FLOAT,
   INTERPRETER_OBJECT_INT_SIGNED,
   INTERPRETER_OBJECT_INT_UNSIGNED,
@@ -45,18 +47,20 @@ typedef enum {
   INTERPRETER_OBJECT_NULL,
 } bosl_interpreter_object_type_t;
 
-typedef struct {
+typedef struct bosl_interpreter_object {
   bosl_interpreter_object_type_t type;
   void* data;
   size_t size;
+  bool environment;
 } bosl_interpreter_object_t;
 
-typedef struct {
+typedef struct bosl_interpreter {
   interpreter_previous_t previous;
   interpreter_current_t current;
   interpreter_next_t next;
 
   bool error;
+  bosl_environment_t* env;
 
   list_manager_t* _ast;
   list_item_t* _current;
@@ -65,5 +69,7 @@ typedef struct {
 bool bosl_interpreter_init( list_manager_t* );
 void bosl_interpreter_free( void );
 bool bosl_interpreter_run( void );
-
+void bosl_interpreter_destroy_object( bosl_interpreter_object_t*);
+bosl_interpreter_object_t* bosl_interpreter_allocate_object(
+  bosl_interpreter_object_type_t, void*, size_t );
 #endif

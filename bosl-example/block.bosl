@@ -1,0 +1,22 @@
+
+let a: uint32;
+let b: uint32 = 5;
+let c: uint32 = 10;
+
+print( a );
+print( b + c );
+print( b );
+print( c );
+
+{
+  print( "block" );
+  let d: uint32 = 1337;
+  print( d );
+}
+// print( d );
+
+b = 20;
+c = 15;
+print( b + c );
+print( b );
+print( c );

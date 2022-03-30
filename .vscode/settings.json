@@ -15,6 +15,7 @@
   "C_Cpp.autoAddFileAssociations": false,
   "files.associations": {
     "*.h": "c",
-    "*.c": "c"
+    "*.c": "c",
+    "*.bosl": "javascript"
   },
 }
