@@ -1344,7 +1344,7 @@ static bosl_object_t* execute_function(
   list_manager_t* parameter
 ) {
   // create new closure environment
-  bosl_environment_t* closure = bosl_environment_init( interpreter->env );
+  bosl_environment_t* closure = bosl_environment_init( interpreter->global );
   if ( ! closure ) {
     raise_error( NULL, "Unable to allocate closure for function execution." );
     return NULL;
@@ -1450,6 +1450,7 @@ bool bosl_interpreter_init( list_manager_t* ast ) {
     return false;
   }
   // populate
+  interpreter->global = interpreter->env;
   interpreter->_ast = ast;
   interpreter->_current = ast->first;
   interpreter->current = current;

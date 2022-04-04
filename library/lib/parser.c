@@ -904,6 +904,11 @@ static bosl_ast_node_t* statement_print( void ) {
  * @return
  */
 static bosl_ast_node_t* statement_return( void ) {
+  // handle return not in function
+  if ( ! parser->_in_function ) {
+    bosl_error_raise( parser->current(), "Return is only in functions allowed" );
+    return NULL;
+  }
   // get keyword
   bosl_token_t* keyword = parser->previous();
   // default no return
@@ -1261,6 +1266,13 @@ static bosl_ast_node_t* declaration_let( void ) {
  * @return
  */
 static bosl_ast_node_t* declaration_function( void ) {
+  // handle function in function
+  if ( parser->_in_function ) {
+    bosl_error_raise( parser->current(), "Function in function is not allowed" );
+    return NULL;
+  }
+  // set flag
+  parser->_in_function = true;
   // cache function name
   bosl_token_t* name = consume( TOKEN_IDENTIFIER, "Expect function name." );
   // expect function name
@@ -1394,6 +1406,8 @@ static bosl_ast_node_t* declaration_function( void ) {
   }
   // populate node
   node->statement = f;
+  // reset flag
+  parser->_in_function = true;
   // finally return it
   return node;
 }
@@ -1447,6 +1461,7 @@ bool bosl_parser_init( list_manager_t* token ) {
   // push in token list and set current to first element
   parser->_token = token;
   parser->_current = token->first;
+  parser->_in_function = false;
   // push back convenience helper
   parser->current = current;
   parser->next = next;

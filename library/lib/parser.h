@@ -42,6 +42,8 @@ typedef struct {
   list_manager_t* ast;
   list_manager_t* _token;
   list_item_t* _current;
+
+  bool _in_function;
 } bosl_parser_t;
 
 bool bosl_parser_init( list_manager_t* );

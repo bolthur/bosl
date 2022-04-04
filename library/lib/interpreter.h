@@ -43,6 +43,7 @@ typedef struct bosl_interpreter {
 
   bool error;
   bosl_environment_t* env;
+  bosl_environment_t* global;
 
   list_manager_t* _ast;
   list_item_t* _current;
