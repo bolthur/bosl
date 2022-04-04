@@ -22,11 +22,11 @@
 #if defined( _COMPILING_BOSL )
   #include "collection/hashmap.h"
   #include "scanner.h"
-  #include "interpreter.h"
+  #include "object.h"
 #else
   #include <bosl/collection/hashmap.h>
   #include <bosl/scanner.h>
-  #include <bosl/interpreter.h>
+  #include <bosl/object.h>
 #endif
 
 #if ! defined( _BOSL_ENVIRONMENT_H )
@@ -41,11 +41,8 @@ typedef struct bosl_environment {
 
 bosl_environment_t* bosl_environment_init( bosl_environment_t* );
 void bosl_environment_free( bosl_environment_t* );
-bool bosl_environment_push_value(
-  bosl_environment_t*, bosl_token_t*, bosl_interpreter_object_t* );
-bosl_interpreter_object_t* bosl_environment_get_value(
-  bosl_environment_t*, bosl_token_t* );
-bool bosl_environment_assign_value(
-  bosl_environment_t*, bosl_token_t*, bosl_interpreter_object_t* );
+bool bosl_environment_push_value( bosl_environment_t*, bosl_token_t*, bosl_object_t* );
+bosl_object_t* bosl_environment_get_value( bosl_environment_t*, bosl_token_t* );
+bool bosl_environment_assign_value( bosl_environment_t*, bosl_token_t*, bosl_object_t* );
 
 #endif

@@ -1,0 +1,13 @@
+
+// fibonnaci as recursive function
+fn fibonacci( n: uint32 ): uint32 {
+  // recursive anchor
+  if ( 1 >= n ) {
+    return n;
+  }
+  // calculate
+  return fibonacci( n - 1 ) + fibonacci( n - 2 );
+}
+
+let n: uint32 = 9;
+print( fibonacci( n ) ); // shall print 34

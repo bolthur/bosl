@@ -27,9 +27,11 @@
 #include "interpreter.h"
 #include "error.h"
 #include "environment.h"
+#include "object.h"
 
 // necessary forward declarations
-static bosl_interpreter_object_t* evaluate_expression( bosl_ast_expression_t* );
+static bosl_object_t* evaluate_expression( bosl_ast_expression_t* );
+static bosl_object_t* execute_function( bosl_object_t*, list_manager_t* );
 
 static bosl_interpreter_t* interpreter = NULL;
 
@@ -68,7 +70,7 @@ static bosl_ast_statement_t* next( void ) {
  *
  * @param object
  */
-static void destroy_object( bosl_interpreter_object_t* object ) {
+static void destroy_object( bosl_object_t* object ) {
   // handle invalid object passed
   if ( ! object ) {
     return;
@@ -78,7 +80,23 @@ static void destroy_object( bosl_interpreter_object_t* object ) {
     return;
   }
   // free object
-  bosl_interpreter_destroy_object( object );
+  bosl_object_destroy( object );
+}
+
+/**
+ * @brief Object list cleanup helper
+ *
+ * @param item
+ */
+static void object_list_cleanup( list_item_t* item ) {
+  if ( ! item ) {
+    return;
+  }
+  if ( ! item->data ) {
+    return;
+  }
+  destroy_object( item->data );
+  list_default_cleanup( item );
 }
 
 /**
@@ -98,30 +116,36 @@ static void raise_error( bosl_token_t* token, const char* message ) {
  * @param object
  * @return
  */
-static char* stringify( bosl_interpreter_object_t* object ) {
+static char* stringify( bosl_object_t* object ) {
   const char* buffer;
   // determine buffer size
   size_t buffer_size = sizeof( char );
   if (
-    INTERPRETER_OBJECT_FLOAT == object->type
-    || INTERPRETER_OBJECT_INT_SIGNED == object->type
-    || INTERPRETER_OBJECT_INT_UNSIGNED == object->type
-    || INTERPRETER_OBJECT_HEX_SIGNED == object->type
-    || INTERPRETER_OBJECT_HEX_UNSIGNED == object->type
+    OBJECT_VALUE_FLOAT == object->value_type
+    || OBJECT_VALUE_INT_SIGNED == object->value_type
+    || OBJECT_VALUE_INT_UNSIGNED == object->value_type
+    || OBJECT_VALUE_HEX_SIGNED == object->value_type
+    || OBJECT_VALUE_HEX_UNSIGNED == object->value_type
   ) {
     buffer_size *= 100;
   } else if (
-    INTERPRETER_OBJECT_BOOL == object->type
+    OBJECT_VALUE_BOOL == object->value_type
   ) {
     buffer_size *= 6;
   } else if (
-    INTERPRETER_OBJECT_NULL == object->type
+    OBJECT_VALUE_NULL == object->value_type
   ) {
     buffer_size *= 5;
   } else if (
-    INTERPRETER_OBJECT_STRING == object->type
+    OBJECT_VALUE_STRING == object->value_type
   ) {
     buffer_size *= ( object->size + 1 );
+  } else if (
+    OBJECT_VALUE_CALLABLE == object->value_type
+  ) {
+    buffer_size =
+      ( ( bosl_object_callable_t* )object->data )->statement->token->length
+      + 6;
   }
   // allocate buffer
   buffer = malloc( buffer_size );
@@ -129,34 +153,40 @@ static char* stringify( bosl_interpreter_object_t* object ) {
     return NULL;
   }
   memset( buffer, 0, buffer_size );
-  if ( INTERPRETER_OBJECT_FLOAT == object->type ) {
+  if ( OBJECT_VALUE_FLOAT == object->value_type ) {
     long double num;
     memcpy( &num, object->data, sizeof( num ) );
     sprintf( buffer, "%Lf", num );
-  } else if ( INTERPRETER_OBJECT_INT_SIGNED == object->type ) {
+  } else if ( OBJECT_VALUE_INT_SIGNED == object->value_type ) {
     int64_t num;
     memcpy( &num, object->data, sizeof( num ) );
     sprintf( buffer, "%"PRId64, num );
-  } else if ( INTERPRETER_OBJECT_INT_UNSIGNED == object->type ) {
+  } else if ( OBJECT_VALUE_INT_UNSIGNED == object->value_type ) {
     uint64_t num;
     memcpy( &num, object->data, sizeof( num ) );
     sprintf( buffer, "%"PRIu64, num );
-  } else if ( INTERPRETER_OBJECT_HEX_SIGNED == object->type ) {
+  } else if ( OBJECT_VALUE_HEX_SIGNED == object->value_type ) {
     int64_t num;
     memcpy( &num, object->data, sizeof( num ) );
     sprintf( buffer, "%"PRIx64, num );
-  } else if ( INTERPRETER_OBJECT_HEX_UNSIGNED == object->type ) {
+  } else if ( OBJECT_VALUE_HEX_UNSIGNED == object->value_type ) {
     uint64_t num;
     memcpy( &num, object->data, sizeof( num ) );
     sprintf( buffer, "%"PRIx64, num );
-  } else if ( INTERPRETER_OBJECT_BOOL == object->type ) {
+  } else if ( OBJECT_VALUE_BOOL == object->value_type ) {
     bool flag;
     memcpy( &flag, object->data, sizeof( flag ) );
     sprintf( buffer, "%s", flag ? "true": "false" );
-  } else if ( INTERPRETER_OBJECT_STRING == object->type ) {
+  } else if ( OBJECT_VALUE_STRING == object->value_type ) {
     strncpy( buffer, object->data, object->size );
-  } else if ( INTERPRETER_OBJECT_NULL == object->type ) {
+  } else if ( OBJECT_VALUE_NULL == object->value_type ) {
     sprintf( buffer, "null" );
+  } else if ( OBJECT_VALUE_CALLABLE == object->value_type ) {
+    bosl_token_t* token = ( ( bosl_object_callable_t* )object->data )
+      ->statement->token;
+    sprintf(
+      buffer, "<fn %*.*s>", ( int )token->length,
+      ( int )token->length, token->start );
   }
   // return buffer
   return buffer;
@@ -168,8 +198,8 @@ static char* stringify( bosl_interpreter_object_t* object ) {
  * @param object
  * @return
  */
-static bosl_interpreter_object_t* object_truthy(
-  bosl_interpreter_object_t* object,
+static bosl_object_t* object_truthy(
+  bosl_object_t* object,
   bool negotiate
 ) {
   // handle invalid
@@ -179,10 +209,10 @@ static bosl_interpreter_object_t* object_truthy(
   }
   bool flag = true;
   // handle null
-  if ( INTERPRETER_OBJECT_NULL == object->type ) {
+  if ( OBJECT_VALUE_NULL == object->value_type ) {
     flag = false;
   // evaluate boolean
-  } else if ( INTERPRETER_OBJECT_BOOL == object->type ) {
+  } else if ( OBJECT_VALUE_BOOL == object->value_type ) {
     flag = *( ( bool* )( object->data ) );
   }
   // handle negotiation
@@ -190,8 +220,8 @@ static bosl_interpreter_object_t* object_truthy(
     flag = ! flag;
   }
   // build and return object
-  return bosl_interpreter_allocate_object(
-    INTERPRETER_OBJECT_BOOL,
+  return bosl_object_allocate(
+    OBJECT_VALUE_BOOL,
     &flag,
     sizeof( flag )
   );
@@ -205,9 +235,9 @@ static bosl_interpreter_object_t* object_truthy(
  * @param negotiate
  * @return
  */
-static bosl_interpreter_object_t* object_equal(
-  bosl_interpreter_object_t* left,
-  bosl_interpreter_object_t* right,
+static bosl_object_t* object_equal(
+  bosl_object_t* left,
+  bosl_object_t* right,
   bool negotiate
 ) {
   // handle invalid
@@ -218,13 +248,13 @@ static bosl_interpreter_object_t* object_equal(
   bool flag = false;
   // handle both null
   if (
-    INTERPRETER_OBJECT_NULL == left->type
-    && INTERPRETER_OBJECT_NULL == right->type
+    OBJECT_VALUE_NULL == left->value_type
+    && OBJECT_VALUE_NULL == right->value_type
   ) {
     flag = true;
   // handle comparison
-  } else if ( left->type == right->type ) {
-    if ( INTERPRETER_OBJECT_BOOL == left->type ) {
+  } else if ( left->value_type == right->value_type ) {
+    if ( OBJECT_VALUE_BOOL == left->value_type ) {
       flag = *( ( bool* )( left->data ) ) == *( ( bool* )( right->data ) );
     } else {
       flag = 0 == memcmp(
@@ -241,8 +271,8 @@ static bosl_interpreter_object_t* object_equal(
     flag = ! flag;
   }
   // return result
-  return bosl_interpreter_allocate_object(
-    INTERPRETER_OBJECT_BOOL,
+  return bosl_object_allocate(
+    OBJECT_VALUE_BOOL,
     &flag,
     sizeof( flag )
   );
@@ -258,27 +288,27 @@ static bosl_interpreter_object_t* object_equal(
  * @return
  */
 static bool extract_number(
-  bosl_interpreter_object_t* object,
+  bosl_object_t* object,
   uint64_t* unum,
   int64_t* num,
   long double* dnum
 ) {
   // only numbers are handled here
-  if ( object->type > INTERPRETER_OBJECT_HEX_UNSIGNED ) {
+  if ( object->value_type > OBJECT_VALUE_HEX_UNSIGNED ) {
     raise_error( NULL, "Invalid object passed to extract_number." );
     return false;
   }
   // extract numbers
-  switch ( object->type ) {
-    case INTERPRETER_OBJECT_FLOAT:
+  switch ( object->value_type ) {
+    case OBJECT_VALUE_FLOAT:
       memcpy( dnum, object->data, object->size );
       break;
-    case INTERPRETER_OBJECT_INT_UNSIGNED:
-    case INTERPRETER_OBJECT_HEX_UNSIGNED:
+    case OBJECT_VALUE_INT_UNSIGNED:
+    case OBJECT_VALUE_HEX_UNSIGNED:
       memcpy( unum, object->data, object->size );
       break;
-    case INTERPRETER_OBJECT_INT_SIGNED:
-    case INTERPRETER_OBJECT_HEX_SIGNED:
+    case OBJECT_VALUE_INT_SIGNED:
+    case OBJECT_VALUE_HEX_SIGNED:
       memcpy( num, object->data, object->size );
       break;
     default:
@@ -290,52 +320,27 @@ static bool extract_number(
 }
 
 /**
- * @brief Duplicate an object if from environment
- *
- * @param obj
- * @return
- */
-static bosl_interpreter_object_t* duplicate_if_environment(
-  bosl_interpreter_object_t* obj
-) {
-  // handle invalid pointer
-  if ( ! obj ) {
-    return NULL;
-  }
-  // no duplication necessary if not from environment
-  if ( ! obj->environment ) {
-    return obj;
-  }
-  // return duplicate
-  return bosl_interpreter_allocate_object(
-    obj->type,
-    obj->data,
-    obj->size
-  );
-}
-
-/**
  * @brief Helper to evaluate binary
  *
  * @param b
  * @return
  */
-static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
+static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
   // evaluate left
-  bosl_interpreter_object_t* left = evaluate_expression( b->left );
+  bosl_object_t* left = evaluate_expression( b->left );
   if ( ! left ) {
     raise_error( b->operator, "Unable to evaluate left expression" );
     return NULL;
   }
   // evaluate right
-  bosl_interpreter_object_t* right = evaluate_expression( b->right );
+  bosl_object_t* right = evaluate_expression( b->right );
   if ( ! right ) {
     raise_error( b->operator, "Unable to evaluate right expression" );
     destroy_object( left );
     return NULL;
   }
   // flag indicating different types
-  bool same_type = left->type == right->type;
+  bool same_type = left->value_type == right->value_type;
   // enforce same type and number
   if (
     TOKEN_BANG_EQUAL != b->operator->type
@@ -344,17 +349,17 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
   ) {
     // change right if left is signed
     if (
-      INTERPRETER_OBJECT_HEX_SIGNED == left->type
-      || INTERPRETER_OBJECT_INT_SIGNED == left->type
+      OBJECT_VALUE_HEX_SIGNED == left->value_type
+      || OBJECT_VALUE_INT_SIGNED == left->value_type
     ) {
-      right->type = left->type;
+      right->value_type = left->value_type;
       same_type = true;
     // change left if right is signed
     } else if (
-      INTERPRETER_OBJECT_HEX_SIGNED == right->type
-      || INTERPRETER_OBJECT_INT_SIGNED == right->type
+      OBJECT_VALUE_HEX_SIGNED == right->value_type
+      || OBJECT_VALUE_INT_SIGNED == right->value_type
     ) {
-      left->type = right->type;
+      left->value_type = right->value_type;
       same_type = true;
     } else {
       raise_error( b->operator, "Different types for binary." );
@@ -389,25 +394,25 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
   // apply operator
   if ( TOKEN_MINUS == b->operator->type ) {
     // save type and destroy objects
-    bosl_interpreter_object_type_t type = left->type;
+    bosl_object_value_type_t type = left->value_type;
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == INTERPRETER_OBJECT_FLOAT ) {
+    if ( type == OBJECT_VALUE_FLOAT ) {
       long double result = ldnum - rdnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_FLOAT,
+      return bosl_object_allocate(
+        OBJECT_VALUE_FLOAT,
         &result,
         sizeof( result )
       );
     }
     // handle unsigned int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_UNSIGNED
-      || type == INTERPRETER_OBJECT_HEX_UNSIGNED
+      type == OBJECT_VALUE_INT_UNSIGNED
+      || type == OBJECT_VALUE_HEX_UNSIGNED
     ) {
       uint64_t result = lunum - runum;
-      return bosl_interpreter_allocate_object(
+      return bosl_object_allocate(
         type,
         &result,
         sizeof( result )
@@ -415,11 +420,11 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
     }
     // handle signed int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_SIGNED
-      || type == INTERPRETER_OBJECT_HEX_SIGNED
+      type == OBJECT_VALUE_INT_SIGNED
+      || type == OBJECT_VALUE_HEX_SIGNED
     ) {
       int64_t result = lsnum - rsnum;
-      return bosl_interpreter_allocate_object(
+      return bosl_object_allocate(
         type,
         &result,
         sizeof( result )
@@ -430,25 +435,25 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
     return NULL;
   } else if ( TOKEN_PLUS == b->operator->type ) {
     // save type and destroy objects
-    bosl_interpreter_object_type_t type = left->type;
+    bosl_object_value_type_t type = left->value_type;
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == INTERPRETER_OBJECT_FLOAT ) {
+    if ( type == OBJECT_VALUE_FLOAT ) {
       long double result = ldnum + rdnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_FLOAT,
+      return bosl_object_allocate(
+        OBJECT_VALUE_FLOAT,
         &result,
         sizeof( result )
       );
     }
     // handle unsigned int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_UNSIGNED
-      || type == INTERPRETER_OBJECT_HEX_UNSIGNED
+      type == OBJECT_VALUE_INT_UNSIGNED
+      || type == OBJECT_VALUE_HEX_UNSIGNED
     ) {
       uint64_t result = lunum + runum;
-      return bosl_interpreter_allocate_object(
+      return bosl_object_allocate(
         type,
         &result,
         sizeof( result )
@@ -456,11 +461,11 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
     }
     // handle signed int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_SIGNED
-      || type == INTERPRETER_OBJECT_HEX_SIGNED
+      type == OBJECT_VALUE_INT_SIGNED
+      || type == OBJECT_VALUE_HEX_SIGNED
     ) {
       int64_t result = lsnum + rsnum;
-      return bosl_interpreter_allocate_object(
+      return bosl_object_allocate(
         type,
         &result,
         sizeof( result )
@@ -471,25 +476,25 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
     return NULL;
   } else if ( TOKEN_SLASH == b->operator->type ) {
     // save type and destroy objects
-    bosl_interpreter_object_type_t type = left->type;
+    bosl_object_value_type_t type = left->value_type;
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == INTERPRETER_OBJECT_FLOAT ) {
+    if ( type == OBJECT_VALUE_FLOAT ) {
       long double result = ldnum / rdnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_FLOAT,
+      return bosl_object_allocate(
+        OBJECT_VALUE_FLOAT,
         &result,
         sizeof( result )
       );
     }
     // handle unsigned int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_UNSIGNED
-      || type == INTERPRETER_OBJECT_HEX_UNSIGNED
+      type == OBJECT_VALUE_INT_UNSIGNED
+      || type == OBJECT_VALUE_HEX_UNSIGNED
     ) {
       uint64_t result = lunum / runum;
-      return bosl_interpreter_allocate_object(
+      return bosl_object_allocate(
         type,
         &result,
         sizeof( result )
@@ -497,11 +502,11 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
     }
     // handle signed int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_SIGNED
-      || type == INTERPRETER_OBJECT_HEX_SIGNED
+      type == OBJECT_VALUE_INT_SIGNED
+      || type == OBJECT_VALUE_HEX_SIGNED
     ) {
       int64_t result = lsnum / rsnum;
-      return bosl_interpreter_allocate_object(
+      return bosl_object_allocate(
         type,
         &result,
         sizeof( result )
@@ -512,25 +517,25 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
     return NULL;
   } else if ( TOKEN_STAR == b->operator->type ) {
     // save type and destroy objects
-    bosl_interpreter_object_type_t type = left->type;
+    bosl_object_value_type_t type = left->value_type;
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == INTERPRETER_OBJECT_FLOAT ) {
+    if ( type == OBJECT_VALUE_FLOAT ) {
       long double result = ldnum * rdnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_FLOAT,
+      return bosl_object_allocate(
+        OBJECT_VALUE_FLOAT,
         &result,
         sizeof( result )
       );
     }
     // handle unsigned int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_UNSIGNED
-      || type == INTERPRETER_OBJECT_HEX_UNSIGNED
+      type == OBJECT_VALUE_INT_UNSIGNED
+      || type == OBJECT_VALUE_HEX_UNSIGNED
     ) {
       uint64_t result = lunum * runum;
-      return bosl_interpreter_allocate_object(
+      return bosl_object_allocate(
         type,
         &result,
         sizeof( result )
@@ -538,11 +543,11 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
     }
     // handle signed int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_SIGNED
-      || type == INTERPRETER_OBJECT_HEX_SIGNED
+      type == OBJECT_VALUE_INT_SIGNED
+      || type == OBJECT_VALUE_HEX_SIGNED
     ) {
       int64_t result = lsnum * rsnum;
-      return bosl_interpreter_allocate_object(
+      return bosl_object_allocate(
         type,
         &result,
         sizeof( result )
@@ -553,135 +558,135 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
     return NULL;
   } else if ( TOKEN_GREATER == b->operator->type ) {
     // save type and destroy objects
-    bosl_interpreter_object_type_t type = left->type;
+    bosl_object_value_type_t type = left->value_type;
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == INTERPRETER_OBJECT_FLOAT ) {
+    if ( type == OBJECT_VALUE_FLOAT ) {
       bool result = ldnum > rdnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_UNSIGNED
-      || type == INTERPRETER_OBJECT_HEX_UNSIGNED
+      type == OBJECT_VALUE_INT_UNSIGNED
+      || type == OBJECT_VALUE_HEX_UNSIGNED
     ) {
       bool result = lunum > runum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_SIGNED
-      || type == INTERPRETER_OBJECT_HEX_SIGNED
+      type == OBJECT_VALUE_INT_SIGNED
+      || type == OBJECT_VALUE_HEX_SIGNED
     ) {
       bool result = lsnum > rsnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
     raise_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_GREATER_EQUAL == b->operator->type ) {
     // save type and destroy objects
-    bosl_interpreter_object_type_t type = left->type;
+    bosl_object_value_type_t type = left->value_type;
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == INTERPRETER_OBJECT_FLOAT ) {
+    if ( type == OBJECT_VALUE_FLOAT ) {
       bool result = ldnum >= rdnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_UNSIGNED
-      || type == INTERPRETER_OBJECT_HEX_UNSIGNED
+      type == OBJECT_VALUE_INT_UNSIGNED
+      || type == OBJECT_VALUE_HEX_UNSIGNED
     ) {
       bool result = lunum >= runum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_SIGNED
-      || type == INTERPRETER_OBJECT_HEX_SIGNED
+      type == OBJECT_VALUE_INT_SIGNED
+      || type == OBJECT_VALUE_HEX_SIGNED
     ) {
       bool result = lsnum >= rsnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
     raise_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_LESS == b->operator->type ) {
     // save type and destroy objects
-    bosl_interpreter_object_type_t type = left->type;
+    bosl_object_value_type_t type = left->value_type;
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == INTERPRETER_OBJECT_FLOAT ) {
+    if ( type == OBJECT_VALUE_FLOAT ) {
       bool result = ldnum < rdnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_UNSIGNED
-      || type == INTERPRETER_OBJECT_HEX_UNSIGNED
+      type == OBJECT_VALUE_INT_UNSIGNED
+      || type == OBJECT_VALUE_HEX_UNSIGNED
     ) {
       bool result = lunum < runum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_SIGNED
-      || type == INTERPRETER_OBJECT_HEX_SIGNED
+      type == OBJECT_VALUE_INT_SIGNED
+      || type == OBJECT_VALUE_HEX_SIGNED
     ) {
       bool result = lsnum < rsnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
     raise_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_LESS_EQUAL == b->operator->type ) {
     // save type and destroy objects
-    bosl_interpreter_object_type_t type = left->type;
+    bosl_object_value_type_t type = left->value_type;
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == INTERPRETER_OBJECT_FLOAT ) {
+    if ( type == OBJECT_VALUE_FLOAT ) {
       bool result = ldnum <= rdnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_UNSIGNED
-      || type == INTERPRETER_OBJECT_HEX_UNSIGNED
+      type == OBJECT_VALUE_INT_UNSIGNED
+      || type == OBJECT_VALUE_HEX_UNSIGNED
     ) {
       bool result = lunum <= runum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
     if (
-      type == INTERPRETER_OBJECT_INT_SIGNED
-      || type == INTERPRETER_OBJECT_HEX_SIGNED
+      type == OBJECT_VALUE_INT_SIGNED
+      || type == OBJECT_VALUE_HEX_SIGNED
     ) {
       bool result = lsnum <= rsnum;
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_BOOL, &result, sizeof( result ) );
+      return bosl_object_allocate(
+        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
     raise_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_BANG_EQUAL == b->operator->type ) {
     // get equality status
-    bosl_interpreter_object_t* equality = object_equal( left, right, true );
+    bosl_object_t* equality = object_equal( left, right, true );
     // destroy object
     destroy_object( left );
     destroy_object( right );
@@ -689,7 +694,7 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
     return equality;
   } else if ( TOKEN_EQUAL_EQUAL == b->operator->type ) {
     // get equality status
-    bosl_interpreter_object_t* equality = object_equal( left, right, false );
+    bosl_object_t* equality = object_equal( left, right, false );
     // destroy object
     destroy_object( left );
     destroy_object( right );
@@ -711,9 +716,9 @@ static bosl_interpreter_object_t* evaluate_binary( bosl_ast_expression_binary_t*
  * @param u
  * @return
  */
-static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
+static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
   // evaluate right
-  bosl_interpreter_object_t* right = evaluate_expression( u->right );
+  bosl_object_t* right = evaluate_expression( u->right );
   if ( ! right ) {
     raise_error( u->operator, "Unable to evaluate right expression" );
     return NULL;
@@ -721,14 +726,14 @@ static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u
   // apply operators
   if ( TOKEN_BANG == u->operator->type ) {
     // truthy flag
-    bosl_interpreter_object_t* truthy = object_truthy( right, true );
+    bosl_object_t* truthy = object_truthy( right, true );
     // free object
     destroy_object( right );
     // return result
     return truthy;
   } else if ( TOKEN_MINUS == u->operator->type ) {
     // validate type
-    if ( right->type > INTERPRETER_OBJECT_HEX_UNSIGNED ) {
+    if ( right->value_type > OBJECT_VALUE_HEX_UNSIGNED ) {
       // raise error and return NULL
       raise_error( u->operator, "Expect numeric" );
       return NULL;
@@ -743,26 +748,26 @@ static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u
       destroy_object( right );
       return NULL;
     }
-    bosl_interpreter_object_type_t type = right->type;
+    bosl_object_value_type_t type = right->value_type;
     destroy_object( right );
-    if ( INTERPRETER_OBJECT_FLOAT == type ) {
+    if ( OBJECT_VALUE_FLOAT == type ) {
       dnum = -dnum;
-      return bosl_interpreter_allocate_object( type, &dnum, sizeof( dnum ) );
+      return bosl_object_allocate( type, &dnum, sizeof( dnum ) );
     } else if (
-      INTERPRETER_OBJECT_INT_SIGNED == type
-      || INTERPRETER_OBJECT_HEX_SIGNED == type
+      OBJECT_VALUE_INT_SIGNED == type
+      || OBJECT_VALUE_HEX_SIGNED == type
     ) {
       snum = -snum;
-      return bosl_interpreter_allocate_object( type, &snum, sizeof( snum ) );
+      return bosl_object_allocate( type, &snum, sizeof( snum ) );
     } else if (
-      INTERPRETER_OBJECT_INT_UNSIGNED == type
-      || INTERPRETER_OBJECT_HEX_UNSIGNED == type
+      OBJECT_VALUE_INT_UNSIGNED == type
+      || OBJECT_VALUE_HEX_UNSIGNED == type
     ) {
       snum = -( ( int64_t )unum );
-      return bosl_interpreter_allocate_object(
-        INTERPRETER_OBJECT_INT_UNSIGNED == type
-          ? INTERPRETER_OBJECT_INT_SIGNED
-          : INTERPRETER_OBJECT_HEX_SIGNED,
+      return bosl_object_allocate(
+        OBJECT_VALUE_INT_UNSIGNED == type
+          ? OBJECT_VALUE_INT_SIGNED
+          : OBJECT_VALUE_HEX_SIGNED,
         &snum,
         sizeof( snum )
       );
@@ -773,8 +778,8 @@ static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u
   } else if ( TOKEN_PLUS == u->operator->type ) {
     // validate type
     if (
-      right->type >= INTERPRETER_OBJECT_FLOAT
-      && right->type <= INTERPRETER_OBJECT_HEX_UNSIGNED
+      right->value_type >= OBJECT_VALUE_FLOAT
+      && right->value_type <= OBJECT_VALUE_HEX_UNSIGNED
     ) {
       // raise error and return NULL
       raise_error( u->operator, "Expect numeric" );
@@ -785,8 +790,8 @@ static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u
   } else if ( TOKEN_BINARY_ONE_COMPLEMENT == u->operator->type ) {
     // validate type
     if (
-      right->type >= INTERPRETER_OBJECT_INT_SIGNED
-      && right->type <= INTERPRETER_OBJECT_HEX_UNSIGNED
+      right->value_type >= OBJECT_VALUE_INT_SIGNED
+      && right->value_type <= OBJECT_VALUE_HEX_UNSIGNED
     ) {
       // raise error and return NULL
       raise_error( u->operator, "Expect numeric integer" );
@@ -802,20 +807,20 @@ static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u
       destroy_object( right );
       return NULL;
     }
-    bosl_interpreter_object_type_t type = right->type;
+    bosl_object_value_type_t type = right->value_type;
     destroy_object( right );
     if (
-      INTERPRETER_OBJECT_INT_SIGNED == type
-      || INTERPRETER_OBJECT_HEX_SIGNED == type
+      OBJECT_VALUE_INT_SIGNED == type
+      || OBJECT_VALUE_HEX_SIGNED == type
     ) {
       snum = ~snum;
-      return bosl_interpreter_allocate_object( type, &snum, sizeof( snum ) );
+      return bosl_object_allocate( type, &snum, sizeof( snum ) );
     } else if (
-      INTERPRETER_OBJECT_INT_UNSIGNED == type
-      || INTERPRETER_OBJECT_HEX_UNSIGNED == type
+      OBJECT_VALUE_INT_UNSIGNED == type
+      || OBJECT_VALUE_HEX_UNSIGNED == type
     ) {
       unum = ~unum;
-      return bosl_interpreter_allocate_object( type, &unum, sizeof( unum ) );
+      return bosl_object_allocate( type, &unum, sizeof( unum ) );
     }
     // just return right
     raise_error( u->operator, "Runtime error unknown" );
@@ -835,34 +840,34 @@ static bosl_interpreter_object_t* evaluate_unary( bosl_ast_expression_unary_t* u
  * @param l
  * @return
  */
-static bosl_interpreter_object_t* evaluate_literal( bosl_ast_expression_literal_t* l ) {
+static bosl_object_t* evaluate_literal( bosl_ast_expression_literal_t* l ) {
   // determine type
-  bosl_interpreter_object_type_t type;
+  bosl_object_value_type_t type;
   switch ( l->type ) {
     case EXPRESSION_LITERAL_TYPE_BOOL:
-      type = INTERPRETER_OBJECT_BOOL;
+      type = OBJECT_VALUE_BOOL;
       break;
     case EXPRESSION_LITERAL_TYPE_NULL:
-      type = INTERPRETER_OBJECT_NULL;
+      type = OBJECT_VALUE_NULL;
       break;
     case EXPRESSION_LITERAL_TYPE_NUMBER_FLOAT:
-      type = INTERPRETER_OBJECT_FLOAT;
+      type = OBJECT_VALUE_FLOAT;
       break;
     case EXPRESSION_LITERAL_TYPE_NUMBER_HEX:
-      type = INTERPRETER_OBJECT_HEX_UNSIGNED;
+      type = OBJECT_VALUE_HEX_UNSIGNED;
       break;
     case EXPRESSION_LITERAL_TYPE_NUMBER_INT:
-      type = INTERPRETER_OBJECT_INT_UNSIGNED;
+      type = OBJECT_VALUE_INT_UNSIGNED;
       break;
     case EXPRESSION_LITERAL_TYPE_STRING:
-      type = INTERPRETER_OBJECT_STRING;
+      type = OBJECT_VALUE_STRING;
       break;
     default:
       raise_error( NULL, "Unsupported object type in literal." );
       return NULL;
   }
   // allocate object
-  return bosl_interpreter_allocate_object( type, l->value, l->size );
+  return bosl_object_allocate( type, l->value, l->size );
 }
 
 /**
@@ -871,12 +876,12 @@ static bosl_interpreter_object_t* evaluate_literal( bosl_ast_expression_literal_
  * @param e
  * @return
  */
-static bosl_interpreter_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
+static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
   switch ( e->type ) {
     case EXPRESSION_ASSIGN: {
       /// FIXME: CHECK WHETHER CONSTANT SHALL BE SET OR NOT
       // evaluate expression and duplicate if from environment
-      bosl_interpreter_object_t* value = duplicate_if_environment(
+      bosl_object_t* value = bosl_object_duplicate_environment(
         evaluate_expression( e->assign->value ) );
       // handle error
       if ( ! value ) {
@@ -884,7 +889,7 @@ static bosl_interpreter_object_t* evaluate_expression( bosl_ast_expression_t* e 
         return NULL;
       }
       // get current value
-      bosl_interpreter_object_t* current = bosl_environment_get_value(
+      bosl_object_t* current = bosl_environment_get_value(
         interpreter->env, e->assign->token );
       // handle error
       if ( ! current ) {
@@ -913,7 +918,85 @@ static bosl_interpreter_object_t* evaluate_expression( bosl_ast_expression_t* e 
     }
     case EXPRESSION_BINARY: return evaluate_binary( e->binary );
     case EXPRESSION_CALL: {
-      break;
+      // evaluate callee expression
+      bosl_object_t* object = evaluate_expression(
+        e->call->callee
+      );
+      // handle error
+      if ( ! object ) {
+        raise_error( e->call->paren, "Unable to evaluate callee expression." );
+        return NULL;
+      }
+      // handle not a callable
+      if ( OBJECT_VALUE_CALLABLE != object->value_type ) {
+        raise_error( e->call->paren, "Not a callable function." );
+        return NULL;
+      }
+      // extract callee information
+      bosl_object_callable_t* callee = object->data;
+      // build list of arguments
+      list_manager_t* argument_list = list_construct(
+        NULL, object_list_cleanup, NULL );
+      if ( ! argument_list ) {
+        raise_error( e->call->paren, "Unable to allocate list for arguments." );
+        destroy_object( object );
+        return NULL;
+      }
+      // evaluate arguments
+      for (
+        list_item_t* current = e->call->arguments->first;
+        current;
+        current = current->next
+      ) {
+        // evaluate argument
+        bosl_object_t* argument = evaluate_expression( current->data );
+        if ( ! argument ) {
+          raise_error(
+            e->call->paren, "Unable to evaluate parameter expression." );
+          list_destruct( argument_list );
+          destroy_object( object );
+          return NULL;
+        }
+        argument = bosl_object_duplicate_environment( argument );
+        if ( ! argument ) {
+          raise_error(
+            e->call->paren, "Unable to duplicate parameter object." );
+          list_destruct( argument_list );
+          destroy_object( object );
+          return NULL;
+        }
+        // push back
+        if ( ! list_push_back_data( argument_list, argument ) ) {
+          raise_error(
+            e->call->paren, "Unable to push back parameter object." );
+          list_destruct( argument_list );
+          destroy_object( object );
+          return NULL;
+        }
+      }
+      // get expected and passed parameters
+      size_t expected = list_count_item( callee->statement->parameter );
+      size_t passed = list_count_item( argument_list );
+      // check amount of passed arguments
+      if ( expected != passed ) {
+        raise_error(
+          e->call->paren,
+          "Argument mismatch, to less or much parameters passed."
+        );
+        list_destruct( argument_list );
+        destroy_object( object );
+        return NULL;
+      }
+      // FIXME: ADD TYPE CHECK
+      // call function
+      bosl_object_t* result = callee->callback( object, argument_list );
+      // cleanup
+      argument_list->cleanup = list_default_cleanup;
+      list_destruct( argument_list );
+      // destroy object
+      destroy_object( object );
+      // return result
+      return result;
     }
     case EXPRESSION_LOAD: {
       break;
@@ -927,7 +1010,7 @@ static bosl_interpreter_object_t* evaluate_expression( bosl_ast_expression_t* e 
     case EXPRESSION_LITERAL: return evaluate_literal( e->literal );
     case EXPRESSION_LOGICAL: {
       // evaluate left side
-      bosl_interpreter_object_t* left = evaluate_expression(
+      bosl_object_t* left = evaluate_expression(
         e->logical->left
       );
       // handle error
@@ -935,7 +1018,7 @@ static bosl_interpreter_object_t* evaluate_expression( bosl_ast_expression_t* e 
         raise_error( e->logical->operator, "Unable to evaluate left side." );
         return NULL;
       }
-      bosl_interpreter_object_t* truthy = object_truthy( left, false );
+      bosl_object_t* truthy = object_truthy( left, false );
       if ( ! truthy ) {
         raise_error( e->logical->operator, "Unable to allocate truthy object." );
         destroy_object( left );
@@ -973,7 +1056,7 @@ static bosl_interpreter_object_t* evaluate_expression( bosl_ast_expression_t* e 
  */
 static void execute_print( bosl_ast_statement_t* s ) {
   // evaluate print expression
-  bosl_interpreter_object_t* object = evaluate_expression(
+  bosl_object_t* object = evaluate_expression(
     s->print->expression
   );
   // handle error
@@ -1000,7 +1083,7 @@ static void execute_print( bosl_ast_statement_t* s ) {
  * @param s
  * @return
  */
-static void execute( bosl_ast_statement_t* s ) {
+static bosl_object_t* execute( bosl_ast_statement_t* s ) {
   switch ( s->type ) {
     case STATEMENT_BLOCK: {
       // create new nested environment
@@ -1020,7 +1103,23 @@ static void execute( bosl_ast_statement_t* s ) {
         // get statement
         bosl_ast_statement_t* statement = current->data;
         // execute it
-        execute( statement );
+        bosl_object_t* r = execute( statement );
+        // handle return
+        /// FIXME: CHECK FOR ACTIVE FUNCTION!
+        if ( r && r->is_return ) {
+          // duplicate return if environment variable
+          bosl_object_t* copy = bosl_object_duplicate_environment( r );
+          if ( ! copy ) {
+            raise_error( NULL, "Unable to duplicate return object.\r\n" );
+            break;
+          }
+          // restore previous environment
+          interpreter->env = previous;
+          // destroy nested environment
+          bosl_environment_free( inner );
+          // return object
+          return copy;
+        }
         // handle error
         if ( interpreter->error ) {
           raise_error( NULL, "Unable to execute block statement." );
@@ -1047,47 +1146,98 @@ static void execute( bosl_ast_statement_t* s ) {
       );
       break;
     case STATEMENT_FUNCTION: {
+      // allocate callable object
+      bosl_object_t* f = bosl_object_allocate_callable(
+        s->function, execute_function );
+      if ( ! f ) {
+        raise_error(
+          s->function->token,
+          "Unable to allocate function object."
+        );
+        break;
+      }
+      // push to environment
+      bosl_environment_push_value( interpreter->env, s->function->token, f );
       break;
     }
     case STATEMENT_IF: {
       // evaluate condition
-      bosl_interpreter_object_t* condition = evaluate_expression(
+      bosl_object_t* condition = evaluate_expression(
         s->if_else->if_condition );
       if ( ! condition ) {
         raise_error( NULL, "Unable to evaluate condition." );
-        return;
+        break;
       }
       // check condition for truthy
-      bosl_interpreter_object_t* truthy = object_truthy( condition, false );
+      bosl_object_t* truthy = object_truthy( condition, false );
       if ( ! truthy ) {
         raise_error( NULL, "Unable to allocate truthy object." );
         destroy_object( condition );
-        return;
+        break;
       }
+      bosl_object_t* r = NULL;
       // execute statements depending on condition
       if ( *( ( bool* )( truthy->data ) ) ) {
-        execute( s->if_else->if_statement );
+        r = execute( s->if_else->if_statement );
       } else {
         if ( s->if_else->else_statement ) {
-          execute( s->if_else->else_statement );
+          r = execute( s->if_else->else_statement );
         }
       }
       // destroy condition again
       destroy_object( condition );
       destroy_object( truthy );
+      if ( r && r->is_return ) {
+        bosl_object_t* copy = bosl_object_duplicate_environment( r );
+        if ( ! copy ) {
+          raise_error( NULL, "Unable to duplicate return object.\r\n" );
+          break;
+        }
+        return copy;
+      }
       break;
     }
     case STATEMENT_PRINT:
       execute_print( s );
       break;
     case STATEMENT_RETURN: {
-      break;
+      bosl_object_t* value= NULL;
+      if ( s->return_value->value ) {
+        // evaluate expression
+        value = evaluate_expression( s->return_value->value );
+        if ( ! value ) {
+          raise_error(
+            s->return_value->keyword,
+            "Unable to evaluate return expression."
+          );
+        }
+      } else {
+        // build null return
+        const char n[] = "NULL";
+        value = bosl_object_allocate( OBJECT_VALUE_NULL, n, strlen( n ) + 1 );
+        if ( ! value ) {
+          raise_error(
+            s->return_value->keyword,
+            "Unable to allocate return object."
+          );
+          return NULL;
+        }
+      }
+      // duplicate if environment variable
+      bosl_object_t* copy = bosl_object_duplicate_environment( value );
+      if ( ! copy ) {
+        raise_error( NULL, "Unable to duplicate return object.\r\n" );
+        break;
+      }
+      // set return flag
+      copy->is_return = true;
+      return copy;
     }
     case STATEMENT_VARIABLE: {
-      bosl_interpreter_object_t* value = NULL;
+      bosl_object_t* value = NULL;
       // evaluate initializer
       if ( s->variable->initializer ) {
-        value = duplicate_if_environment(
+        value = bosl_object_duplicate_environment(
           evaluate_expression( s->variable->initializer )
         );
         if ( ! value ) {
@@ -1100,8 +1250,8 @@ static void execute( bosl_ast_statement_t* s ) {
       // default initializer null
       } else {
         const char n[] = "NULL";
-        value = bosl_interpreter_allocate_object(
-          INTERPRETER_OBJECT_NULL, n, strlen( n ) + 1 );
+        value = bosl_object_allocate(
+          OBJECT_VALUE_NULL, n, strlen( n ) + 1 );
         if ( ! value ) {
           raise_error(
             s->variable->name,
@@ -1116,7 +1266,7 @@ static void execute( bosl_ast_statement_t* s ) {
     }
     case STATEMENT_CONST: {
       // evaluate initializer
-      bosl_interpreter_object_t* value = duplicate_if_environment(
+      bosl_object_t* value = bosl_object_duplicate_environment(
         evaluate_expression( s->variable->initializer )
       );
       // handle error
@@ -1136,19 +1286,19 @@ static void execute( bosl_ast_statement_t* s ) {
     case STATEMENT_WHILE: {
       while ( true ) {
         // evaluate condition
-        bosl_interpreter_object_t* condition = evaluate_expression(
+        bosl_object_t* condition = evaluate_expression(
           s->while_loop->condition );
         // handle error
         if ( ! condition ) {
           raise_error( NULL, "Unable to evaluate condition." );
-          return;
+          break;
         }
         // check condition for truthy
-        bosl_interpreter_object_t* truthy = object_truthy( condition, false );
+        bosl_object_t* truthy = object_truthy( condition, false );
         if ( ! truthy ) {
           raise_error( NULL, "Unable to allocate truthy object." );
           destroy_object( condition );
-          return;
+          break;
         }
         // break if not true any longer
         if ( ! *( ( bool* )( truthy->data ) ) ) {
@@ -1157,10 +1307,19 @@ static void execute( bosl_ast_statement_t* s ) {
           break;
         }
         // execute while body
-        execute( s->while_loop->body );
+        bosl_object_t* r = execute( s->while_loop->body );
         // destroy truthy and condition again
         destroy_object( truthy );
         destroy_object( condition );
+        // handle return
+        if ( r && r->is_return ) {
+          bosl_object_t* copy = bosl_object_duplicate_environment( r );
+          if ( ! copy ) {
+            raise_error( NULL, "Unable to duplicate return object.\r\n" );
+            break;
+          }
+          return copy;
+        }
       }
       break;
     }
@@ -1170,6 +1329,84 @@ static void execute( bosl_ast_statement_t* s ) {
     default:
       raise_error( NULL, "Unknown ast statement" );
   }
+  return NULL;
+}
+
+/**
+ * @brief Helper to execute a script function
+ *
+ * @param object
+ * @param parameter
+ * @return
+ */
+static bosl_object_t* execute_function(
+  bosl_object_t* object,
+  list_manager_t* parameter
+) {
+  // create new closure environment
+  bosl_environment_t* closure = bosl_environment_init( interpreter->env );
+  if ( ! closure ) {
+    raise_error( NULL, "Unable to allocate closure for function execution." );
+    return NULL;
+  }
+  // backup current environment
+  bosl_environment_t* previous = interpreter->env;
+  // temporarily overwrite current
+  interpreter->env = closure;
+  // FIXME: ENSURE CORRECT VALUE TYPE
+  // extract callable
+  bosl_object_callable_t* callable = object->data;
+  // push parameter to environment
+  for ( size_t index = 0, max = list_count_item( parameter ); index < max; index++ ) {
+    // get argument and value from list
+    list_item_t* argument_item = list_get_item_at_pos(
+      callable->statement->parameter, index );
+    if ( ! argument_item ) {
+      // restore interpreter environment
+      interpreter->env = previous;
+      // destroy closure
+      bosl_environment_free( closure );
+      raise_error( NULL, "Unable to get parameter name from callable." );
+      return NULL;
+    }
+    // get value from list
+    list_item_t* value_item = list_get_item_at_pos( parameter, index );
+    if ( ! value_item ) {
+      // restore interpreter environment
+      interpreter->env = previous;
+      // destroy closure
+      bosl_environment_free( closure );
+      raise_error( NULL, "Unable to get parameter value for callable." );
+      return NULL;
+    }
+    // extract values
+    bosl_ast_statement_t* argument = argument_item->data;
+    bosl_object_t* value = value_item->data;
+    // push to environment
+    bosl_environment_push_value( closure, argument->parameter->name, value );
+  }
+  // execute function
+  bosl_object_t* o = execute( callable->statement->body );
+  // handle return
+  if ( o && o->is_return ) {
+    // duplicate if environment object
+    bosl_object_t* copy = bosl_object_duplicate_environment( o );
+    if ( ! copy ) {
+      // restore interpreter environment
+      interpreter->env = previous;
+      // destroy closure
+      bosl_environment_free( closure );
+      raise_error( NULL, "Unable to duplicate return object after function." );
+      return NULL;
+    }
+    o = copy;
+  }
+  // restore interpreter environment
+  interpreter->env = previous;
+  // destroy closure
+  bosl_environment_free( closure );
+  // return copy
+  return o;
 }
 
 /**
@@ -1260,63 +1497,4 @@ bool bosl_interpreter_run( void ) {
   }
   // return success
   return true;
-}
-
-/**
- * @brief Destroy an interpreter object
- *
- * @param object
- */
-void bosl_interpreter_destroy_object( bosl_interpreter_object_t* object ) {
-  // handle no object
-  if ( ! object ) {
-    return;
-  }
-  // destroy data
-  if ( object->data ) {
-    free( object->data );
-  }
-  // destroy object
-  free( object );
-}
-
-/**
- * @brief Allocate an interpreter object
- *
- * @param type
- * @param data
- * @param size
- * @return
- */
-bosl_interpreter_object_t* bosl_interpreter_allocate_object(
-  bosl_interpreter_object_type_t type,
-  void* data,
-  size_t size
-) {
-  // allocate object
-  bosl_interpreter_object_t* o = malloc( sizeof( bosl_interpreter_object_t ) );
-  if ( ! o ) {
-    raise_error( NULL, "Object allocation failed." );
-    return NULL;
-  }
-  // allocate data
-  o->data = malloc( size );
-  if ( ! o->data ) {
-    raise_error( NULL, "Object data allocation failed." );
-    bosl_interpreter_destroy_object( o );
-    return NULL;
-  }
-  // populate data
-  o->size = size;
-  o->type = type;
-  o->environment = false;
-  o->constant = false;
-  // copy over
-  if ( INTERPRETER_OBJECT_BOOL == type ) {
-    *( ( bool* )( o->data ) ) = *( ( bool* )data );
-  } else {
-    memcpy( o->data, data, size );
-  }
-  // return object
-  return o;
 }

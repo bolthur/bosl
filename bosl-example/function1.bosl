@@ -1,0 +1,8 @@
+
+// fibonnaci as recursive function
+fn str_print( s: string ): void {
+  print( s );
+}
+
+str_print( "Hello World from function :)" );
+print( str_print );

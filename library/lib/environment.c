@@ -31,7 +31,7 @@
  * @param object
  */
 static void environment_cleanup( void* object ) {
-  bosl_interpreter_destroy_object( object );
+  bosl_object_destroy( object );
 }
 
 /**
@@ -86,7 +86,7 @@ void bosl_environment_free( bosl_environment_t* environment ) {
 bool bosl_environment_push_value(
   bosl_environment_t* environment,
   bosl_token_t* token,
-  bosl_interpreter_object_t* data
+  bosl_object_t* data
 ) {
   // add to hashmap
   const char* r = hashmap_value_nset(
@@ -110,12 +110,12 @@ bool bosl_environment_push_value(
  * @param token
  * @return
  */
-bosl_interpreter_object_t* bosl_environment_get_value(
+bosl_object_t* bosl_environment_get_value(
   bosl_environment_t* environment,
   bosl_token_t* token
 ) {
   // try to get value
-  bosl_interpreter_object_t* value = hashmap_value_nget(
+  bosl_object_t* value = hashmap_value_nget(
     environment->value,
     token->start,
     token->length
@@ -144,7 +144,7 @@ bosl_interpreter_object_t* bosl_environment_get_value(
 bool bosl_environment_assign_value(
   bosl_environment_t* environment,
   bosl_token_t* token,
-  bosl_interpreter_object_t* object
+  bosl_object_t* object
 ) {
   // try current level
   if ( hashmap_value_nget( environment->value, token->start, token->length ) ) {

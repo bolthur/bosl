@@ -112,10 +112,13 @@ void bosl_ast_statement_destroy( bosl_ast_statement_t* statement ) {
       case STATEMENT_PARAMETER:
         // do nothing as only token references are in here
         break;
-      case STATEMENT_FUNCTION:
+      case STATEMENT_FUNCTION: {
         list_destruct( statement->function->parameter );
-        bosl_ast_statement_destroy( statement->function->body );
+        if ( statement->function->body ) {
+          bosl_ast_statement_destroy( statement->function->body );
+        }
         break;
+      }
       case STATEMENT_IF:
         bosl_ast_expression_destroy( statement->if_else->if_condition );
         bosl_ast_statement_destroy( statement->if_else->if_statement );

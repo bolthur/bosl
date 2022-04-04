@@ -36,25 +36,6 @@ typedef bosl_ast_statement_t* ( *interpreter_previous_t )( void );
 typedef bosl_ast_statement_t* ( *interpreter_current_t )( void );
 typedef bosl_ast_statement_t* ( *interpreter_next_t )( void );
 
-typedef enum bosl_interpreter_object_type {
-  INTERPRETER_OBJECT_FLOAT,
-  INTERPRETER_OBJECT_INT_SIGNED,
-  INTERPRETER_OBJECT_INT_UNSIGNED,
-  INTERPRETER_OBJECT_HEX_SIGNED,
-  INTERPRETER_OBJECT_HEX_UNSIGNED,
-  INTERPRETER_OBJECT_BOOL,
-  INTERPRETER_OBJECT_STRING,
-  INTERPRETER_OBJECT_NULL,
-} bosl_interpreter_object_type_t;
-
-typedef struct bosl_interpreter_object {
-  bosl_interpreter_object_type_t type;
-  void* data;
-  size_t size;
-  bool environment;
-  bool constant;
-} bosl_interpreter_object_t;
-
 typedef struct bosl_interpreter {
   interpreter_previous_t previous;
   interpreter_current_t current;
@@ -70,7 +51,4 @@ typedef struct bosl_interpreter {
 bool bosl_interpreter_init( list_manager_t* );
 void bosl_interpreter_free( void );
 bool bosl_interpreter_run( void );
-void bosl_interpreter_destroy_object( bosl_interpreter_object_t*);
-bosl_interpreter_object_t* bosl_interpreter_allocate_object(
-  bosl_interpreter_object_type_t, void*, size_t );
 #endif

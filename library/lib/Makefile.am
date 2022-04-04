@@ -8,9 +8,9 @@ pkginclude_HEADERS = \
   environment.h \
   error.h \
   interpreter.h \
+  object.h \
   parser.h \
-  scanner.h \
-  type-check.h
+  scanner.h
 
 collectioninclude_HEADERS = \
   collection/list.h \
@@ -31,6 +31,6 @@ libbosl_la_SOURCES = \
   environment.c \
   error.c \
   interpreter.c \
+  object.c \
   parser.c \
-  scanner.c \
-  type-check.c
+  scanner.c

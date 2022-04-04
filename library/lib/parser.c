@@ -1352,8 +1352,18 @@ static bosl_ast_node_t* declaration_function( void ) {
     list_destruct( parameter );
     return NULL;
   }
+  // create block for body
+  bosl_ast_node_t* body = statement_block();
+  if ( ! body ) {
+    list_destruct( parameter );
+    bosl_ast_statement_destroy( f );
+    return NULL;
+  }
   // handle possible load
   if ( match( TOKEN_EQUAL ) ) {
+    // destroy body again
+    bosl_ast_node_destroy( body );
+    // after equal a loat has to come
     if ( ! consume( TOKEN_LOAD, "Expect load type after equal." ) ) {
       list_destruct( parameter );
       bosl_ast_statement_destroy( f );
@@ -1368,13 +1378,6 @@ static bosl_ast_node_t* declaration_function( void ) {
       return NULL;
     }
   } else {
-    // create block for body
-    bosl_ast_node_t* body = statement_block();
-    if ( ! body ) {
-      list_destruct( parameter );
-      bosl_ast_statement_destroy( f );
-      return NULL;
-    }
     // set body
     f->function->body = body->statement;
     free( body );
@@ -1383,8 +1386,16 @@ static bosl_ast_node_t* declaration_function( void ) {
   f->function->token = name;
   f->function->parameter = parameter;
   f->function->return_type = return_type;
-  //bosl_ast_statement_t
-  return NULL;
+  // allocate node
+  bosl_ast_node_t* node = bosl_ast_node_allocate();
+  if ( ! node ) {
+    bosl_ast_statement_destroy( f );
+    return NULL;
+  }
+  // populate node
+  node->statement = f;
+  // finally return it
+  return node;
 }
 
 /**

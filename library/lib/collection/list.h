@@ -22,6 +22,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 // forward declaration
 typedef struct list_item list_item_t;
@@ -67,6 +68,8 @@ bool list_insert_data( list_manager_t*, void* );
 bool list_insert_data_before( list_manager_t*, list_item_t*, void* );
 bool list_remove_item( list_manager_t*, list_item_t* );
 bool list_remove_data( list_manager_t*, void* );
+size_t list_count_item( list_manager_t* );
+list_item_t* list_get_item_at_pos( list_manager_t*, size_t );
 
 int32_t list_default_lookup( const list_item_t*, const void* );
 void list_default_cleanup( list_item_t* );

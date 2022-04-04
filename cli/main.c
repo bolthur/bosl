@@ -26,6 +26,7 @@
 #include "../library/lib/parser.h"
 #include "../library/lib/interpreter.h"
 #include "../library/lib/environment.h"
+#include "../library/lib/object.h"
 
 /**
  * @brief Helper to read file content
@@ -77,31 +78,41 @@ static char* read_file( const char* path ) {
  * @return
  */
 static bool interprete( bool print_ast, char* buffer ) {
+  // initialize object handling
+  if ( ! bosl_object_init() ) {
+    fprintf( stderr, "Unable to init object!\r\n" );
+    return false;
+  }
   // initialize scanner
   if ( ! bosl_scanner_init( buffer ) ) {
+    bosl_object_free();
     fprintf( stderr, "Unable to init scanner!\r\n" );
     return false;
   }
   // scan token
   list_manager_t* token_list = bosl_scanner_scan();
   if ( ! token_list ) {
+    bosl_object_free();
     bosl_scanner_free();
     return false;
   }
   // init parser
   if ( ! bosl_parser_init( token_list ) ) {
+    bosl_object_free();
     bosl_scanner_free();
     return false;
   }
   // parse ast
   list_manager_t* ast_list = bosl_parser_scan();
   if ( ! ast_list ) {
+    bosl_object_free();
     bosl_parser_free();
     bosl_scanner_free();
     return false;
   }
   // setup interpreter
   if ( ! bosl_interpreter_init( ast_list ) ) {
+    bosl_object_free();
     bosl_parser_free();
     bosl_scanner_free();
     return false;
@@ -113,6 +124,7 @@ static bool interprete( bool print_ast, char* buffer ) {
   } else {
     // run code
     if ( ! bosl_interpreter_run() ) {
+      bosl_object_free();
       bosl_interpreter_free();
       bosl_parser_free();
       bosl_scanner_free();
@@ -120,7 +132,8 @@ static bool interprete( bool print_ast, char* buffer ) {
     }
   }
 
-  // destroy parser, scanner and interpreter
+  // destroy object, parser, scanner and interpreter
+  bosl_object_free();
   bosl_parser_free();
   bosl_scanner_free();
   bosl_interpreter_free();

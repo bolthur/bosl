@@ -622,3 +622,47 @@ bool list_insert_data_before(
   // success
   return true;
 }
+
+/**
+ * @brief Method to count list items
+ *
+ * @param list
+ * @return
+ */
+size_t list_count_item( list_manager_t* list ) {
+  size_t count = 0;
+  // count all items
+  for (
+    list_item_t* current = list->first;
+    current;
+    current = current->next
+  ) {
+    count++;
+  }
+  // return amount
+  return count;
+}
+
+/**
+ * @brief Helper to get item at position
+ *
+ * @param list
+ * @param position
+ * @return
+ */
+list_item_t* list_get_item_at_pos( list_manager_t* list, size_t position ) {
+  size_t to_index;
+  list_item_t* current;
+  // get parameter item
+  for (
+    current = list->first, to_index = 0;
+    current && to_index < position;
+    current = current->next, to_index++
+  ) {}
+  // handle mismatch / overflow
+  if ( to_index != position ) {
+    return NULL;
+  }
+  // return item
+  return current;
+}
