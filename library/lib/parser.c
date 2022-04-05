@@ -906,7 +906,8 @@ static bosl_ast_node_t* statement_print( void ) {
 static bosl_ast_node_t* statement_return( void ) {
   // handle return not in function
   if ( ! parser->_in_function ) {
-    bosl_error_raise( parser->current(), "Return is only in functions allowed" );
+    bosl_error_raise(
+      parser->current(), "Return is only in functions allowed" );
     return NULL;
   }
   // get keyword
@@ -954,6 +955,9 @@ static bosl_ast_node_t* statement_return( void ) {
  * @return
  */
 static bosl_ast_node_t* statement_while( void ) {
+  // set in loop statement
+  parser->_in_loop = true;
+  // Expect opening parenthesis
   if ( ! consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after 'while'." ) ) {
     return NULL;
   }
@@ -992,6 +996,8 @@ static bosl_ast_node_t* statement_while( void ) {
   node->statement->while_loop->body = body->statement;
   // free container for body statment
   free( body );
+  // reset in loop statement
+  parser->_in_loop = false;
   // return
   return node;
 }
@@ -1087,6 +1093,49 @@ static bosl_ast_node_t* statement_pointer( void ) {
 }
 
 /**
+ * @brief Handle break statement
+ *
+ * @return
+ */
+static bosl_ast_node_t* statement_break( void ) {
+  if ( ! parser->_in_loop ) {
+    bosl_error_raise( parser->current(), "Break is only allowed in a loop" );
+    return NULL;
+  }
+  bosl_token_t* token = parser->previous();
+  // handle level to break
+  bosl_ast_expression_t* e = NULL;
+  if ( parser->current()->type != TOKEN_SEMICOLON ) {
+    e = expression();
+    if ( ! e ) {
+      bosl_error_raise( parser->current(), "Unable to evaluate expression" );
+      return NULL;
+    }
+  }
+  // expect semicolon
+  if ( ! consume( TOKEN_SEMICOLON, "Expect ';' at end of break." ) ) {
+    bosl_ast_expression_destroy( e );
+    return NULL;
+  }
+  // allocate new ast node
+  bosl_ast_node_t* node = bosl_ast_node_allocate();
+  if ( ! node ) {
+    return NULL;
+  }
+  // allocate new ast node
+  node->statement = bosl_ast_statement_allocate( STATEMENT_BREAK );
+  if ( ! node->statement ) {
+    bosl_ast_node_destroy( node );
+    return NULL;
+  }
+  // populate node
+  node->statement->break_loop->token = token;
+  node->statement->break_loop->level = e;
+  // return node
+  return node;
+}
+
+/**
  * @brief Handle expression statement
  *
  * @return
@@ -1143,6 +1192,9 @@ static bosl_ast_node_t* statement( void ) {
   }
   if ( match( TOKEN_POINTER ) ) {
     return statement_pointer();
+  }
+  if ( match( TOKEN_BREAK ) ) {
+    return statement_break();
   }
   return statement_expression();
 }
@@ -1266,9 +1318,9 @@ static bosl_ast_node_t* declaration_let( void ) {
  * @return
  */
 static bosl_ast_node_t* declaration_function( void ) {
-  // handle function in function
-  if ( parser->_in_function ) {
-    bosl_error_raise( parser->current(), "Function in function is not allowed" );
+  // handle invalid depth
+  if ( 1 < parser->_depth ) {
+    bosl_error_raise( parser->current(), "Functions are restricted to top level." );
     return NULL;
   }
   // set flag
@@ -1407,7 +1459,7 @@ static bosl_ast_node_t* declaration_function( void ) {
   // populate node
   node->statement = f;
   // reset flag
-  parser->_in_function = true;
+  parser->_in_function = false;
   // finally return it
   return node;
 }
@@ -1418,6 +1470,8 @@ static bosl_ast_node_t* declaration_function( void ) {
  * @return
  */
 static bosl_ast_node_t* declaration( void ) {
+  // increase depth
+  parser->_depth += 1;
   // handle function
   if ( match( TOKEN_FUNCTION ) ) {
     return declaration_function();
@@ -1446,12 +1500,12 @@ bool bosl_parser_init( list_manager_t* token ) {
     return true;
   }
   // allocate parser structure
-  parser = malloc( sizeof( *parser ) );
+  parser = malloc( sizeof( bosl_parser_t ) );
   if ( ! parser ) {
     return false;
   }
   // clear out
-  memset( parser, 0, sizeof( *parser ) );
+  memset( parser, 0, sizeof( bosl_parser_t ) );
   // construct ast list
   parser->ast = list_construct( NULL, list_node_cleanup, NULL );
   if ( ! parser->ast ) {
@@ -1462,6 +1516,8 @@ bool bosl_parser_init( list_manager_t* token ) {
   parser->_token = token;
   parser->_current = token->first;
   parser->_in_function = false;
+  parser->_in_loop = false;
+  parser->_depth = 0;
   // push back convenience helper
   parser->current = current;
   parser->next = next;
@@ -1503,11 +1559,11 @@ list_manager_t* bosl_parser_scan( void ) {
     if ( TOKEN_EOF == token->type ) {
       break;
     }
+    // reset depth
+    parser->_depth = 0;
     // evaluate
     bosl_ast_node_t* tmp = declaration();
     if ( ! tmp ) {
-      // free parser stuff
-      bosl_parser_free();
       // return null
       return NULL;
     }
@@ -1519,8 +1575,6 @@ list_manager_t* bosl_parser_scan( void ) {
       );
       // destroy node
       bosl_ast_node_destroy( tmp );
-      // free parser stuff
-      bosl_parser_free();
       // return null
       return NULL;
     }
@@ -1698,6 +1752,14 @@ static void print_expression( bosl_ast_expression_t* e ) {
 static void print_statement( bosl_ast_statement_t* s ) {
   switch ( s->type ) {
     case STATEMENT_FUNCTION: {
+      // handle invalid depth
+      if ( 1 < parser->_depth ) {
+        bosl_error_raise(
+          s->function->token, "Functions are restricted to top level." );
+        break;
+      }
+      // set flag
+      parser->_in_function = true;
       // opening block
       fprintf(
         stdout, "(fn %*.*s (",
@@ -1739,6 +1801,8 @@ static void print_statement( bosl_ast_statement_t* s ) {
       }
       // closing block
       fprintf( stdout, ")" );
+      // reset flag
+      parser->_in_function = true;
       break;
     }
     case STATEMENT_VARIABLE: {
@@ -1801,6 +1865,12 @@ static void print_statement( bosl_ast_statement_t* s ) {
       break;
     }
     case STATEMENT_RETURN: {
+      // handle return not in function
+      if ( ! parser->_in_function ) {
+        bosl_error_raise(
+          s->return_value->keyword, "Return is only in functions allowed" );
+        break;
+      }
       if ( ! s->return_value->value ) {
         fprintf( stdout, "(return)" );
       } else {
@@ -1814,6 +1884,8 @@ static void print_statement( bosl_ast_statement_t* s ) {
       break;
     }
     case STATEMENT_WHILE: {
+      // set in loop statement
+      parser->_in_loop = true;
       // opening block
       fprintf( stdout, "(while " );
       // condition
@@ -1822,6 +1894,25 @@ static void print_statement( bosl_ast_statement_t* s ) {
       fprintf( stdout, " " );
       // body
       print_statement( s->while_loop->body );
+      // closing block
+      fprintf( stdout, ")" );
+      // reset in loop statement
+      parser->_in_loop = false;
+      break;
+    }
+    case STATEMENT_BREAK: {
+      if ( ! parser->_in_loop ) {
+        bosl_error_raise( parser->current(), "Break is only allowed in a loop" );
+        break;
+      }
+      // opening block
+      fprintf( stdout, "(break " );
+      // print level
+      if ( s->break_loop->level ) {
+        print_expression( s->break_loop->level );
+      } else {
+        fprintf( stdout, "1" );
+      }
       // closing block
       fprintf( stdout, ")" );
       break;
@@ -1876,6 +1967,7 @@ static void print_statement( bosl_ast_statement_t* s ) {
  * @param n
  */
 static void print_node( bosl_ast_node_t* n ) {
+  parser->_depth += 1;
   print_statement( n->statement );
   // flush output
   fflush( stdout );
@@ -1895,6 +1987,7 @@ void bosl_parser_print( void ) {
     current;
     current = current->next
   ) {
+    parser->_depth = 0;
     print_node( current->data );
   }
   // final newline

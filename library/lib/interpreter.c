@@ -879,7 +879,6 @@ static bosl_object_t* evaluate_literal( bosl_ast_expression_literal_t* l ) {
 static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
   switch ( e->type ) {
     case EXPRESSION_ASSIGN: {
-      /// FIXME: CHECK WHETHER CONSTANT SHALL BE SET OR NOT
       // evaluate expression and duplicate if from environment
       bosl_object_t* value = bosl_object_duplicate_environment(
         evaluate_expression( e->assign->value ) );
@@ -1105,12 +1104,11 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         // execute it
         bosl_object_t* r = execute( statement );
         // handle return
-        /// FIXME: CHECK FOR ACTIVE FUNCTION!
-        if ( r && r->is_return ) {
+        if ( r && ( r->is_return || r->is_break ) ) {
           // duplicate return if environment variable
           bosl_object_t* copy = bosl_object_duplicate_environment( r );
           if ( ! copy ) {
-            raise_error( NULL, "Unable to duplicate return object.\r\n" );
+            raise_error( NULL, "Unable to duplicate return / break object." );
             break;
           }
           // restore previous environment
@@ -1148,7 +1146,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
     case STATEMENT_FUNCTION: {
       // allocate callable object
       bosl_object_t* f = bosl_object_allocate_callable(
-        s->function, execute_function );
+        s->function, execute_function, interpreter->env );
       if ( ! f ) {
         raise_error(
           s->function->token,
@@ -1187,10 +1185,11 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       // destroy condition again
       destroy_object( condition );
       destroy_object( truthy );
-      if ( r && r->is_return ) {
+      // handle return
+      if ( r && ( r->is_return || r->is_break ) ) {
         bosl_object_t* copy = bosl_object_duplicate_environment( r );
         if ( ! copy ) {
-          raise_error( NULL, "Unable to duplicate return object.\r\n" );
+          raise_error( NULL, "Unable to duplicate return / break object." );
           break;
         }
         return copy;
@@ -1285,6 +1284,11 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
     }
     case STATEMENT_WHILE: {
       while ( true ) {
+        // check for break
+        if ( interpreter->loop_break_remaining ) {
+          interpreter->loop_break_remaining--;
+          break;
+        }
         // evaluate condition
         bosl_object_t* condition = evaluate_expression(
           s->while_loop->condition );
@@ -1311,6 +1315,15 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         // destroy truthy and condition again
         destroy_object( truthy );
         destroy_object( condition );
+        // handle error
+        if ( interpreter->error ) {
+          // destroy return if set ( shouldn't be set )
+          if ( r ) {
+            destroy_object( r );
+          }
+          // stop endless loop
+          break;
+        }
         // handle return
         if ( r && r->is_return ) {
           bosl_object_t* copy = bosl_object_duplicate_environment( r );
@@ -1320,8 +1333,44 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           }
           return copy;
         }
+        // handle break
+        if ( r && r->is_break ) {
+          // fill remaining breaks, normally one but could be more
+          memcpy( &interpreter->loop_break_remaining, r->data, sizeof( uint64_t ) );
+          interpreter->loop_break_remaining--;
+          // destroy object
+          destroy_object( r );
+          break;
+        }
       }
       break;
+    }
+    case STATEMENT_BREAK: {
+      bosl_object_t* level = NULL;
+      if ( s->break_loop->level ) {
+        // evaluate level expression
+        level = evaluate_expression( s->break_loop->level );
+        if ( ! level ) {
+          raise_error(
+            s->break_loop->token, "Unable to evaluate break condition." );
+          break;
+        }
+      }
+      // allocate default level if not allocated
+      if ( ! level ) {
+        uint64_t i = 1;
+        level = bosl_object_allocate( OBJECT_VALUE_INT_UNSIGNED, &i, sizeof( i ) );
+        if ( ! level ) {
+          raise_error(
+            s->break_loop->token,
+            "Unable to allocate default break object value." );
+          break;
+        }
+      }
+      // set break flag
+      level->is_break = true;
+      // return level
+      return level;
     }
     case STATEMENT_POINTER: {
       break;
@@ -1343,8 +1392,10 @@ static bosl_object_t* execute_function(
   bosl_object_t* object,
   list_manager_t* parameter
 ) {
+  // extract callable
+  bosl_object_callable_t* callable = object->data;
   // create new closure environment
-  bosl_environment_t* closure = bosl_environment_init( interpreter->global );
+  bosl_environment_t* closure = bosl_environment_init( callable->closure );
   if ( ! closure ) {
     raise_error( NULL, "Unable to allocate closure for function execution." );
     return NULL;
@@ -1354,8 +1405,6 @@ static bosl_object_t* execute_function(
   // temporarily overwrite current
   interpreter->env = closure;
   // FIXME: ENSURE CORRECT VALUE TYPE
-  // extract callable
-  bosl_object_callable_t* callable = object->data;
   // push parameter to environment
   for ( size_t index = 0, max = list_count_item( parameter ); index < max; index++ ) {
     // get argument and value from list
@@ -1399,6 +1448,7 @@ static bosl_object_t* execute_function(
       raise_error( NULL, "Unable to duplicate return object after function." );
       return NULL;
     }
+    // overwrite o with copy
     o = copy;
   }
   // restore interpreter environment
@@ -1421,6 +1471,8 @@ static void execute_ast_node( bosl_ast_node_t* node ) {
     raise_error( NULL, "Invalid ast node" );
     return;
   }
+  // reset loop break remaining
+  interpreter->loop_break_remaining = 0;
   // execute statement
   execute( node->statement );
 }
@@ -1450,7 +1502,6 @@ bool bosl_interpreter_init( list_manager_t* ast ) {
     return false;
   }
   // populate
-  interpreter->global = interpreter->env;
   interpreter->_ast = ast;
   interpreter->_current = ast->first;
   interpreter->current = current;

@@ -23,9 +23,11 @@
 #if defined( _COMPILING_BOSL )
   #include "collection/list.h"
   #include "ast/statement.h"
+  typedef struct bosl_environment bosl_environment_t;
 #else
   #include <bosl/collection/list.h>
   #include <bosl/ast/statement.h>
+  typedef struct bosl_environment bosl_environment_t;
 #endif
 
 #if ! defined( _BOSL_OBJECT_H )
@@ -68,6 +70,7 @@ typedef struct bosl_object {
   bool environment;
   bool constant;
   bool is_return;
+  bool is_break;
 } bosl_object_t;
 
 // type definition for function callback
@@ -76,6 +79,7 @@ typedef bosl_object_t* ( *bosl_callback_t )( bosl_object_t*, list_manager_t* );
 typedef struct bosl_object_callable {
   bosl_callback_t callback;
   bosl_ast_statement_function_t* statement;
+  bosl_environment_t* closure;
 } bosl_object_callable_t;
 
 bool bosl_object_init( void );
@@ -84,7 +88,8 @@ void bosl_object_destroy( bosl_object_t* );
 bosl_object_t* bosl_object_allocate( bosl_object_value_type_t, void*, size_t );
 bosl_object_t* bosl_object_allocate_callable(
   bosl_ast_statement_function_t*,
-  bosl_callback_t
+  bosl_callback_t,
+  bosl_environment_t*
 );
 bosl_object_t* bosl_object_duplicate_environment( bosl_object_t* );
 

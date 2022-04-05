@@ -85,6 +85,7 @@ typedef enum {
   TOKEN_FUNCTION,
   TOKEN_RETURN,
   TOKEN_LOAD,
+  TOKEN_BREAK,
 
   // built-in functions
   TOKEN_PRINT,

@@ -1,0 +1,19 @@
+
+// fibonnaci as recursive function
+fn fibonacci( n: uint32 ): uint32 {
+  // recursive anchor
+  if ( 1 >= n ) {
+    return n;
+  }
+  // calculate
+  return fibonacci( n - 1 ) + fibonacci( n - 2 );
+}
+
+if ( true ) {
+  let n: uint32 = 0;
+  while ( n < 20 ) {
+    print( fibonacci( n ) );
+    n = n + 1;
+  }
+  return 5;
+}

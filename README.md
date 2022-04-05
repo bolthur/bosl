@@ -245,6 +245,28 @@ while ( i < 5 ) {
   print i * 2;
   i = i + 1;
 }
+
+// break within a while loop
+let n: uint32 = 0;
+while ( true ) {
+  if ( n >= 5 ) {
+    break;
+  }
+  print i * 2;
+  i = i + 1;
+}
+
+// break with level within while loops
+let n: uint32 = 0;
+while ( true ) {
+  while ( true ) {
+    if ( n >= 5 ) {
+      break 2;
+    }
+    print i * 2;
+    i = i + 1;
+  }
+}
 ```
 
 ### Functions

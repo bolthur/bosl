@@ -202,6 +202,8 @@ int main( int argc, char* argv[] ) {
   }
   // interprete it
   if ( ! interprete( ast->count, buffer ) ) {
+    // free buffer and free argtable
+    free( buffer );
     arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
     return EXIT_FAILURE;
   }

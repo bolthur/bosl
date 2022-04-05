@@ -33,11 +33,11 @@ __weak // weak reference only for linux and bolthur
 void bosl_error_raise( bosl_token_t* token, const char* message ) {
   // error without token
   if ( ! token ) {
-    fprintf( stderr, "%s\r\n", message );
+    fprintf( stderr, "\033[0;91m%s\r\n\033[0m", message );
     return;
   }
   // start error output
-  fprintf( stderr, "[line %u] Error", token->line );
+  fprintf( stderr, "\033[0;91m[line %u] Error", token->line );
   // position / token information
   if ( TOKEN_EOF == token->type ) {
     fprintf( stderr, " at end" );
@@ -45,5 +45,5 @@ void bosl_error_raise( bosl_token_t* token, const char* message ) {
     fprintf( stderr, " at '%.*s'", ( int )token->length, token->start );
   }
   // finish with adding message
-  fprintf( stderr, ": %s\r\n", message );
+  fprintf( stderr, ": %s\r\n\033[0m", message );
 }

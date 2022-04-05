@@ -374,6 +374,7 @@ bool bosl_scanner_init( const char* source ) {
     || ! hashmap_value_set( scanner->keyword, "fn", ( void* )TOKEN_FUNCTION )
     || ! hashmap_value_set( scanner->keyword, "return", ( void* )TOKEN_RETURN )
     || ! hashmap_value_set( scanner->keyword, "load", ( void* )TOKEN_LOAD )
+    || ! hashmap_value_set( scanner->keyword, "break", ( void* )TOKEN_BREAK )
     || ! hashmap_value_set( scanner->keyword, "int8", ( void* )TOKEN_TYPE_IDENTIFIER )
     || ! hashmap_value_set( scanner->keyword, "int16", ( void* )TOKEN_TYPE_IDENTIFIER )
     || ! hashmap_value_set( scanner->keyword, "int32", ( void* )TOKEN_TYPE_IDENTIFIER )
@@ -428,7 +429,6 @@ list_manager_t* bosl_scanner_scan( void ) {
     scanner->start = scanner->current;
     // scan token
     if ( ! scan_token() ) {
-      bosl_scanner_free();
       return NULL;
     }
   }
@@ -436,7 +436,6 @@ list_manager_t* bosl_scanner_scan( void ) {
   scanner->start = scanner->current;
   // add eof token
   if ( ! add_token( TOKEN_EOF, NULL ) ) {
-    bosl_scanner_free();
     return NULL;
   }
   // return list of tokens

@@ -115,6 +115,7 @@ bosl_object_t* bosl_object_allocate(
   o->environment = false;
   o->constant = false;
   o->is_return = false;
+  o->is_break = false;
   // copy over
   if ( OBJECT_VALUE_BOOL == value_type ) {
     *( ( bool* )( o->data ) ) = *( ( bool* )data );
@@ -130,11 +131,13 @@ bosl_object_t* bosl_object_allocate(
  *
  * @param statement
  * @param callback
+ * @param closure
  * @return
  */
 bosl_object_t* bosl_object_allocate_callable(
   bosl_ast_statement_function_t* statement,
-  bosl_callback_t callback
+  bosl_callback_t callback,
+  bosl_environment_t* closure
 ) {
   // allocate object
   bosl_object_t* o = malloc( sizeof( bosl_object_t ) );
@@ -159,6 +162,7 @@ bosl_object_t* bosl_object_allocate_callable(
   bosl_object_callable_t* callable = o->data;
   callable->statement = statement;
   callable->callback = callback;
+  callable->closure = closure;
   // return object
   return o;
 }
