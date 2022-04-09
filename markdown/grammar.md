@@ -18,7 +18,7 @@ declaration_let       → "let" IDENTIFIER ":" ( "pointer" )? TYPE_IDENTIFIER ( 
 
 ## Statements
 
-statement             → statement_expression | statement_if | statement_print | statement_return | statement_while | statement_pointer | statement_break | block;
+statement             → statement_expression | statement_if | statement_print | statement_return | statement_while | statement_pointer | statement_break | statement_continue | block;
 
 statement_expression  → expression ";" ;
 statement_if          → "if" "(" expression ")" statement ( "else" statement )? ;
@@ -26,6 +26,7 @@ statement_print       → "print" "(" expression ")" ";" ;
 statement_return      → "return" expression? ";" ;
 statement_while       → "while" "(" expression ")" statement;
 statement_break       → "break" expression? ";" ;
+statement_continue    → "continue" expression? ";" ;
 statement_pointer     → "pointer" IDENTIFIER statement;
 block                 → "{" declaration "}"
 ```

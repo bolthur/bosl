@@ -53,25 +53,117 @@ static size_t hashmap_generate_hash( const char* key ) {
 }
 
 /**
+ * @brief Helper to find an entry
+ *
+ * @param entries
+ * @param key
+ * @param capacity
+ * @return
+ */
+static hashmap_entry_t* hashmap_find_entry(
+  hashmap_entry_t* entries,
+  const char* key,
+  size_t capacity
+) {
+  // generate hash
+  size_t hash = hashmap_generate_hash( key );
+  size_t index = hash & ( capacity - 1 );
+  // loop until non empty
+  while ( entries[ index ].key ) {
+    // check if found and return
+    if ( ! strcmp( key, entries[ index ].key ) )  {
+      return &entries[ index ];
+    }
+    // increment if key wasn't in slot and check for end reached
+    if ( ++index >= capacity ) {
+      index = 0;
+    }
+  }
+  // return by index
+  return &entries[ index ];
+}
+
+/**
+ * @brief Helper to duplicate key by length
+ *
+ * @param key
+ * @param len
+ * @return
+ */
+static char* duplicate_key( const char* key, size_t len ) {
+  // get key length
+  size_t key_len = len + 1;
+  // allocate temporary
+  char* tmp = malloc( sizeof( char ) * key_len );
+  if ( ! tmp ) {
+    return NULL;
+  }
+  // clear out
+  memset( tmp, 0, sizeof( char ) * key_len );
+  // copy content
+  strncpy( tmp, key, len );
+  // return key
+  return tmp;
+}
+
+/**
+ * @brief Helper to adjust hashmap size
+ *
+ * @param table
+ * @param capacity
+ * @return
+ */
+static bool adjust_capacity( hashmap_table_t* table, size_t capacity ) {
+  // allocate new hashmap entries
+  hashmap_entry_t* new_list = calloc( capacity, sizeof( hashmap_entry_t ) );
+  // handle error
+  if ( ! new_list ) {
+    return false;
+  }
+  // clear out
+  memset( new_list, 0, sizeof( hashmap_entry_t ) * capacity );
+  // resize table length
+  table->length = 0;
+  for ( size_t i = 0; i < table->capacity; i++ ) {
+    // skip unused entries
+    if ( ! table->entries[ i ].key ) {
+      continue;
+    }
+    // find entry
+    hashmap_entry_t* new_entry = hashmap_find_entry(
+      new_list, table->entries[ i ].key, capacity );
+    // copy over
+    new_entry->key = table->entries[ i ].key;
+    new_entry->value = table->entries[ i ].value;
+    // increment length
+    table->length++;
+  }
+  // free up old table
+  free( table->entries );
+  // set entries and new capacity
+  table->entries = new_list;
+  table->capacity = capacity;
+  // return success
+  return true;
+}
+
+/**
  * @brief Construct new hashmap
  *
  * @return Allocated new hashmap or NULL on error
  */
 hashmap_table_t* hashmap_construct( hashmap_entry_cleanup_t cleanup ) {
   // allocate hashmap table
-  hashmap_table_t* table = malloc( sizeof( *table  ) );
+  hashmap_table_t* table = malloc( sizeof( hashmap_table_t ) );
   if ( ! table ) {
     return NULL;
   }
+  // clear out
+  memset( table, 0, sizeof( hashmap_table_t ) );
   // populate properties
-  table->capacity = HASHMAP_INITIAL_CAPACITY;
+  table->capacity = 0;
   table->length = 0;
-  // allocate hashmap entries
-  table->entries = calloc( table->capacity, sizeof( *table->entries ) );
-  if ( ! table->entries ) {
-    free( table );
-    return NULL;
-  }
+  table->entries = NULL;
   table->cleanup = cleanup ? cleanup : default_cleanup;
   // return built table
   return table;
@@ -94,8 +186,11 @@ void hashmap_destruct( hashmap_table_t* table ) {
       table->cleanup( table->entries[ idx ].value );
     }
   }
-  // free entries and finally table
-  free( table->entries );
+  // free table if set
+  if ( table->entries ) {
+    free( table->entries );
+  }
+  // free structure
   free( table );
 }
 
@@ -107,22 +202,14 @@ void hashmap_destruct( hashmap_table_t* table ) {
  * @return Set value or NULL if not found
  */
 void* hashmap_value_get( hashmap_table_t* table, const char* key ) {
-  size_t hash = hashmap_generate_hash( key );
-  size_t index = hash & ( table->capacity - 1 );
-
-  // loop until non empty
-  while ( table->entries[ index ].key ) {
-    // check if found and return
-    if ( ! strcmp( key, table->entries[ index ].key ) )  {
-      return table->entries[ index ].value;
-    }
-    // increment if key wasn't in slot and check for end reached
-    if ( ++index >= table->capacity ) {
-      index = 0;
-    }
+  // handle no entries yet
+  if ( ! table->entries ) {
+    return NULL;
   }
-  // return NULL as nothing was found
-  return NULL;
+  // get matching entry from map
+  hashmap_entry_t* e = hashmap_find_entry( table->entries, key, table->capacity );
+  // return stored value ( NULL if not set previously )
+  return e->value;
 }
 
 /**
@@ -134,35 +221,21 @@ void* hashmap_value_get( hashmap_table_t* table, const char* key ) {
  * @return Set value or NULL if not found
  */
 void* hashmap_value_nget( hashmap_table_t* table, const char* key, size_t len ) {
-  // allocate temporary
-  char* tmp = malloc( len + 1 );
+  // handle no entries yet
+  if ( ! table->entries ) {
+    return NULL;
+  }
+  // duplicate key
+  char* tmp = duplicate_key( key, len );
   if ( ! tmp ) {
     return NULL;
   }
-  // clear out
-  memset( tmp, 0, len + 1 );
-  // copy content
-  strncpy( tmp, key, len );
-
-
-  size_t hash = hashmap_generate_hash( tmp );
-  size_t index = hash & ( table->capacity - 1 );
-
-  // loop until non empty
-  while ( table->entries[ index ].key ) {
-    // check if found and return
-    if ( ! strcmp( tmp, table->entries[ index ].key ) )  {
-      free( tmp );
-      return table->entries[ index ].value;
-    }
-    // increment if key wasn't in slot and check for end reached
-    if ( ++index >= table->capacity ) {
-      index = 0;
-    }
-  }
+  // get value using temporary key
+  void* data = hashmap_value_get( table, tmp );
+  // free up temporary
   free( tmp );
-  // return NULL as nothing was found
-  return NULL;
+  // return found data
+  return data;
 }
 
 /**
@@ -179,44 +252,33 @@ const char* hashmap_value_set(
   void* value
 ) {
   // expand table if limit reached
-  if ( table->length >= table->capacity ) {
-    // FIXME: EXPAND
+  if (
+    table->length + 1 >= table->capacity
+    && ! adjust_capacity( table, HASHMAP_ENLARGE_CAPACITY( table->capacity ) )
+  ) {
     return NULL;
   }
-
-  // generate hash and index
-  size_t hash = hashmap_generate_hash( key );
-  size_t index = hash & ( table->capacity - 1 );
-  // loop until empty entry was found
-  while ( table->entries[ index ].key ) {
-    // update if already exists
-    if ( ! strcmp( key, table->entries[ index ].key ) ) {
-      table->entries[ index ].value = value;
-      return table->entries[ index ].key;
+  // get matching entry from map
+  hashmap_entry_t* e = hashmap_find_entry( table->entries, key, table->capacity );
+  // handle no new key
+  if ( e->key ) {
+    table->cleanup( e->value );
+    e->value = value;
+  // handle new key
+  } else {
+    // duplicate key
+    char* new_key = duplicate_key( key, strlen( key ) );
+    if ( ! new_key ) {
+      return NULL;
     }
-    // increment if key wasn't in slot and check for end reached
-    if ( ++index >= table->capacity ) {
-      index = 0;
-    }
+    // push back data
+    e->key = new_key;
+    e->value = value;
+    // increase length
+    table->length++;
   }
-
-  // get key length
-  size_t key_len = strlen( key ) + 1;
-  // allocate entry
-  char* new_key = malloc( sizeof( char ) * key_len );
-  if ( ! new_key ) {
-    return NULL;
-  }
-  // clear out stuff and copy
-  memset( new_key, 0, sizeof( char ) * key_len );
-  strcpy( new_key, key );
-  // push back data
-  table->entries[ index ].key = new_key;
-  table->entries[ index ].value = value;
-  // increase length
-  table->length++;
-  // return new key
-  return table->entries[ index ].key;
+  // return stored key ( NULL if not set previously )
+  return e->key;
 }
 
 /**
@@ -234,53 +296,63 @@ const char* hashmap_value_nset(
   size_t len,
   void* value
 ) {
-  // expand table if limit reached
-  if ( table->length >= table->capacity ) {
-    // FIXME: EXPAND
-    return NULL;
-  }
-  // get key length
-  size_t key_len = len + 1;
-
-  // allocate temporary
-  char* tmp = malloc( sizeof( char ) * key_len );
+  // duplicate key
+  char* tmp = duplicate_key( key, len );
   if ( ! tmp ) {
     return NULL;
   }
-  // clear out
-  memset( tmp, 0, sizeof( char ) * key_len );
-  // copy content
-  strncpy( tmp, key, len );
+  // add via normal set
+  const char* return_key = hashmap_value_set( table, tmp, value );
+  // free temporary ( duplicated in hashmap value set )
+  free( tmp );
+  // return set key
+  return return_key;
+}
 
-  // generate hash and index
-  size_t hash = hashmap_generate_hash( tmp );
-  size_t index = hash & ( table->capacity - 1 );
-  // loop until empty entry was found
-  while ( table->entries[ index ].key ) {
-    // update if already exists
-    if ( ! strcmp( tmp, table->entries[ index ].key ) ) {
-      // cleanup key if cleanup is provided
-      table->cleanup( table->entries[ index ].value );
-      // set new value
-      table->entries[ index ].value = value;
-      // free temporary
-      free( tmp );
-      // return key
-      return table->entries[ index ].key;
-    }
-    // increment if key wasn't in slot and check for end reached
-    if ( ++index >= table->capacity ) {
-      index = 0;
-    }
+/**
+ * @brief Delete a hashmap entry by key
+ *
+ * @param table
+ * @param key
+ * @return
+ */
+bool hashmap_value_del( hashmap_table_t* table, const char* key ) {
+  // find entry
+  hashmap_entry_t* e = hashmap_find_entry( table->entries, key, table->capacity );
+  // treat no key ( no entry ) as failure
+  if ( ! e->key ) {
+    return false;
   }
+  // cleanup value
+  table->cleanup( e->value );
+  // free key
+  free( e->key );
+  // unset key and value to NULL again
+  e->key = NULL;
+  e->value = NULL;
+  // return success
+  return true;
+}
 
-  // push back data
-  table->entries[ index ].key = tmp;
-  table->entries[ index ].value = value;
-  // increase length
-  table->length++;
-  // return new key
-  return table->entries[ index ].key;
+/**
+ * @brief Delete a value by key
+ *
+ * @param table
+ * @param key
+ * @param len
+ */
+bool hashmap_value_ndel( hashmap_table_t* table, const char* key, size_t len ) {
+  // duplicate key
+  char* tmp = duplicate_key( key, len );
+  if ( ! tmp ) {
+    return false;
+  }
+  // delete value
+  bool r = hashmap_value_del( table, tmp );
+  // free tmp again
+  free( tmp );
+  // return result
+  return r;
 }
 
 /**

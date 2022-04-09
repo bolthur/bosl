@@ -1,0 +1,10 @@
+
+let i: uint32 = 0;
+while ( 10 >= i ) {
+  if ( 2 == i ) {
+    i = i + 1;
+    continue;
+  }
+  print( i );
+  i = i + 1;
+}

@@ -116,6 +116,7 @@ bosl_object_t* bosl_object_allocate(
   o->constant = false;
   o->is_return = false;
   o->is_break = false;
+  o->is_continue = false;
   // copy over
   if ( OBJECT_VALUE_BOOL == value_type ) {
     *( ( bool* )( o->data ) ) = *( ( bool* )data );

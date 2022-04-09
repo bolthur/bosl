@@ -1104,7 +1104,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         // execute it
         bosl_object_t* r = execute( statement );
         // handle return
-        if ( r && ( r->is_return || r->is_break ) ) {
+        if ( r && ( r->is_return || r->is_break || r->is_continue ) ) {
           // duplicate return if environment variable
           bosl_object_t* copy = bosl_object_duplicate_environment( r );
           if ( ! copy ) {
@@ -1186,7 +1186,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       destroy_object( condition );
       destroy_object( truthy );
       // handle return
-      if ( r && ( r->is_return || r->is_break ) ) {
+      if ( r && ( r->is_return || r->is_break || r->is_continue ) ) {
         bosl_object_t* copy = bosl_object_duplicate_environment( r );
         if ( ! copy ) {
           raise_error( NULL, "Unable to duplicate return / break object." );
@@ -1283,6 +1283,9 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       break;
     }
     case STATEMENT_WHILE: {
+      // increment loop level
+      interpreter->loop_level++;
+      // execute loop
       while ( true ) {
         // check for break
         if ( interpreter->loop_break_remaining ) {
@@ -1333,6 +1336,18 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           }
           return copy;
         }
+        // handle continue
+        if ( r && r->is_continue ) {
+          // fill remaining breaks, normally one but could be more
+          memcpy( &interpreter->loop_continue_remaining, r->data, sizeof( uint64_t ) );
+          interpreter->loop_continue_remaining--;
+          // destroy object
+          destroy_object( r );
+          // break out if more than one level shall be continued
+          if ( interpreter->loop_continue_remaining ) {
+            break;
+          }
+        }
         // handle break
         if ( r && r->is_break ) {
           // fill remaining breaks, normally one but could be more
@@ -1347,12 +1362,12 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
     }
     case STATEMENT_BREAK: {
       bosl_object_t* level = NULL;
-      if ( s->break_loop->level ) {
+      if ( s->break_continue->level ) {
         // evaluate level expression
-        level = evaluate_expression( s->break_loop->level );
+        level = evaluate_expression( s->break_continue->level );
         if ( ! level ) {
           raise_error(
-            s->break_loop->token, "Unable to evaluate break condition." );
+            s->break_continue->token, "Unable to evaluate break condition." );
           break;
         }
       }
@@ -1362,17 +1377,63 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         level = bosl_object_allocate( OBJECT_VALUE_INT_UNSIGNED, &i, sizeof( i ) );
         if ( ! level ) {
           raise_error(
-            s->break_loop->token,
+            s->break_continue->token,
             "Unable to allocate default break object value." );
           break;
         }
+      }
+      // get continue level
+      uint64_t val = 0;
+      memcpy( &val, level->data, sizeof( val ) );
+      // handle more levels than loops are existing
+      if ( val > interpreter->loop_level ) {
+        raise_error( s->break_continue->token, "Continue statement to high." );
+        destroy_object( level );
+        break;
       }
       // set break flag
       level->is_break = true;
       // return level
       return level;
     }
+    case STATEMENT_CONTINUE: {
+      bosl_object_t* level = NULL;
+      if ( s->break_continue->level ) {
+        // evaluate level expression
+        level = evaluate_expression( s->break_continue->level );
+        if ( ! level ) {
+          raise_error(
+            s->break_continue->token, "Unable to evaluate continue condition." );
+          break;
+        }
+      }
+      // allocate default level if not allocated
+      if ( ! level ) {
+        uint64_t i = 1;
+        level = bosl_object_allocate( OBJECT_VALUE_INT_UNSIGNED, &i, sizeof( i ) );
+        if ( ! level ) {
+          raise_error(
+            s->break_continue->token,
+            "Unable to allocate default continue object value." );
+          break;
+        }
+      }
+      // get continue level
+      uint64_t val = 0;
+      memcpy( &val, level->data, sizeof( val ) );
+      // handle more levels than loops are existing
+      if ( val > interpreter->loop_level ) {
+        raise_error( s->break_continue->token, "Continue statement to high." );
+        destroy_object( level );
+        break;
+      }
+      // set break flag
+      level->is_continue = true;
+      // return level
+      return level;
+    }
     case STATEMENT_POINTER: {
+      raise_error( s->pointer->name, "Not implemented statement" );
       break;
     }
     default:
@@ -1471,8 +1532,10 @@ static void execute_ast_node( bosl_ast_node_t* node ) {
     raise_error( NULL, "Invalid ast node" );
     return;
   }
-  // reset loop break remaining
+  // reset loop break remaining, continue remaining and loop level
   interpreter->loop_break_remaining = 0;
+  interpreter->loop_continue_remaining = 0;
+  interpreter->loop_level = 0;
   // execute statement
   execute( node->statement );
 }

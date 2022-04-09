@@ -1,0 +1,15 @@
+
+let i: uint32 = 0;
+let j: uint32 = 0;
+while ( j < 5 ) {
+  i = 0;
+  while ( i < 10 ) {
+    if ( 2 == j && 5 == i ) {
+      continue 2;
+    }
+    print( i );
+    i = i + 1;
+  }
+
+  j = j + 1;
+}

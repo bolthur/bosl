@@ -69,8 +69,9 @@ bosl_ast_statement_t* bosl_ast_statement_allocate( bosl_ast_statement_type_t typ
     case STATEMENT_WHILE:
       allocated_size = sizeof( bosl_ast_statement_while_t );
       break;
+    case STATEMENT_CONTINUE:
     case STATEMENT_BREAK:
-      allocated_size = sizeof( bosl_ast_statement_break_loop_t );
+      allocated_size = sizeof( bosl_ast_statement_break_continue_t );
       break;
     case STATEMENT_POINTER:
       allocated_size = sizeof( bosl_ast_statement_pointer_t );
@@ -141,8 +142,9 @@ void bosl_ast_statement_destroy( bosl_ast_statement_t* statement ) {
         bosl_ast_expression_destroy( statement->while_loop->condition );
         bosl_ast_statement_destroy( statement->while_loop->body );
         break;
+      case STATEMENT_CONTINUE:
       case STATEMENT_BREAK:
-        bosl_ast_expression_destroy( statement->break_loop->level );
+        bosl_ast_expression_destroy( statement->break_continue->level );
         break;
       case STATEMENT_POINTER:
         bosl_ast_statement_destroy( statement->pointer->statement );

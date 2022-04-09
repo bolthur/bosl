@@ -1129,8 +1129,51 @@ static bosl_ast_node_t* statement_break( void ) {
     return NULL;
   }
   // populate node
-  node->statement->break_loop->token = token;
-  node->statement->break_loop->level = e;
+  node->statement->break_continue->token = token;
+  node->statement->break_continue->level = e;
+  // return node
+  return node;
+}
+
+/**
+ * @brief Handle continue statement
+ *
+ * @return
+ */
+static bosl_ast_node_t* statement_continue( void ) {
+  if ( ! parser->_in_loop ) {
+    bosl_error_raise( parser->current(), "Continue is only allowed in a loop." );
+    return NULL;
+  }
+  bosl_token_t* token = parser->previous();
+  // handle level to break
+  bosl_ast_expression_t* e = NULL;
+  if ( parser->current()->type != TOKEN_SEMICOLON ) {
+    e = expression();
+    if ( ! e ) {
+      bosl_error_raise( parser->current(), "Unable to evaluate expression" );
+      return NULL;
+    }
+  }
+  // expect semicolon
+  if ( ! consume( TOKEN_SEMICOLON, "Expect ';' at end of continue." ) ) {
+    bosl_ast_expression_destroy( e );
+    return NULL;
+  }
+  // allocate new ast node
+  bosl_ast_node_t* node = bosl_ast_node_allocate();
+  if ( ! node ) {
+    return NULL;
+  }
+  // allocate new ast node
+  node->statement = bosl_ast_statement_allocate( STATEMENT_CONTINUE );
+  if ( ! node->statement ) {
+    bosl_ast_node_destroy( node );
+    return NULL;
+  }
+  // populate node
+  node->statement->break_continue->token = token;
+  node->statement->break_continue->level = e;
   // return node
   return node;
 }
@@ -1195,6 +1238,9 @@ static bosl_ast_node_t* statement( void ) {
   }
   if ( match( TOKEN_BREAK ) ) {
     return statement_break();
+  }
+  if ( match( TOKEN_CONTINUE ) ) {
+    return statement_continue();
   }
   return statement_expression();
 }
@@ -1908,8 +1954,25 @@ static void print_statement( bosl_ast_statement_t* s ) {
       // opening block
       fprintf( stdout, "(break " );
       // print level
-      if ( s->break_loop->level ) {
-        print_expression( s->break_loop->level );
+      if ( s->break_continue->level ) {
+        print_expression( s->break_continue->level );
+      } else {
+        fprintf( stdout, "1" );
+      }
+      // closing block
+      fprintf( stdout, ")" );
+      break;
+    }
+    case STATEMENT_CONTINUE: {
+      if ( ! parser->_in_loop ) {
+        bosl_error_raise( parser->current(), "Continue is only allowed in a loop." );
+        break;
+      }
+      // opening block
+      fprintf( stdout, "(continue " );
+      // print level
+      if ( s->break_continue->level ) {
+        print_expression( s->break_continue->level );
       } else {
         fprintf( stdout, "1" );
       }

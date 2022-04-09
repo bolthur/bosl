@@ -65,7 +65,7 @@ START_TEST( test_error_at_eof ) {
   // prepare expected
   sprintf(
     expected,
-    "[line %u] Error at end: %s\r\n",
+    "\033[0;91m[line %u] Error at end: %s\r\n\033[0m",
     token.line,
     "foo bar foo"
   );
@@ -85,7 +85,7 @@ START_TEST( test_error_token ) {
   // prepare expected
   sprintf(
     expected,
-    "[line %u] Error: %s\r\n",
+    "\033[0;91m[line %u] Error: %s\r\n\033[0m",
     token.line,
     "token error"
   );
@@ -106,7 +106,7 @@ START_TEST( test_error_normal ) {
   // prepare expected
   sprintf(
     expected,
-    "[line %u] Error at '%.*s': %s\r\n",
+    "\033[0;91m[line %u] Error at '%.*s': %s\r\n\033[0m",
     token.line,
     ( int )token.length,
     token.start,

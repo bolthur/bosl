@@ -39,7 +39,8 @@ START_TEST( test_hashmap_create ) {
   table = hashmap_construct( NULL );
   ck_assert_ptr_nonnull( table );
   ck_assert( 0 == table->length );
-  ck_assert( HASHMAP_INITIAL_CAPACITY == table->capacity );
+  ck_assert( 0 == table->capacity );
+  ck_assert_ptr_null( table->entries );
 }
 END_TEST
 
@@ -53,14 +54,19 @@ START_TEST( test_hashmap_add ) {
 END_TEST
 
 START_TEST( test_hashmap_add_multiple ) {
+  ck_assert_ptr_null( table->entries );
   ck_assert_ptr_nonnull( hashmap_value_set( table, "foo1", ( void* )5 ) );
   ck_assert( 1 == hashmap_length( table ) );
+  ck_assert_ptr_nonnull( table->entries );
   ck_assert_ptr_nonnull( hashmap_value_set( table, "foo2", ( void* )5 ) );
   ck_assert( 2 == hashmap_length( table ) );
+  ck_assert_ptr_nonnull( table->entries );
   ck_assert_ptr_nonnull( hashmap_value_set( table, "foo3", ( void* )5 ) );
   ck_assert( 3 == hashmap_length( table ) );
+  ck_assert_ptr_nonnull( table->entries );
   ck_assert_ptr_nonnull( hashmap_value_set( table, "foo4", ( void* )5 ) );
   ck_assert( 4 == hashmap_length( table ) );
+  ck_assert_ptr_nonnull( table->entries );
   ck_assert_ptr_nonnull( hashmap_value_set( table, "foo5", ( void* )5 ) );
   ck_assert( 5 == hashmap_length( table ) );
 }

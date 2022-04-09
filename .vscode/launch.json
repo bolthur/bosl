@@ -6,7 +6,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/cli/bosl",
-      "args": [ "${workspaceFolder}/bosl-example/while3.bosl" ],
+      "args": [ "${workspaceFolder}/bosl-example/while4.bosl" ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}/build/cli",
       "environment": [

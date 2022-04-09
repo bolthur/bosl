@@ -82,10 +82,11 @@ typedef enum {
   TOKEN_IF,
   TOKEN_ELSE,
   TOKEN_WHILE,
+  TOKEN_BREAK,
+  TOKEN_CONTINUE,
   TOKEN_FUNCTION,
   TOKEN_RETURN,
   TOKEN_LOAD,
-  TOKEN_BREAK,
 
   // built-in functions
   TOKEN_PRINT,

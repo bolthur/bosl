@@ -71,6 +71,7 @@ typedef struct bosl_object {
   bool constant;
   bool is_return;
   bool is_break;
+  bool is_continue;
 } bosl_object_t;
 
 // type definition for function callback
