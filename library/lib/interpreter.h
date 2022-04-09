@@ -44,9 +44,9 @@ typedef struct bosl_interpreter {
   bool error;
   bosl_environment_t* env;
 
-  uint64_t loop_break_remaining;
-  uint64_t loop_continue_remaining;
-  uint64_t loop_level;
+  int64_t loop_break_remaining;
+  int64_t loop_continue_remaining;
+  int64_t loop_level;
 
   list_manager_t* _ast;
   list_item_t* _current;

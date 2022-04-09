@@ -211,9 +211,7 @@ static bosl_ast_expression_t* expression_primary( void ) {
       }
       // push to literal
       return bosl_ast_expression_allocate_literal(
-        &num, sizeof( num ), is_hex
-          ? EXPRESSION_LITERAL_TYPE_NUMBER_HEX
-          : EXPRESSION_LITERAL_TYPE_NUMBER_INT );
+        &num, sizeof( num ), EXPRESSION_LITERAL_TYPE_NUMBER_INT );
     }
   }
 
@@ -266,7 +264,7 @@ static bosl_ast_expression_t* expression_primary( void ) {
 static bosl_ast_expression_t* expression_call_finish(
   bosl_ast_expression_t* callee
 ) {
-  bosl_token_t* current = parser->current();
+  bosl_token_t* current_token = parser->current();
   // create arguments list
   list_manager_t* arguments = list_construct(
     NULL, list_expression_cleanup, NULL );
@@ -274,7 +272,7 @@ static bosl_ast_expression_t* expression_call_finish(
     return NULL;
   }
   // handle possible arguments
-  if ( TOKEN_RIGHT_PARENTHESIS != current->type ) {
+  if ( TOKEN_RIGHT_PARENTHESIS != current_token->type ) {
     do {
       // get argument expression
       bosl_ast_expression_t* arg = expression();
@@ -290,10 +288,10 @@ static bosl_ast_expression_t* expression_call_finish(
       }
     } while ( match( TOKEN_COMMA ) );
   }
-  bosl_token_t* previous = consume(
+  bosl_token_t* previous_token = consume(
     TOKEN_RIGHT_PARENTHESIS, "Expected ')' after arguments." );
   // check for closing parenthesis
-  if ( ! previous ) {
+  if ( ! previous_token ) {
     list_destruct( arguments );
     return NULL;
   }
@@ -304,7 +302,7 @@ static bosl_ast_expression_t* expression_call_finish(
     return NULL;
   }
   e->call->callee = callee;
-  e->call->paren = previous;
+  e->call->paren = previous_token;
   e->call->arguments = arguments;
   // return call expression
   return e;
@@ -749,7 +747,7 @@ static bosl_ast_expression_t* expression_assignment( void ) {
   // handle assignment
   if ( match( TOKEN_EQUAL ) ) {
     // get previous token
-    bosl_token_t* previous = parser->previous();
+    bosl_token_t* previous_token = parser->previous();
     // get value for assignment
     bosl_ast_expression_t* value = expression_assignment();
     if ( ! value ) {
@@ -774,7 +772,7 @@ static bosl_ast_expression_t* expression_assignment( void ) {
       return new_e;
     }
     // raise error
-    bosl_error_raise( previous, "Invalid assignment target." );
+    bosl_error_raise( previous_token, "Invalid assignment target." );
     bosl_ast_expression_destroy( e );
     return NULL;
   }
@@ -1389,9 +1387,9 @@ static bosl_ast_node_t* declaration_function( void ) {
     return NULL;
   }
   // get current token
-  bosl_token_t* current = parser->current();
+  bosl_token_t* current_token = parser->current();
   // handle possible parameter
-  if ( TOKEN_RIGHT_PARENTHESIS != current->type ) {
+  if ( TOKEN_RIGHT_PARENTHESIS != current_token->type ) {
     do {
       // cache name
       bosl_token_t* parameter_name = consume(
@@ -1739,12 +1737,6 @@ static void print_expression( bosl_ast_expression_t* e ) {
           fprintf( stdout, "%"PRIu64, num );
           break;
         }
-        case EXPRESSION_LITERAL_TYPE_NUMBER_HEX: {
-          uint64_t num;
-          memcpy( &num, e->literal->value, sizeof( uint64_t ) );
-          fprintf( stdout, "%"PRIx64, num );
-          break;
-        }
       }
       break;
     }
@@ -2046,12 +2038,12 @@ void bosl_parser_print( void ) {
   }
   // loop through nodes and print them
   for (
-    list_item_t* current = parser->ast->first;
-    current;
-    current = current->next
+    list_item_t* current_item = parser->ast->first;
+    current_item;
+    current_item = current_item->next
   ) {
     parser->_depth = 0;
-    print_node( current->data );
+    print_node( current_item->data );
   }
   // final newline
   fprintf( stdout, "\r\n" );

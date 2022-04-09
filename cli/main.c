@@ -63,6 +63,7 @@ static char* read_file( const char* path ) {
   // read whole file into buffer
   if ( 1 != fread( buffer, size - 1, 1, f ) ) {
     fclose( f );
+    free( buffer );
     return NULL;
   }
   // close and return buffer

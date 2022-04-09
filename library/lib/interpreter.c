@@ -121,27 +121,25 @@ static char* stringify( bosl_object_t* object ) {
   // determine buffer size
   size_t buffer_size = sizeof( char );
   if (
-    OBJECT_VALUE_FLOAT == object->value_type
-    || OBJECT_VALUE_INT_SIGNED == object->value_type
-    || OBJECT_VALUE_INT_UNSIGNED == object->value_type
-    || OBJECT_VALUE_HEX_SIGNED == object->value_type
-    || OBJECT_VALUE_HEX_UNSIGNED == object->value_type
+    BOSL_OBJECT_VALUE_FLOAT == object->value_type
+    || BOSL_OBJECT_VALUE_INT_SIGNED == object->value_type
+    || BOSL_OBJECT_VALUE_INT_UNSIGNED == object->value_type
   ) {
     buffer_size *= 100;
   } else if (
-    OBJECT_VALUE_BOOL == object->value_type
+    BOSL_OBJECT_VALUE_BOOL == object->value_type
   ) {
     buffer_size *= 6;
   } else if (
-    OBJECT_VALUE_NULL == object->value_type
+    BOSL_OBJECT_VALUE_NULL == object->value_type
   ) {
     buffer_size *= 5;
   } else if (
-    OBJECT_VALUE_STRING == object->value_type
+    BOSL_OBJECT_VALUE_STRING == object->value_type
   ) {
     buffer_size *= ( object->size + 1 );
   } else if (
-    OBJECT_VALUE_CALLABLE == object->value_type
+    BOSL_OBJECT_VALUE_CALLABLE == object->value_type
   ) {
     buffer_size =
       ( ( bosl_object_callable_t* )object->data )->statement->token->length
@@ -153,35 +151,27 @@ static char* stringify( bosl_object_t* object ) {
     return NULL;
   }
   memset( buffer, 0, buffer_size );
-  if ( OBJECT_VALUE_FLOAT == object->value_type ) {
+  if ( BOSL_OBJECT_VALUE_FLOAT == object->value_type ) {
     long double num;
     memcpy( &num, object->data, sizeof( num ) );
     sprintf( buffer, "%Lf", num );
-  } else if ( OBJECT_VALUE_INT_SIGNED == object->value_type ) {
+  } else if ( BOSL_OBJECT_VALUE_INT_SIGNED == object->value_type ) {
     int64_t num;
     memcpy( &num, object->data, sizeof( num ) );
     sprintf( buffer, "%"PRId64, num );
-  } else if ( OBJECT_VALUE_INT_UNSIGNED == object->value_type ) {
+  } else if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == object->value_type ) {
     uint64_t num;
     memcpy( &num, object->data, sizeof( num ) );
     sprintf( buffer, "%"PRIu64, num );
-  } else if ( OBJECT_VALUE_HEX_SIGNED == object->value_type ) {
-    int64_t num;
-    memcpy( &num, object->data, sizeof( num ) );
-    sprintf( buffer, "%"PRIx64, num );
-  } else if ( OBJECT_VALUE_HEX_UNSIGNED == object->value_type ) {
-    uint64_t num;
-    memcpy( &num, object->data, sizeof( num ) );
-    sprintf( buffer, "%"PRIx64, num );
-  } else if ( OBJECT_VALUE_BOOL == object->value_type ) {
+  } else if ( BOSL_OBJECT_VALUE_BOOL == object->value_type ) {
     bool flag;
     memcpy( &flag, object->data, sizeof( flag ) );
     sprintf( buffer, "%s", flag ? "true": "false" );
-  } else if ( OBJECT_VALUE_STRING == object->value_type ) {
+  } else if ( BOSL_OBJECT_VALUE_STRING == object->value_type ) {
     strncpy( buffer, object->data, object->size );
-  } else if ( OBJECT_VALUE_NULL == object->value_type ) {
+  } else if ( BOSL_OBJECT_VALUE_NULL == object->value_type ) {
     sprintf( buffer, "null" );
-  } else if ( OBJECT_VALUE_CALLABLE == object->value_type ) {
+  } else if ( BOSL_OBJECT_VALUE_CALLABLE == object->value_type ) {
     bosl_token_t* token = ( ( bosl_object_callable_t* )object->data )
       ->statement->token;
     sprintf(
@@ -197,6 +187,8 @@ static char* stringify( bosl_object_t* object ) {
  *
  * @param object
  * @return
+ *
+ * @todo Treat values ( int, uint, float ) as true if not 0
  */
 static bosl_object_t* object_truthy(
   bosl_object_t* object,
@@ -209,10 +201,10 @@ static bosl_object_t* object_truthy(
   }
   bool flag = true;
   // handle null
-  if ( OBJECT_VALUE_NULL == object->value_type ) {
+  if ( BOSL_OBJECT_VALUE_NULL == object->value_type ) {
     flag = false;
   // evaluate boolean
-  } else if ( OBJECT_VALUE_BOOL == object->value_type ) {
+  } else if ( BOSL_OBJECT_VALUE_BOOL == object->value_type ) {
     flag = *( ( bool* )( object->data ) );
   }
   // handle negotiation
@@ -221,7 +213,8 @@ static bosl_object_t* object_truthy(
   }
   // build and return object
   return bosl_object_allocate(
-    OBJECT_VALUE_BOOL,
+    BOSL_OBJECT_VALUE_BOOL,
+    BOSL_OBJECT_TYPE_BOOL,
     &flag,
     sizeof( flag )
   );
@@ -234,6 +227,10 @@ static bosl_object_t* object_truthy(
  * @param right
  * @param negotiate
  * @return
+ *
+ * @todo Add change depending on type
+ * @todo float and integer comparison shall be not equal
+ * @todo integer and unsigned integer shall be equal when both values are comparable and equal
  */
 static bosl_object_t* object_equal(
   bosl_object_t* left,
@@ -248,13 +245,13 @@ static bosl_object_t* object_equal(
   bool flag = false;
   // handle both null
   if (
-    OBJECT_VALUE_NULL == left->value_type
-    && OBJECT_VALUE_NULL == right->value_type
+    BOSL_OBJECT_VALUE_NULL == left->value_type
+    && BOSL_OBJECT_VALUE_NULL == right->value_type
   ) {
     flag = true;
   // handle comparison
   } else if ( left->value_type == right->value_type ) {
-    if ( OBJECT_VALUE_BOOL == left->value_type ) {
+    if ( BOSL_OBJECT_VALUE_BOOL == left->value_type ) {
       flag = *( ( bool* )( left->data ) ) == *( ( bool* )( right->data ) );
     } else {
       flag = 0 == memcmp(
@@ -272,51 +269,11 @@ static bosl_object_t* object_equal(
   }
   // return result
   return bosl_object_allocate(
-    OBJECT_VALUE_BOOL,
+    BOSL_OBJECT_VALUE_BOOL,
+    BOSL_OBJECT_TYPE_BOOL,
     &flag,
     sizeof( flag )
   );
-}
-
-/**
- * @brief Helper to extract number from object
- *
- * @param object
- * @param unum
- * @param num
- * @param dnum
- * @return
- */
-static bool extract_number(
-  bosl_object_t* object,
-  uint64_t* unum,
-  int64_t* num,
-  long double* dnum
-) {
-  // only numbers are handled here
-  if ( object->value_type > OBJECT_VALUE_HEX_UNSIGNED ) {
-    raise_error( NULL, "Invalid object passed to extract_number." );
-    return false;
-  }
-  // extract numbers
-  switch ( object->value_type ) {
-    case OBJECT_VALUE_FLOAT:
-      memcpy( dnum, object->data, object->size );
-      break;
-    case OBJECT_VALUE_INT_UNSIGNED:
-    case OBJECT_VALUE_HEX_UNSIGNED:
-      memcpy( unum, object->data, object->size );
-      break;
-    case OBJECT_VALUE_INT_SIGNED:
-    case OBJECT_VALUE_HEX_SIGNED:
-      memcpy( num, object->data, object->size );
-      break;
-    default:
-      // should not happen due to if
-      return false;
-  }
-  // return success
-  return true;
 }
 
 /**
@@ -324,6 +281,9 @@ static bool extract_number(
  *
  * @param b
  * @return
+ *
+ * @todo add type checking when performing addition, subtraction, division or multiplication
+ * @todo raise error for <, <=, >, >= when types are not comparable, e.g. integer and double or unsigned integer and integer when integer is negative
  */
 static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
   // evaluate left
@@ -348,17 +308,11 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     && ! same_type
   ) {
     // change right if left is signed
-    if (
-      OBJECT_VALUE_HEX_SIGNED == left->value_type
-      || OBJECT_VALUE_INT_SIGNED == left->value_type
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_SIGNED == left->value_type ) {
       right->value_type = left->value_type;
       same_type = true;
     // change left if right is signed
-    } else if (
-      OBJECT_VALUE_HEX_SIGNED == right->value_type
-      || OBJECT_VALUE_INT_SIGNED == right->value_type
-    ) {
+    } else if ( BOSL_OBJECT_VALUE_INT_SIGNED == right->value_type ) {
       left->value_type = right->value_type;
       same_type = true;
     } else {
@@ -381,8 +335,8 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     && b->operator->type != TOKEN_BANG_EQUAL
     && b->operator->type != TOKEN_BANG
     && (
-      ! extract_number( left, &lunum, &lsnum, &ldnum )
-      || ! extract_number( right, &runum, &rsnum, &rdnum )
+      ! bosl_object_extract_number( left, &lunum, &lsnum, &ldnum )
+      || ! bosl_object_extract_number( right, &runum, &rsnum, &rdnum )
     )
   ) {
     raise_error( b->operator, "Number extraction failed." );
@@ -398,34 +352,31 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == OBJECT_VALUE_FLOAT ) {
+    if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
       long double result = ldnum - rdnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_FLOAT,
+        BOSL_OBJECT_VALUE_FLOAT,
+        BOSL_OBJECT_TYPE_FLOAT,
         &result,
         sizeof( result )
       );
     }
     // handle unsigned int / hex
-    if (
-      type == OBJECT_VALUE_INT_UNSIGNED
-      || type == OBJECT_VALUE_HEX_UNSIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
       uint64_t result = lunum - runum;
       return bosl_object_allocate(
         type,
+        BOSL_OBJECT_TYPE_UINT64,
         &result,
         sizeof( result )
       );
     }
     // handle signed int / hex
-    if (
-      type == OBJECT_VALUE_INT_SIGNED
-      || type == OBJECT_VALUE_HEX_SIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
       int64_t result = lsnum - rsnum;
       return bosl_object_allocate(
         type,
+        BOSL_OBJECT_TYPE_INT64,
         &result,
         sizeof( result )
       );
@@ -439,34 +390,31 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == OBJECT_VALUE_FLOAT ) {
+    if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
       long double result = ldnum + rdnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_FLOAT,
+        BOSL_OBJECT_VALUE_FLOAT,
+        BOSL_OBJECT_TYPE_FLOAT,
         &result,
         sizeof( result )
       );
     }
     // handle unsigned int / hex
-    if (
-      type == OBJECT_VALUE_INT_UNSIGNED
-      || type == OBJECT_VALUE_HEX_UNSIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
       uint64_t result = lunum + runum;
       return bosl_object_allocate(
         type,
+        BOSL_OBJECT_TYPE_UINT64,
         &result,
         sizeof( result )
       );
     }
     // handle signed int / hex
-    if (
-      type == OBJECT_VALUE_INT_SIGNED
-      || type == OBJECT_VALUE_HEX_SIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
       int64_t result = lsnum + rsnum;
       return bosl_object_allocate(
         type,
+        BOSL_OBJECT_TYPE_INT64,
         &result,
         sizeof( result )
       );
@@ -480,34 +428,31 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == OBJECT_VALUE_FLOAT ) {
+    if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
       long double result = ldnum / rdnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_FLOAT,
+        BOSL_OBJECT_VALUE_FLOAT,
+        BOSL_OBJECT_TYPE_FLOAT,
         &result,
         sizeof( result )
       );
     }
     // handle unsigned int / hex
-    if (
-      type == OBJECT_VALUE_INT_UNSIGNED
-      || type == OBJECT_VALUE_HEX_UNSIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
       uint64_t result = lunum / runum;
       return bosl_object_allocate(
         type,
+        BOSL_OBJECT_TYPE_UINT64,
         &result,
         sizeof( result )
       );
     }
     // handle signed int / hex
-    if (
-      type == OBJECT_VALUE_INT_SIGNED
-      || type == OBJECT_VALUE_HEX_SIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
       int64_t result = lsnum / rsnum;
       return bosl_object_allocate(
         type,
+        BOSL_OBJECT_TYPE_INT64,
         &result,
         sizeof( result )
       );
@@ -521,34 +466,31 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == OBJECT_VALUE_FLOAT ) {
+    if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
       long double result = ldnum * rdnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_FLOAT,
+        BOSL_OBJECT_VALUE_FLOAT,
+        BOSL_OBJECT_TYPE_FLOAT,
         &result,
         sizeof( result )
       );
     }
     // handle unsigned int / hex
-    if (
-      type == OBJECT_VALUE_INT_UNSIGNED
-      || type == OBJECT_VALUE_HEX_UNSIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
       uint64_t result = lunum * runum;
       return bosl_object_allocate(
         type,
+        BOSL_OBJECT_TYPE_UINT64,
         &result,
         sizeof( result )
       );
     }
     // handle signed int / hex
-    if (
-      type == OBJECT_VALUE_INT_SIGNED
-      || type == OBJECT_VALUE_HEX_SIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
       int64_t result = lsnum * rsnum;
       return bosl_object_allocate(
         type,
+        BOSL_OBJECT_TYPE_INT64,
         &result,
         sizeof( result )
       );
@@ -562,28 +504,22 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == OBJECT_VALUE_FLOAT ) {
+    if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
       bool result = ldnum > rdnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
-    if (
-      type == OBJECT_VALUE_INT_UNSIGNED
-      || type == OBJECT_VALUE_HEX_UNSIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
       bool result = lunum > runum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
-    if (
-      type == OBJECT_VALUE_INT_SIGNED
-      || type == OBJECT_VALUE_HEX_SIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
       bool result = lsnum > rsnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
     raise_error( b->operator, "Unknown error" );
@@ -594,28 +530,22 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == OBJECT_VALUE_FLOAT ) {
+    if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
       bool result = ldnum >= rdnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
-    if (
-      type == OBJECT_VALUE_INT_UNSIGNED
-      || type == OBJECT_VALUE_HEX_UNSIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
       bool result = lunum >= runum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
-    if (
-      type == OBJECT_VALUE_INT_SIGNED
-      || type == OBJECT_VALUE_HEX_SIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
       bool result = lsnum >= rsnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
     raise_error( b->operator, "Unknown error" );
@@ -626,28 +556,22 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == OBJECT_VALUE_FLOAT ) {
+    if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
       bool result = ldnum < rdnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
-    if (
-      type == OBJECT_VALUE_INT_UNSIGNED
-      || type == OBJECT_VALUE_HEX_UNSIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
       bool result = lunum < runum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
-    if (
-      type == OBJECT_VALUE_INT_SIGNED
-      || type == OBJECT_VALUE_HEX_SIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
       bool result = lsnum < rsnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
     raise_error( b->operator, "Unknown error" );
@@ -658,28 +582,22 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( left );
     destroy_object( right );
     // handle float
-    if ( type == OBJECT_VALUE_FLOAT ) {
+    if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
       bool result = ldnum <= rdnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
-    if (
-      type == OBJECT_VALUE_INT_UNSIGNED
-      || type == OBJECT_VALUE_HEX_UNSIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
       bool result = lunum <= runum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
-    if (
-      type == OBJECT_VALUE_INT_SIGNED
-      || type == OBJECT_VALUE_HEX_SIGNED
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
       bool result = lsnum <= rsnum;
       return bosl_object_allocate(
-        OBJECT_VALUE_BOOL, &result, sizeof( result ) );
+        BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
     raise_error( b->operator, "Unknown error" );
@@ -715,6 +633,8 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
  *
  * @param u
  * @return
+ *
+ * @todo consider types correctly
  */
 static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
   // evaluate right
@@ -733,7 +653,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     return truthy;
   } else if ( TOKEN_MINUS == u->operator->type ) {
     // validate type
-    if ( right->value_type > OBJECT_VALUE_HEX_UNSIGNED ) {
+    if ( right->value_type > BOSL_OBJECT_VALUE_INT_UNSIGNED ) {
       // raise error and return NULL
       raise_error( u->operator, "Expect numeric" );
       return NULL;
@@ -743,31 +663,26 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     uint64_t unum = 0;
     long double dnum = 0;
     // extract stuff
-    if ( ! extract_number( right, &unum, &snum, &dnum ) ) {
+    if ( ! bosl_object_extract_number( right, &unum, &snum, &dnum ) ) {
       raise_error( u->operator, "Runtime error unable to extract number" );
       destroy_object( right );
       return NULL;
     }
     bosl_object_value_type_t type = right->value_type;
     destroy_object( right );
-    if ( OBJECT_VALUE_FLOAT == type ) {
+    if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
       dnum = -dnum;
-      return bosl_object_allocate( type, &dnum, sizeof( dnum ) );
-    } else if (
-      OBJECT_VALUE_INT_SIGNED == type
-      || OBJECT_VALUE_HEX_SIGNED == type
-    ) {
+      return bosl_object_allocate(
+        type, BOSL_OBJECT_TYPE_FLOAT, &dnum, sizeof( dnum ) );
+    } else if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
       snum = -snum;
-      return bosl_object_allocate( type, &snum, sizeof( snum ) );
-    } else if (
-      OBJECT_VALUE_INT_UNSIGNED == type
-      || OBJECT_VALUE_HEX_UNSIGNED == type
-    ) {
+      return bosl_object_allocate(
+        type, BOSL_OBJECT_TYPE_INT64, &snum, sizeof( snum ) );
+    } else if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
       snum = -( ( int64_t )unum );
       return bosl_object_allocate(
-        OBJECT_VALUE_INT_UNSIGNED == type
-          ? OBJECT_VALUE_INT_SIGNED
-          : OBJECT_VALUE_HEX_SIGNED,
+        BOSL_OBJECT_VALUE_INT_UNSIGNED,
+        BOSL_OBJECT_TYPE_UINT64,
         &snum,
         sizeof( snum )
       );
@@ -778,8 +693,8 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
   } else if ( TOKEN_PLUS == u->operator->type ) {
     // validate type
     if (
-      right->value_type >= OBJECT_VALUE_FLOAT
-      && right->value_type <= OBJECT_VALUE_HEX_UNSIGNED
+      right->value_type >= BOSL_OBJECT_VALUE_FLOAT
+      && right->value_type <= BOSL_OBJECT_VALUE_INT_UNSIGNED
     ) {
       // raise error and return NULL
       raise_error( u->operator, "Expect numeric" );
@@ -790,8 +705,8 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
   } else if ( TOKEN_BINARY_ONE_COMPLEMENT == u->operator->type ) {
     // validate type
     if (
-      right->value_type >= OBJECT_VALUE_INT_SIGNED
-      && right->value_type <= OBJECT_VALUE_HEX_UNSIGNED
+      right->value_type >= BOSL_OBJECT_VALUE_INT_SIGNED
+      && right->value_type <= BOSL_OBJECT_VALUE_INT_UNSIGNED
     ) {
       // raise error and return NULL
       raise_error( u->operator, "Expect numeric integer" );
@@ -802,25 +717,21 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     uint64_t unum = 0;
     long double dnum = 0;
     // extract stuff
-    if ( ! extract_number( right, &unum, &snum, &dnum ) ) {
+    if ( ! bosl_object_extract_number( right, &unum, &snum, &dnum ) ) {
       raise_error( u->operator, "Runtime error unable to extract number" );
       destroy_object( right );
       return NULL;
     }
     bosl_object_value_type_t type = right->value_type;
     destroy_object( right );
-    if (
-      OBJECT_VALUE_INT_SIGNED == type
-      || OBJECT_VALUE_HEX_SIGNED == type
-    ) {
+    if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
       snum = ~snum;
-      return bosl_object_allocate( type, &snum, sizeof( snum ) );
-    } else if (
-      OBJECT_VALUE_INT_UNSIGNED == type
-      || OBJECT_VALUE_HEX_UNSIGNED == type
-    ) {
+      return bosl_object_allocate(
+        type, BOSL_OBJECT_TYPE_INT64, &snum, sizeof( snum ) );
+    } else if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
       unum = ~unum;
-      return bosl_object_allocate( type, &unum, sizeof( unum ) );
+      return bosl_object_allocate(
+        type, BOSL_OBJECT_TYPE_UINT64, &unum, sizeof( unum ) );
     }
     // just return right
     raise_error( u->operator, "Runtime error unknown" );
@@ -843,31 +754,34 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
 static bosl_object_t* evaluate_literal( bosl_ast_expression_literal_t* l ) {
   // determine type
   bosl_object_value_type_t type;
+  bosl_object_type_t object_type;
   switch ( l->type ) {
     case EXPRESSION_LITERAL_TYPE_BOOL:
-      type = OBJECT_VALUE_BOOL;
+      type = BOSL_OBJECT_VALUE_BOOL;
+      object_type = BOSL_OBJECT_TYPE_BOOL;
       break;
     case EXPRESSION_LITERAL_TYPE_NULL:
-      type = OBJECT_VALUE_NULL;
+      type = BOSL_OBJECT_VALUE_NULL;
+      object_type = BOSL_OBJECT_TYPE_UNDEFINED;
       break;
     case EXPRESSION_LITERAL_TYPE_NUMBER_FLOAT:
-      type = OBJECT_VALUE_FLOAT;
-      break;
-    case EXPRESSION_LITERAL_TYPE_NUMBER_HEX:
-      type = OBJECT_VALUE_HEX_UNSIGNED;
+      type = BOSL_OBJECT_VALUE_FLOAT;
+      object_type = BOSL_OBJECT_TYPE_FLOAT;
       break;
     case EXPRESSION_LITERAL_TYPE_NUMBER_INT:
-      type = OBJECT_VALUE_INT_UNSIGNED;
+      type = BOSL_OBJECT_VALUE_INT_UNSIGNED;
+      object_type = BOSL_OBJECT_TYPE_INT64;
       break;
     case EXPRESSION_LITERAL_TYPE_STRING:
-      type = OBJECT_VALUE_STRING;
+      type = BOSL_OBJECT_VALUE_STRING;
+      object_type = BOSL_OBJECT_TYPE_STRING;
       break;
     default:
       raise_error( NULL, "Unsupported object type in literal." );
       return NULL;
   }
   // allocate object
-  return bosl_object_allocate( type, l->value, l->size );
+  return bosl_object_allocate( type, object_type, l->value, l->size );
 }
 
 /**
@@ -887,26 +801,13 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
         raise_error( e->assign->token, "Unable to evaluate assign expression." );
         return NULL;
       }
-      // get current value
-      bosl_object_t* current = bosl_environment_get_value(
-        interpreter->env, e->assign->token );
-      // handle error
-      if ( ! current ) {
-        raise_error( e->assign->token, "Variable not existing." );
-        destroy_object( value );
-        return NULL;
-      }
-      // check for constant
-      if ( current->constant ) {
-        raise_error( e->assign->token, "Change a constant is not allowed." );
-        destroy_object( value );
-        return NULL;
-      }
-      // try to assign value
-      if ( ! bosl_environment_assign_value(
+      // assign object value
+      if ( ! bosl_object_assign_push_value(
         interpreter->env,
         e->assign->token,
-        value
+        NULL,
+        value,
+        false
       ) ) {
         raise_error( e->assign->token, "Assignment failed." );
         destroy_object( value );
@@ -927,7 +828,7 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
         return NULL;
       }
       // handle not a callable
-      if ( OBJECT_VALUE_CALLABLE != object->value_type ) {
+      if ( BOSL_OBJECT_VALUE_CALLABLE != object->value_type ) {
         raise_error( e->call->paren, "Not a callable function." );
         return NULL;
       }
@@ -943,12 +844,12 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
       }
       // evaluate arguments
       for (
-        list_item_t* current = e->call->arguments->first;
-        current;
-        current = current->next
+        list_item_t* current_item = e->call->arguments->first;
+        current_item;
+        current_item = current_item->next
       ) {
         // evaluate argument
-        bosl_object_t* argument = evaluate_expression( current->data );
+        bosl_object_t* argument = evaluate_expression( current_item->data );
         if ( ! argument ) {
           raise_error(
             e->call->paren, "Unable to evaluate parameter expression." );
@@ -1093,14 +994,14 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         break;
       }
       // backup current environment
-      bosl_environment_t* previous = interpreter->env;
-      // temporarily overwrite current
+      bosl_environment_t* previous_env = interpreter->env;
+      // temporarily overwrite current env
       interpreter->env = inner;
       // execute statement per statement
-      list_item_t* current = s->block->statements->first;
-      while ( current ) {
+      list_item_t* current_statement = s->block->statements->first;
+      while ( current_statement ) {
         // get statement
-        bosl_ast_statement_t* statement = current->data;
+        bosl_ast_statement_t* statement = current_statement->data;
         // execute it
         bosl_object_t* r = execute( statement );
         // handle return
@@ -1108,11 +1009,14 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           // duplicate return if environment variable
           bosl_object_t* copy = bosl_object_duplicate_environment( r );
           if ( ! copy ) {
+            // destroy object
+            destroy_object( r );
+            // raise error
             raise_error( NULL, "Unable to duplicate return / break object." );
             break;
           }
           // restore previous environment
-          interpreter->env = previous;
+          interpreter->env = previous_env;
           // destroy nested environment
           bosl_environment_free( inner );
           // return object
@@ -1124,10 +1028,10 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           break;
         }
         // get to next
-        current = current->next;
+        current_statement = current_statement->next;
       }
       // restore interpreter environment
-      interpreter->env = previous;
+      interpreter->env = previous_env;
       // destroy nested environment
       bosl_environment_free( inner );
       break;
@@ -1189,6 +1093,9 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       if ( r && ( r->is_return || r->is_break || r->is_continue ) ) {
         bosl_object_t* copy = bosl_object_duplicate_environment( r );
         if ( ! copy ) {
+          // destroy object
+          destroy_object( r );
+          // raise error
           raise_error( NULL, "Unable to duplicate return / break object." );
           break;
         }
@@ -1213,7 +1120,12 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       } else {
         // build null return
         const char n[] = "NULL";
-        value = bosl_object_allocate( OBJECT_VALUE_NULL, n, strlen( n ) + 1 );
+        value = bosl_object_allocate(
+          BOSL_OBJECT_VALUE_NULL,
+          BOSL_OBJECT_TYPE_UNDEFINED,
+          n,
+          strlen( n ) + 1
+        );
         if ( ! value ) {
           raise_error(
             s->return_value->keyword,
@@ -1250,7 +1162,11 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       } else {
         const char n[] = "NULL";
         value = bosl_object_allocate(
-          OBJECT_VALUE_NULL, n, strlen( n ) + 1 );
+          BOSL_OBJECT_VALUE_NULL,
+          BOSL_OBJECT_TYPE_UNDEFINED,
+          n,
+          strlen( n ) + 1
+        );
         if ( ! value ) {
           raise_error(
             s->variable->name,
@@ -1260,7 +1176,19 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         }
       }
       // push to environment
-      bosl_environment_push_value( interpreter->env, s->variable->name, value );
+      if ( ! bosl_object_assign_push_value(
+        interpreter->env,
+        s->variable->name,
+        s->variable->type,
+        value,
+        true
+      ) ) {
+        raise_error(
+          s->variable->name,
+          "Unable to push variable to environment."
+        );
+        break;
+      }
       break;
     }
     case STATEMENT_CONST: {
@@ -1272,14 +1200,26 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       if ( ! value ) {
         raise_error(
           s->variable->name,
-          "Unable to evaluate initializer expression."
+          "Unable to evaluate constant initializer expression."
         );
         break;
       }
       // set constant flag
       value->constant = true;
       // push to environment
-      bosl_environment_push_value( interpreter->env, s->variable->name, value );
+      if ( ! bosl_object_assign_push_value(
+        interpreter->env,
+        s->variable->name,
+        s->variable->type,
+        value,
+        true
+      ) ) {
+        raise_error(
+          s->variable->name,
+          "Unable to push constant to environment."
+        );
+        break;
+      }
       break;
     }
     case STATEMENT_WHILE: {
@@ -1339,7 +1279,8 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         // handle continue
         if ( r && r->is_continue ) {
           // fill remaining breaks, normally one but could be more
-          memcpy( &interpreter->loop_continue_remaining, r->data, sizeof( uint64_t ) );
+          memcpy(
+            &interpreter->loop_continue_remaining, r->data, sizeof( int64_t ) );
           interpreter->loop_continue_remaining--;
           // destroy object
           destroy_object( r );
@@ -1351,7 +1292,8 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         // handle break
         if ( r && r->is_break ) {
           // fill remaining breaks, normally one but could be more
-          memcpy( &interpreter->loop_break_remaining, r->data, sizeof( uint64_t ) );
+          memcpy(
+            &interpreter->loop_break_remaining, r->data, sizeof( int64_t ) );
           interpreter->loop_break_remaining--;
           // destroy object
           destroy_object( r );
@@ -1374,7 +1316,12 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       // allocate default level if not allocated
       if ( ! level ) {
         uint64_t i = 1;
-        level = bosl_object_allocate( OBJECT_VALUE_INT_UNSIGNED, &i, sizeof( i ) );
+        level = bosl_object_allocate(
+          BOSL_OBJECT_VALUE_INT_UNSIGNED,
+          BOSL_OBJECT_TYPE_INT64,
+          &i,
+          sizeof( i )
+        );
         if ( ! level ) {
           raise_error(
             s->break_continue->token,
@@ -1382,9 +1329,28 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           break;
         }
       }
+      if (
+        level->type != BOSL_OBJECT_TYPE_INT8
+        && level->type != BOSL_OBJECT_TYPE_INT16
+        && level->type != BOSL_OBJECT_TYPE_INT32
+        && level->type != BOSL_OBJECT_TYPE_INT64
+      ) {
+        raise_error(
+          s->break_continue->token,
+          "break level has to be of type signed integer." );
+        destroy_object( level );
+        break;
+      }
       // get continue level
-      uint64_t val = 0;
+      int64_t val = 0;
       memcpy( &val, level->data, sizeof( val ) );
+      // handle invalid value
+      if ( 0 > val ) {
+        raise_error(
+          s->break_continue->token, "negative break level is not allowed." );
+        destroy_object( level );
+        break;
+      }
       // handle more levels than loops are existing
       if ( val > interpreter->loop_level ) {
         raise_error( s->break_continue->token, "Continue statement to high." );
@@ -1410,7 +1376,12 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       // allocate default level if not allocated
       if ( ! level ) {
         uint64_t i = 1;
-        level = bosl_object_allocate( OBJECT_VALUE_INT_UNSIGNED, &i, sizeof( i ) );
+        level = bosl_object_allocate(
+          BOSL_OBJECT_VALUE_INT_UNSIGNED,
+          BOSL_OBJECT_TYPE_INT64,
+          &i,
+          sizeof( i )
+        );
         if ( ! level ) {
           raise_error(
             s->break_continue->token,
@@ -1418,9 +1389,28 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           break;
         }
       }
+      if (
+        level->type != BOSL_OBJECT_TYPE_INT8
+        && level->type != BOSL_OBJECT_TYPE_INT16
+        && level->type != BOSL_OBJECT_TYPE_INT32
+        && level->type != BOSL_OBJECT_TYPE_INT64
+      ) {
+        raise_error(
+          s->break_continue->token,
+          "continue level has to be of type signed integer." );
+        destroy_object( level );
+        break;
+      }
       // get continue level
-      uint64_t val = 0;
+      int64_t val = 0;
       memcpy( &val, level->data, sizeof( val ) );
+      // handle invalid value
+      if ( 0 > val ) {
+        raise_error(
+          s->break_continue->token, "negative continue level is not allowed." );
+        destroy_object( level );
+        break;
+      }
       // handle more levels than loops are existing
       if ( val > interpreter->loop_level ) {
         raise_error( s->break_continue->token, "Continue statement to high." );
@@ -1462,7 +1452,7 @@ static bosl_object_t* execute_function(
     return NULL;
   }
   // backup current environment
-  bosl_environment_t* previous = interpreter->env;
+  bosl_environment_t* previous_env = interpreter->env;
   // temporarily overwrite current
   interpreter->env = closure;
   // FIXME: ENSURE CORRECT VALUE TYPE
@@ -1473,7 +1463,7 @@ static bosl_object_t* execute_function(
       callable->statement->parameter, index );
     if ( ! argument_item ) {
       // restore interpreter environment
-      interpreter->env = previous;
+      interpreter->env = previous_env;
       // destroy closure
       bosl_environment_free( closure );
       raise_error( NULL, "Unable to get parameter name from callable." );
@@ -1483,7 +1473,7 @@ static bosl_object_t* execute_function(
     list_item_t* value_item = list_get_item_at_pos( parameter, index );
     if ( ! value_item ) {
       // restore interpreter environment
-      interpreter->env = previous;
+      interpreter->env = previous_env;
       // destroy closure
       bosl_environment_free( closure );
       raise_error( NULL, "Unable to get parameter value for callable." );
@@ -1493,7 +1483,8 @@ static bosl_object_t* execute_function(
     bosl_ast_statement_t* argument = argument_item->data;
     bosl_object_t* value = value_item->data;
     // push to environment
-    bosl_environment_push_value( closure, argument->parameter->name, value );
+    bosl_environment_push_value(
+      interpreter->env, argument->parameter->name, value );
   }
   // execute function
   bosl_object_t* o = execute( callable->statement->body );
@@ -1503,7 +1494,7 @@ static bosl_object_t* execute_function(
     bosl_object_t* copy = bosl_object_duplicate_environment( o );
     if ( ! copy ) {
       // restore interpreter environment
-      interpreter->env = previous;
+      interpreter->env = previous_env;
       // destroy closure
       bosl_environment_free( closure );
       raise_error( NULL, "Unable to duplicate return object after function." );
@@ -1513,7 +1504,7 @@ static bosl_object_t* execute_function(
     o = copy;
   }
   // restore interpreter environment
-  interpreter->env = previous;
+  interpreter->env = previous_env;
   // destroy closure
   bosl_environment_free( closure );
   // return copy
@@ -1597,18 +1588,18 @@ void bosl_interpreter_free( void ) {
  */
 bool bosl_interpreter_run( void ) {
   // start with first ast item
-  list_item_t* current = interpreter->_ast->first;
+  list_item_t* current_item = interpreter->_ast->first;
   // loop as long as current is valid
-  while( current ) {
+  while( current_item ) {
     // execute
-    execute_ast_node( current->data );
+    execute_ast_node( current_item->data );
     // handle error
     if ( interpreter->error ) {
       fprintf( stderr, "Some interpreter error occurred!\r\n" );
       return false;
     }
     // get to next
-    current = current->next;
+    current_item = current_item->next;
   }
   // return success
   return true;

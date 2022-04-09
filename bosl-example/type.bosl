@@ -1,0 +1,31 @@
+
+let u8: uint8 = 0;
+let u16: uint16 = 0;
+let u32: uint32 = 0;
+let u64: uint64 = 0;
+
+let s8: int8 = 0;
+let s16: int16 = 0;
+let s32: int32 = 0;
+let s64: int64 = 0;
+
+let f: float = 0;
+
+let s: string = "Hello World!";
+
+print( u8 );
+print( u16 );
+print( u32 );
+print( u64 );
+
+print( s8 );
+print( s16 );
+print( s32 );
+print( s64 );
+
+print( f );
+
+print( s );
+
+// shall fail
+s = 5;

@@ -54,6 +54,11 @@ AX_VALGRIND_CHECK
 ## gettext
 #AM_GNU_GETTEXT([external])
 #AM_GNU_GETTEXT_VERSION([0.21])
+# code coverage
+AX_CODE_COVERAGE
+# valgrind
+AX_VALGRIND_DFLT([sgcheck], [off])
+AX_VALGRIND_CHECK
 # ensure existance of pkg config
 PKG_PROG_PKG_CONFIG
 
