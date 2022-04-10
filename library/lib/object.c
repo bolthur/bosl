@@ -229,6 +229,26 @@ bosl_object_type_t bosl_object_str_to_type( const char* str, size_t length ) {
 }
 
 /**
+ * @brief object type to string
+ *
+ * @param type
+ * @return
+ */
+const char* bosl_object_type_to_str( bosl_object_type_t type ) {
+  // setup hashmap iterator
+  hashmap_iterator_t it = hashmap_iterator( type_map );
+  // convert type to void pointer
+  void* vtype = ( void* )type;
+  // loop through hashmap
+  while ( hashmap_next( &it ) ) {
+    if ( vtype == it.value ) {
+      return it.key;
+    }
+  }
+  return NULL;
+}
+
+/**
  * @brief Get minimum possible integer value per type
  *
  * @param type
@@ -310,7 +330,6 @@ bool bosl_object_assign_push_value(
   bosl_object_t* value,
   bool push
 ) {
-  char buffer[ 100 ];
   // variable for object type
   bosl_object_type_t object_type;
   // check for constant if not pushing a variable
@@ -339,22 +358,39 @@ bool bosl_object_assign_push_value(
     object_type = bosl_object_str_to_type( type->start, type->length );
   }
 
-  // handle string expected but no string
+  // Check usual incompatibilites
   if (
-    BOSL_OBJECT_TYPE_STRING == object_type
-    && BOSL_OBJECT_TYPE_STRING != value->type
+    // handle string expected but no string in value
+    (
+      BOSL_OBJECT_TYPE_STRING == object_type
+      && BOSL_OBJECT_TYPE_STRING != value->type
+    // handle integer expected but decimal received
+    ) || (
+      BOSL_OBJECT_TYPE_UINT8 <= object_type
+      && BOSL_OBJECT_TYPE_INT64 >= object_type
+      && (
+        BOSL_OBJECT_TYPE_BOOL == value->type
+        || BOSL_OBJECT_TYPE_FLOAT == value->type
+        || BOSL_OBJECT_TYPE_STRING == value->type
+      )
+    )
   ) {
-    bosl_error_raise( NULL, "Cannot assign non-string to string." );
+    bosl_error_raise(
+      name, "Cannot assign %s to %s.",
+      bosl_object_type_to_str( value->type ),
+      bosl_object_type_to_str( object_type )
+    );
     return false;
   }
 
+  // check whether it's possible to convert between types
   if ( object_type != value->type ) {
     // extract numbers
     int64_t snum;
     uint64_t unum;
     long double dnum;
     if ( ! bosl_object_extract_number( value, &unum, &snum, &dnum ) ) {
-      bosl_error_raise( NULL, "Unable to extract value number." );
+      bosl_error_raise( name, "Unable to extract value number." );
       return false;
     }
 
@@ -368,6 +404,61 @@ bool bosl_object_assign_push_value(
     __unused long double dmax = bosl_object_type_max_float_value( object_type );
     __unused int64_t imin = bosl_object_type_min_int_value( object_type );
     __unused uint64_t imax = bosl_object_type_max_int_value( object_type );
+
+    // signed / unsigned integer to float conversion
+    if (
+      object_type == BOSL_OBJECT_TYPE_FLOAT
+      && BOSL_OBJECT_TYPE_UINT8 <= value->type
+      && BOSL_OBJECT_TYPE_INT64 >= value->type
+    ) {
+      // uint to double
+      if (
+        BOSL_OBJECT_TYPE_UINT8 <= value->type
+        && BOSL_OBJECT_TYPE_UINT64 >= value->type
+      ) {
+        // test whether value can be stored savely by converting with conversion
+        // back and comparison
+        long double repr;
+        *( ( volatile long double* )&repr ) = ( long double )unum;
+        uint64_t round_trip_value = ( uint64_t )repr;
+        // handle no assign possible
+        if ( round_trip_value != unum ) {
+          bosl_error_raise(
+            name, "Cannot assign value %"PRId64" with type %s to %s "
+            "( cannot be converted savely ).", unum,
+            bosl_object_type_to_str( value->type ),
+            bosl_object_type_to_str( object_type )
+          );
+          return NULL;
+        }
+      // int to double
+      } else {
+        // test whether value can be stored savely by converting with conversion
+        // back and comparison
+        long double repr;
+        *( ( volatile long double* )&repr ) = ( long double )snum;
+        int64_t round_trip_value = ( int64_t )repr;
+        // handle no assign possible
+        if ( round_trip_value != snum ) {
+          bosl_error_raise(
+            name, "Cannot assign value %"PRIu64" with type %s to %s "
+            "( cannot be converted savely ).", unum,
+            bosl_object_type_to_str( value->type ),
+            bosl_object_type_to_str( object_type )
+          );
+          return NULL;
+        }
+      }
+      //if ( object->value_type )
+      // fprintf( stdout, "---------------------------------------\r\n%d => ", object_type );
+      // fprintf( stdout, "%"PRId64" / %"PRIu64" / %Lf\r\n", snum, unum, dnum );
+      // fprintf( stdout, "%Lf", dmin );
+      // fprintf( stdout, " - %Lf", dmax );
+      // fprintf( stdout, " %"PRId64" - %"PRIu64"\r\n", imin, imax );
+    }
+
+    // FIXME: CHECK FOR unsigned integer and whether it fits into value
+
     // perform validation depending on value type
     switch ( value->value_type ) {
       case BOSL_OBJECT_VALUE_FLOAT:
@@ -383,8 +474,7 @@ bool bosl_object_assign_push_value(
       case BOSL_OBJECT_VALUE_NULL:
         break;
       default:
-        sprintf( buffer, "Unable to assign type %d.\r\n", value->type );
-        bosl_error_raise( NULL, buffer );
+        bosl_error_raise( name, "Unable to assign type %d.\r\n", value->type );
         return NULL;
     }
     // FIXME: DO SOME VALIDATION!

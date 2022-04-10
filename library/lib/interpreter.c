@@ -656,7 +656,43 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     if ( right->value_type > BOSL_OBJECT_VALUE_INT_UNSIGNED ) {
       // raise error and return NULL
       raise_error( u->operator, "Expect numeric" );
+      // free object
+      destroy_object( right );
+      // return NULL
       return NULL;
+    }
+    // minus unary is only possible for signed values, so just change it
+    if (
+      right->value_type != BOSL_OBJECT_VALUE_INT_SIGNED
+      && right->value_type != BOSL_OBJECT_VALUE_FLOAT
+    ) {
+      // handle incompatible environment variables
+      if (
+        right->environment
+        && (
+          BOSL_OBJECT_TYPE_INT8 > right->type
+          || BOSL_OBJECT_TYPE_INT64 < right->type
+        )
+      ) {
+        // error message
+        raise_error( u->operator, "Expected signed variable." );
+        // free object
+        destroy_object( right );
+        // return NULL
+        return NULL;
+      }
+      // convert if type is wrong and it's not from environment
+      if (
+        ! right->environment
+        && (
+          BOSL_OBJECT_TYPE_INT8 > right->type
+          || BOSL_OBJECT_TYPE_INT64 < right->type
+        )
+      ) {
+        // now just change to largest possible integer
+        right->value_type = BOSL_OBJECT_VALUE_INT_SIGNED;
+        right->type = BOSL_OBJECT_TYPE_INT64;
+      }
     }
     // variables for values
     int64_t snum = 0;
@@ -664,12 +700,18 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     long double dnum = 0;
     // extract stuff
     if ( ! bosl_object_extract_number( right, &unum, &snum, &dnum ) ) {
+      // raise error
       raise_error( u->operator, "Runtime error unable to extract number" );
+      // destroy object
       destroy_object( right );
+      // return NULL
       return NULL;
     }
+    // cache value type
     bosl_object_value_type_t type = right->value_type;
+    // destroy object
     destroy_object( right );
+    // apply negotiation
     if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
       dnum = -dnum;
       return bosl_object_allocate(
@@ -678,17 +720,10 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
       snum = -snum;
       return bosl_object_allocate(
         type, BOSL_OBJECT_TYPE_INT64, &snum, sizeof( snum ) );
-    } else if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
-      snum = -( ( int64_t )unum );
-      return bosl_object_allocate(
-        BOSL_OBJECT_VALUE_INT_UNSIGNED,
-        BOSL_OBJECT_TYPE_UINT64,
-        &snum,
-        sizeof( snum )
-      );
     }
-    // just return right
+    // raise error
     raise_error( u->operator, "Runtime error unknown" );
+    // return NULL
     return NULL;
   } else if ( TOKEN_PLUS == u->operator->type ) {
     // validate type
@@ -770,7 +805,7 @@ static bosl_object_t* evaluate_literal( bosl_ast_expression_literal_t* l ) {
       break;
     case EXPRESSION_LITERAL_TYPE_NUMBER_INT:
       type = BOSL_OBJECT_VALUE_INT_UNSIGNED;
-      object_type = BOSL_OBJECT_TYPE_INT64;
+      object_type = BOSL_OBJECT_TYPE_UINT64;
       break;
     case EXPRESSION_LITERAL_TYPE_STRING:
       type = BOSL_OBJECT_VALUE_STRING;

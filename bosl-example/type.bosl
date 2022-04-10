@@ -1,15 +1,16 @@
 
-let u8: uint8 = 0;
-let u16: uint16 = 0;
-let u32: uint32 = 0;
-let u64: uint64 = 0;
+let u8: uint8 = 1;
+let u16: uint16 = 2;
+let u32: uint32 = 3;
+let u64: uint64 = 4;
 
-let s8: int8 = 0;
-let s16: int16 = 0;
-let s32: int32 = 0;
-let s64: int64 = 0;
+let s8: int8 = -1;
+let s16: int16 = -2;
+let s32: int32 = -3;
+let s64: int64 = -4;
 
-let f: float = 0;
+let f1: float = 3.14159;
+let f2: float = -3.14159;
 
 let s: string = "Hello World!";
 
@@ -23,9 +24,15 @@ print( s16 );
 print( s32 );
 print( s64 );
 
-print( f );
+print( f1 );
+print( f2 );
 
 print( s );
 
 // shall fail
-s = 5;
+//s = 5;
+//u8 = 10.25;
+
+// shall work, because it can be converted
+f1 = u8;
+f1 = 10;
