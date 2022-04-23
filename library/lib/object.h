@@ -100,9 +100,6 @@ bool bosl_object_extract_number(
   bosl_object_t*, uint64_t*, int64_t*, long double* );
 bosl_object_type_t bosl_object_str_to_type( const char*, size_t );
 const char* bosl_object_type_to_str( bosl_object_type_t );
-int64_t bosl_object_type_min_int_value( bosl_object_type_t );
-uint64_t bosl_object_type_max_int_value( bosl_object_type_t );
-long double bosl_object_type_min_float_value( bosl_object_type_t );
-long double bosl_object_type_max_float_value( bosl_object_type_t );
+char* bosl_object_stringify( bosl_object_t* );
 
 #endif

@@ -111,78 +111,6 @@ static void raise_error( bosl_token_t* token, const char* message ) {
 }
 
 /**
- * @brief Convert object to string
- *
- * @param object
- * @return
- */
-static char* stringify( bosl_object_t* object ) {
-  const char* buffer;
-  // determine buffer size
-  size_t buffer_size = sizeof( char );
-  if (
-    BOSL_OBJECT_VALUE_FLOAT == object->value_type
-    || BOSL_OBJECT_VALUE_INT_SIGNED == object->value_type
-    || BOSL_OBJECT_VALUE_INT_UNSIGNED == object->value_type
-  ) {
-    buffer_size *= 100;
-  } else if (
-    BOSL_OBJECT_VALUE_BOOL == object->value_type
-  ) {
-    buffer_size *= 6;
-  } else if (
-    BOSL_OBJECT_VALUE_NULL == object->value_type
-  ) {
-    buffer_size *= 5;
-  } else if (
-    BOSL_OBJECT_VALUE_STRING == object->value_type
-  ) {
-    buffer_size *= ( object->size + 1 );
-  } else if (
-    BOSL_OBJECT_VALUE_CALLABLE == object->value_type
-  ) {
-    buffer_size =
-      ( ( bosl_object_callable_t* )object->data )->statement->token->length
-      + 6;
-  }
-  // allocate buffer
-  buffer = malloc( buffer_size );
-  if ( ! buffer ) {
-    return NULL;
-  }
-  memset( buffer, 0, buffer_size );
-  if ( BOSL_OBJECT_VALUE_FLOAT == object->value_type ) {
-    long double num;
-    memcpy( &num, object->data, sizeof( num ) );
-    sprintf( buffer, "%Lf", num );
-  } else if ( BOSL_OBJECT_VALUE_INT_SIGNED == object->value_type ) {
-    int64_t num;
-    memcpy( &num, object->data, sizeof( num ) );
-    sprintf( buffer, "%"PRId64, num );
-  } else if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == object->value_type ) {
-    uint64_t num;
-    memcpy( &num, object->data, sizeof( num ) );
-    sprintf( buffer, "%"PRIu64, num );
-  } else if ( BOSL_OBJECT_VALUE_BOOL == object->value_type ) {
-    bool flag;
-    memcpy( &flag, object->data, sizeof( flag ) );
-    sprintf( buffer, "%s", flag ? "true": "false" );
-  } else if ( BOSL_OBJECT_VALUE_STRING == object->value_type ) {
-    strncpy( buffer, object->data, object->size );
-  } else if ( BOSL_OBJECT_VALUE_NULL == object->value_type ) {
-    sprintf( buffer, "null" );
-  } else if ( BOSL_OBJECT_VALUE_CALLABLE == object->value_type ) {
-    bosl_token_t* token = ( ( bosl_object_callable_t* )object->data )
-      ->statement->token;
-    sprintf(
-      buffer, "<fn %*.*s>", ( int )token->length,
-      ( int )token->length, token->start );
-  }
-  // return buffer
-  return buffer;
-}
-
-/**
  * @brief Helper to check whether object is truthy value
  *
  * @param object
@@ -618,6 +546,108 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( right );
     // return result
     return equality;
+  } else if (
+    TOKEN_SHIFT_LEFT == b->operator->type
+    || TOKEN_SHIFT_RIGHT == b->operator->type
+  ) {
+    // save type and destroy objects
+    bosl_object_value_type_t left_value_type = left->value_type;
+    bosl_object_type_t left_type = left->type;
+    bosl_object_type_t right_type = right->type;
+    destroy_object( left );
+    destroy_object( right );
+    // handle only valid types
+    if (
+      BOSL_OBJECT_TYPE_UINT8 <= left_type
+      && BOSL_OBJECT_TYPE_INT64 >= left_type
+      && BOSL_OBJECT_TYPE_UINT8 <= right_type
+      && BOSL_OBJECT_TYPE_INT64 >= left_type
+    ) {
+      // determine max shift bit
+      __unused size_t max_bit = 0;
+      switch ( left_type ) {
+        case BOSL_OBJECT_TYPE_INT8:
+        case BOSL_OBJECT_TYPE_UINT8:
+          max_bit = 8;
+          break;
+        case BOSL_OBJECT_TYPE_INT16:
+        case BOSL_OBJECT_TYPE_UINT16:
+          max_bit = 16;
+          break;
+        case BOSL_OBJECT_TYPE_INT32:
+        case BOSL_OBJECT_TYPE_UINT32:
+          max_bit = 32;
+          break;
+        case BOSL_OBJECT_TYPE_INT64:
+        case BOSL_OBJECT_TYPE_UINT64:
+          max_bit = 64;
+          break;
+        default:
+          raise_error( b->operator, "Unknown left type" );
+          return NULL;
+      }
+      // handle invalid shift bit count
+      if (
+        (
+          BOSL_OBJECT_VALUE_INT_UNSIGNED == left_value_type
+          && max_bit <= ( size_t )runum
+        ) || (
+          BOSL_OBJECT_VALUE_INT_SIGNED == left_value_type
+          && (
+            max_bit <= ( size_t )rsnum
+            || 0 >= rsnum
+          )
+        )
+      ) {
+        bosl_error_raise(
+          b->operator,
+          "Bit amount to shift has to be positive and smaller than %zd.",
+          max_bit
+        );
+        interpreter->error = true;
+        return NULL;
+      }
+      // handle unsigned int / hex
+      if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == left_value_type ) {
+        uint64_t result;
+        if ( TOKEN_SHIFT_LEFT == b->operator->type ) {
+          result = lunum << runum;
+        } else {
+          result = lunum >> runum;
+        }
+        return bosl_object_allocate(
+          left_value_type,
+          BOSL_OBJECT_TYPE_UINT64,
+          &result,
+          sizeof( result )
+        );
+      }
+      // handle signed int / hex
+      if ( BOSL_OBJECT_VALUE_INT_SIGNED == left_value_type ) {
+        if ( 0 > rsnum ) {
+          raise_error( b->operator, "Bits to shift has to be positive." );
+          return NULL;
+        }
+        int64_t result;
+        if ( TOKEN_SHIFT_LEFT == b->operator->type ) {
+          result = lsnum << rsnum;
+        } else {
+          result = lsnum >> rsnum;
+        }
+        return bosl_object_allocate(
+          left_value_type,
+          BOSL_OBJECT_TYPE_INT64,
+          &result,
+          sizeof( result )
+        );
+      }
+    } else {
+      raise_error( b->operator, "Shifting is restricted to integers." );
+      return NULL;
+    }
+    // unsupported
+    raise_error( b->operator, "Unknown error" );
+    return NULL;
   }
   // destroy object
   destroy_object( left );
@@ -922,7 +952,6 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
         destroy_object( object );
         return NULL;
       }
-      // FIXME: ADD TYPE CHECK
       // call function
       bosl_object_t* result = callee->callback( object, argument_list );
       // cleanup
@@ -1000,7 +1029,7 @@ static void execute_print( bosl_ast_statement_t* s ) {
     return;
   }
   // print via stringify
-  char* str = stringify( object );
+  char* str = bosl_object_stringify( object );
   if ( ! str ) {
     raise_error( NULL, "Stringify of evaluated object failed." );
     return;
@@ -1222,6 +1251,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           s->variable->name,
           "Unable to push variable to environment."
         );
+        destroy_object( value );
         break;
       }
       break;
@@ -1253,6 +1283,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           s->variable->name,
           "Unable to push constant to environment."
         );
+        destroy_object( value );
         break;
       }
       break;
@@ -1490,7 +1521,6 @@ static bosl_object_t* execute_function(
   bosl_environment_t* previous_env = interpreter->env;
   // temporarily overwrite current
   interpreter->env = closure;
-  // FIXME: ENSURE CORRECT VALUE TYPE
   // push parameter to environment
   for ( size_t index = 0, max = list_count_item( parameter ); index < max; index++ ) {
     // get argument and value from list

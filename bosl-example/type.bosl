@@ -12,6 +12,11 @@ let s64: int64 = -4;
 let f1: float = 3.14159;
 let f2: float = -3.14159;
 
+//let s82: int8 = -1;
+//let u82: uint8 = s82;
+//print( s82 );
+//print( u82 );
+
 let s: string = "Hello World!";
 
 print( u8 );

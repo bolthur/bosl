@@ -47,6 +47,8 @@ void bosl_error_raise( bosl_token_t* token, const char* message, ... ) {
       fprintf( stderr, " at end: " );
     } else if ( TOKEN_ERROR != token->type ) {
       fprintf( stderr, " at '%.*s': ", ( int )token->length, token->start );
+    } else {
+      fprintf( stderr, ": " );
     }
   }
   // error message itself

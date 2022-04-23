@@ -1,0 +1,14 @@
+
+let i: uint32 = 1;
+
+// shift left by one
+i = 1 << 0;
+print( i );
+
+// shift left by one
+i = i << 1;
+print( i );
+
+// shift right by one
+i = i >> 1;
+print( i );
