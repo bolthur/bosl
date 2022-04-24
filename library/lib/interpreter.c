@@ -954,11 +954,19 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
       }
       // call function
       bosl_object_t* result = callee->callback( object, argument_list );
-      // cleanup
-      argument_list->cleanup = list_default_cleanup;
-      list_destruct( argument_list );
-      // destroy object
-      destroy_object( object );
+      // in case an error ocurred during execution or binding was executed,
+      // cleanup is slightly different
+      if ( interpreter->error || callee->statement->load_identifier ) {
+        // destruct list and object normally
+        list_destruct( argument_list );
+        destroy_object( object );
+      } else {
+        // cleanup
+        argument_list->cleanup = list_default_cleanup;
+        list_destruct( argument_list );
+        // destroy object
+        destroy_object( object );
+      }
       // return result
       return result;
     }
@@ -1123,7 +1131,18 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         break;
       }
       // push to environment
-      bosl_environment_push_value( interpreter->env, s->function->token, f );
+      if ( ! bosl_environment_push_value(
+        interpreter->env, s->function->token, f
+      ) ) {
+        // destroy object
+        bosl_object_destroy( f );
+        // raise error
+        raise_error(
+          s->function->token,
+          "Unable to allocate function object."
+        );
+        break;
+      }
       break;
     }
     case STATEMENT_IF: {
@@ -1509,8 +1528,29 @@ static bosl_object_t* execute_function(
   bosl_object_t* object,
   list_manager_t* parameter
 ) {
-  // extract callable
+  // extract callable and statement
   bosl_object_callable_t* callable = object->data;
+  bosl_ast_statement_function_t* statement = callable->statement;
+  // handle load
+  if ( statement->load_identifier ) {
+    // try to get binding
+    bosl_object_t* binding = bosl_environment_get_value(
+      interpreter->env, statement->load_identifier );
+    // handle no binding
+    if ( ! binding ) {
+      raise_error( statement->load_identifier, "Function binding not found." );
+      return NULL;
+    }
+    // handle invalid binding
+    if ( binding->value_type != BOSL_OBJECT_VALUE_CALLABLE ) {
+      raise_error( statement->load_identifier, "Function binding is not a callable." );
+      return NULL;
+    }
+    // get callable
+    bosl_object_callable_t* binding_callable = binding->data;
+    // call binding
+    return binding_callable->callback( object, parameter );
+  }
   // create new closure environment
   bosl_environment_t* closure = bosl_environment_init( callable->closure );
   if ( ! closure ) {
@@ -1525,7 +1565,7 @@ static bosl_object_t* execute_function(
   for ( size_t index = 0, max = list_count_item( parameter ); index < max; index++ ) {
     // get argument and value from list
     list_item_t* argument_item = list_get_item_at_pos(
-      callable->statement->parameter, index );
+      statement->parameter, index );
     if ( ! argument_item ) {
       // restore interpreter environment
       interpreter->env = previous_env;
@@ -1548,11 +1588,19 @@ static bosl_object_t* execute_function(
     bosl_ast_statement_t* argument = argument_item->data;
     bosl_object_t* value = value_item->data;
     // push to environment
-    bosl_environment_push_value(
-      interpreter->env, argument->parameter->name, value );
+    if ( ! bosl_environment_push_value(
+      interpreter->env, argument->parameter->name, value
+    ) ) {
+      // restore interpreter environment
+      interpreter->env = previous_env;
+      // destroy closure
+      bosl_environment_free( closure );
+      raise_error( NULL, "Unable to get parameter value for callable." );
+      return NULL;
+    }
   }
   // execute function
-  bosl_object_t* o = execute( callable->statement->body );
+  bosl_object_t* o = execute( statement->body );
   // handle return
   if ( o && o->is_return ) {
     // duplicate if environment object
@@ -1602,10 +1650,14 @@ static void execute_ast_node( bosl_ast_node_t* node ) {
  * @param ast
  * @return
  */
-bool bosl_interpreter_init( list_manager_t* ast ) {
+bool bosl_interpreter_init( list_manager_t* ast, bosl_environment_t* env ) {
   // handle already initialized
   if ( interpreter ) {
     return true;
+  }
+  // handle no environment
+  if ( ! env ) {
+    return false;
   }
   // allocate interpreter structure
   interpreter = malloc( sizeof( bosl_interpreter_t ) );
@@ -1614,13 +1666,8 @@ bool bosl_interpreter_init( list_manager_t* ast ) {
   }
   // clear out
   memset( interpreter, 0, sizeof( bosl_interpreter_t ) );
-  // allocate environment
-  interpreter->env = bosl_environment_init( NULL );
-  if ( ! interpreter->env ) {
-    free( interpreter );
-    return false;
-  }
   // populate
+  interpreter->env = env;
   interpreter->_ast = ast;
   interpreter->_current = ast->first;
   interpreter->current = current;
@@ -1638,9 +1685,6 @@ void bosl_interpreter_free( void ) {
   // handle not initialized
   if ( ! interpreter ) {
     return;
-  }
-  if ( interpreter->env ) {
-    bosl_environment_free( interpreter->env );
   }
   // just free structure
   free( interpreter );

@@ -375,7 +375,7 @@ static bosl_ast_expression_t* expression_pointer( void ) {
     // return built expression
     return new_e;
   }
-  bosl_error_raise( parser->current(), "Expect identifier after load." );
+  bosl_error_raise( parser->current(), "Expect identifier after pointer." );
   return NULL;
 }
 
@@ -1184,6 +1184,9 @@ static bosl_ast_node_t* statement_continue( void ) {
 static bosl_ast_node_t* statement_expression( void ) {
   // expression
   bosl_ast_expression_t* e = expression();
+  if ( ! e ) {
+    return NULL;
+  }
   // check for trailing semicolon
   if ( ! consume( TOKEN_SEMICOLON, "Expect ';' after expression." ) ) {
     bosl_ast_expression_destroy( e );
@@ -1477,10 +1480,22 @@ static bosl_ast_node_t* declaration_function( void ) {
       bosl_ast_statement_destroy( f );
       return NULL;
     }
+    // consume fn tag
+    if ( ! consume( TOKEN_FUNCTION, "Expect fn after load." ) ) {
+      list_destruct( parameter );
+      bosl_ast_statement_destroy( f );
+      return NULL;
+    }
     // set load identifier
     f->function->load_identifier = consume(
       TOKEN_IDENTIFIER, "Expect identifier after load." );
     if ( ! f->function->load_identifier ) {
+      list_destruct( parameter );
+      bosl_ast_statement_destroy( f );
+      return NULL;
+    }
+    // consume semicolon
+    if ( ! consume( TOKEN_SEMICOLON, "Expect ';' after load identifier." ) ) {
       list_destruct( parameter );
       bosl_ast_statement_destroy( f );
       return NULL;

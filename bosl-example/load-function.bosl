@@ -1,0 +1,4 @@
+
+fn foo( parameter1: uint8 ): void {} = load fn c_foo;
+let a: uint8 = 5;
+foo( a );

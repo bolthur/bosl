@@ -80,24 +80,24 @@ void bosl_environment_free( bosl_environment_t* environment ) {
  *
  * @param environment
  * @param token
- * @param data
+ * @param object
  * @return
  */
 bool bosl_environment_push_value(
   bosl_environment_t* environment,
   bosl_token_t* token,
-  bosl_object_t* data
+  bosl_object_t* object
 ) {
   // add to hashmap
   const char* r = hashmap_value_nset(
     environment->value,
     token->start,
     token->length,
-    data
+    object
   );
   // set environment member
   if ( r ) {
-    data->environment = true;
+    object->environment = true;
   }
   // return
   return r;
@@ -157,4 +157,31 @@ bool bosl_environment_assign_value(
   // raise error and return false
   bosl_error_raise( token, "Undefined variable." );
   return false;
+}
+
+/**
+ * @brief Method to bind a function for execution
+ *
+ * @param environment
+ * @param name
+ * @param object
+ * @return
+ */
+bool bosl_environment_bind_function(
+  bosl_environment_t* environment,
+  const char* name,
+  bosl_object_t* object
+) {
+  // handle invalid parameter
+  if ( ! environment || ! name || ! object ) {
+    return false;
+  }
+  // add to hashmap
+  const char* r = hashmap_value_set( environment->value, name, object );
+  // set environment member
+  if ( r ) {
+    object->environment = true;
+  }
+  // return
+  return r;
 }

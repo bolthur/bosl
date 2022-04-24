@@ -45,4 +45,6 @@ bool bosl_environment_push_value( bosl_environment_t*, bosl_token_t*, bosl_objec
 bosl_object_t* bosl_environment_get_value( bosl_environment_t*, bosl_token_t* );
 bool bosl_environment_assign_value( bosl_environment_t*, bosl_token_t*, bosl_object_t* );
 
+bool bosl_environment_bind_function( bosl_environment_t*, const char*, bosl_object_t* );
+
 #endif

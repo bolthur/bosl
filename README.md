@@ -373,3 +373,15 @@ within the script itself using the keyword `load`.
 ```c
 // TBD
 ```
+
+## To be done
+
+- [x] Add type checking to interpreter
+- [x] Add support for shift operator
+- [x] Extend environment to allow push of c functions
+- [ ] Add logic for load keyword for variables
+- [ ] Add pointer support
+  - [ ] Use load to load pointer from C
+  - [ ] Set to bosl variable
+- [ ] Add bytecode compiler
+- [ ] C API documentation

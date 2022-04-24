@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <argtable2.h>
+#include <inttypes.h>
 #include "../library/lib/error.h"
 #include "../library/lib/scanner.h"
 #include "../library/lib/parser.h"
@@ -72,6 +73,15 @@ static char* read_file( const char* path ) {
 }
 
 /**
+ * @brief Some simple c binding
+ */
+static bosl_object_t* c_foo( __unused bosl_object_t* o, __unused list_manager_t* l ) {
+  printf( "hello from c binding!\r\n" );
+  //printf( "c_foo( %"PRIu8" )\r\n", a );
+  return NULL;
+}
+
+/**
  * @brief Interprete buffer
  *
  * @param print_ast print ast instead of interpreting
@@ -111,8 +121,27 @@ static bool interprete( bool print_ast, char* buffer ) {
     bosl_scanner_free();
     return false;
   }
+  // setup global environment
+  bosl_environment_t* env = bosl_environment_init( NULL );
+  if ( ! env ) {
+    bosl_object_free();
+    bosl_parser_free();
+    bosl_scanner_free();
+    return false;
+  }
+  // bind c_foo function
+  if ( ! bosl_environment_bind_function(
+    env, "c_foo", bosl_object_allocate_callable( NULL, c_foo, env )
+  ) ) {
+    bosl_environment_free( env );
+    bosl_object_free();
+    bosl_parser_free();
+    bosl_scanner_free();
+    return false;
+  }
   // setup interpreter
-  if ( ! bosl_interpreter_init( ast_list ) ) {
+  if ( ! bosl_interpreter_init( ast_list, env ) ) {
+    bosl_environment_free( env );
     bosl_object_free();
     bosl_parser_free();
     bosl_scanner_free();
@@ -125,6 +154,7 @@ static bool interprete( bool print_ast, char* buffer ) {
   } else {
     // run code
     if ( ! bosl_interpreter_run() ) {
+      bosl_environment_free( env );
       bosl_object_free();
       bosl_interpreter_free();
       bosl_parser_free();
@@ -134,6 +164,7 @@ static bool interprete( bool print_ast, char* buffer ) {
   }
 
   // destroy object, parser, scanner and interpreter
+  bosl_environment_free( env );
   bosl_object_free();
   bosl_parser_free();
   bosl_scanner_free();

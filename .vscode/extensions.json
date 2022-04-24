@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "maelvalais.autoconf",
+    "ms-vscode.cpptools",
+    "cschlosser.doxdocgen",
+    "bierner.github-markdown-preview",
+    "bierner.markdown-checkbox",
+    "bierner.markdown-footnotes",
+    "bierner.markdown-emoji",
+    "bierner.markdown-preview-github-styles",
+    "wayou.vscode-todo-highlight"
+  ]
+}
