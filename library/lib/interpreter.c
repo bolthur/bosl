@@ -28,6 +28,7 @@
 #include "error.h"
 #include "environment.h"
 #include "object.h"
+#include "binding.h"
 
 // necessary forward declarations
 static bosl_object_t* evaluate_expression( bosl_ast_expression_t* );
@@ -1534,8 +1535,10 @@ static bosl_object_t* execute_function(
   // handle load
   if ( statement->load_identifier ) {
     // try to get binding
-    bosl_object_t* binding = bosl_environment_get_value(
-      interpreter->env, statement->load_identifier );
+    bosl_object_t* binding = bosl_binding_nget(
+      statement->load_identifier->start,
+      statement->load_identifier->length
+    );
     // handle no binding
     if ( ! binding ) {
       raise_error( statement->load_identifier, "Function binding not found." );
@@ -1548,7 +1551,7 @@ static bosl_object_t* execute_function(
     }
     // get callable
     bosl_object_callable_t* binding_callable = binding->data;
-    // call binding
+    // call binding and return
     return binding_callable->callback( object, parameter );
   }
   // create new closure environment
@@ -1650,14 +1653,10 @@ static void execute_ast_node( bosl_ast_node_t* node ) {
  * @param ast
  * @return
  */
-bool bosl_interpreter_init( list_manager_t* ast, bosl_environment_t* env ) {
+bool bosl_interpreter_init( list_manager_t* ast ) {
   // handle already initialized
   if ( interpreter ) {
     return true;
-  }
-  // handle no environment
-  if ( ! env ) {
-    return false;
   }
   // allocate interpreter structure
   interpreter = malloc( sizeof( bosl_interpreter_t ) );
@@ -1666,8 +1665,13 @@ bool bosl_interpreter_init( list_manager_t* ast, bosl_environment_t* env ) {
   }
   // clear out
   memset( interpreter, 0, sizeof( bosl_interpreter_t ) );
+  // allocate environment
+  interpreter->env = bosl_environment_init( NULL );
+  if ( ! interpreter->env ) {
+    free( interpreter );
+    return false;
+  }
   // populate
-  interpreter->env = env;
   interpreter->_ast = ast;
   interpreter->_current = ast->first;
   interpreter->current = current;
@@ -1685,6 +1689,9 @@ void bosl_interpreter_free( void ) {
   // handle not initialized
   if ( ! interpreter ) {
     return;
+  }
+  if ( interpreter->env ) {
+    bosl_environment_free( interpreter->env );
   }
   // just free structure
   free( interpreter );

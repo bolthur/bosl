@@ -52,7 +52,7 @@ typedef struct bosl_interpreter {
   list_item_t* _current;
 } bosl_interpreter_t;
 
-bool bosl_interpreter_init( list_manager_t*, bosl_environment_t* );
+bool bosl_interpreter_init( list_manager_t* );
 void bosl_interpreter_free( void );
 bool bosl_interpreter_run( void );
 #endif

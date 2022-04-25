@@ -21,28 +21,20 @@
 
 #if defined( _COMPILING_BOSL )
   #include "collection/hashmap.h"
-  #include "scanner.h"
   #include "object.h"
 #else
   #include <bosl/collection/hashmap.h>
-  #include <bosl/scanner.h>
   #include <bosl/object.h>
 #endif
 
-#if ! defined( _BOSL_ENVIRONMENT_H )
-#define _BOSL_ENVIRONMENT_H
+#if ! defined( _BOSL_BINDING_H )
+#define _BOSL_BINDING_H
 
-typedef struct bosl_environment bosl_environment_t;
-
-typedef struct bosl_environment {
-  hashmap_table_t* value;
-  bosl_environment_t* enclosing;
-} bosl_environment_t;
-
-bosl_environment_t* bosl_environment_init( bosl_environment_t* );
-void bosl_environment_free( bosl_environment_t* );
-bool bosl_environment_push_value( bosl_environment_t*, bosl_token_t*, bosl_object_t* );
-bosl_object_t* bosl_environment_get_value( bosl_environment_t*, bosl_token_t* );
-bool bosl_environment_assign_value( bosl_environment_t*, bosl_token_t*, bosl_object_t* );
+bool bosl_binding_init( void );
+void bosl_binding_free( void );
+bool bosl_binding_bind_function( const char*, bosl_callback_t );
+bool bosl_binding_unbind_function( const char* );
+bosl_object_t* bosl_binding_get( const char* );
+bosl_object_t* bosl_binding_nget( const char*, size_t );
 
 #endif

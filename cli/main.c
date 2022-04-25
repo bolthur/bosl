@@ -28,6 +28,7 @@
 #include "../library/lib/interpreter.h"
 #include "../library/lib/environment.h"
 #include "../library/lib/object.h"
+#include "../library/lib/binding.h"
 
 /**
  * @brief Helper to read file content
@@ -74,10 +75,34 @@ static char* read_file( const char* path ) {
 
 /**
  * @brief Some simple c binding
+ *
+ * @todo move parameter get logic into helper function
  */
-static bosl_object_t* c_foo( __unused bosl_object_t* o, __unused list_manager_t* l ) {
-  printf( "hello from c binding!\r\n" );
-  //printf( "c_foo( %"PRIu8" )\r\n", a );
+static bosl_object_t* c_foo(
+  __unused bosl_object_t* o,
+  list_manager_t* parameter
+) {
+  // handle invalid parameter count
+  if ( 1 != list_count_item( parameter ) ) {
+    return NULL;
+  }
+  // get first parameter item
+  list_item_t* item = list_get_item_at_pos( parameter, 0 );
+  if ( ! item ) {
+    return NULL;
+  }
+  // get object from list item
+  bosl_object_t* parameter1 = item->data;
+  // ensure type
+  if ( BOSL_OBJECT_TYPE_UINT8 != parameter1->type ) {
+    return NULL;
+  }
+  // get and copy value ( everything is stored with maximum amount of space )
+  uint64_t value = 0;
+  memcpy( &value, parameter1->data, sizeof( value ) );
+  // do something
+  printf( "hello from c binding!\r\nparameter1 = %"PRIu64"\r\n", value );
+  // return nothing as nothing will be returned
   return NULL;
 }
 
@@ -121,27 +146,23 @@ static bool interprete( bool print_ast, char* buffer ) {
     bosl_scanner_free();
     return false;
   }
-  // setup global environment
-  bosl_environment_t* env = bosl_environment_init( NULL );
-  if ( ! env ) {
+  // setup bindings
+  if ( ! bosl_binding_init() ) {
     bosl_object_free();
     bosl_parser_free();
     bosl_scanner_free();
     return false;
   }
-  // bind c_foo function
-  if ( ! bosl_environment_bind_function(
-    env, "c_foo", bosl_object_allocate_callable( NULL, c_foo, env )
-  ) ) {
-    bosl_environment_free( env );
+  if ( ! bosl_binding_bind_function( "c_foo", c_foo ) ) {
+    bosl_binding_free();
     bosl_object_free();
     bosl_parser_free();
     bosl_scanner_free();
     return false;
   }
   // setup interpreter
-  if ( ! bosl_interpreter_init( ast_list, env ) ) {
-    bosl_environment_free( env );
+  if ( ! bosl_interpreter_init( ast_list ) ) {
+    bosl_binding_free();
     bosl_object_free();
     bosl_parser_free();
     bosl_scanner_free();
@@ -154,7 +175,7 @@ static bool interprete( bool print_ast, char* buffer ) {
   } else {
     // run code
     if ( ! bosl_interpreter_run() ) {
-      bosl_environment_free( env );
+      bosl_binding_free();
       bosl_object_free();
       bosl_interpreter_free();
       bosl_parser_free();
@@ -164,7 +185,7 @@ static bool interprete( bool print_ast, char* buffer ) {
   }
 
   // destroy object, parser, scanner and interpreter
-  bosl_environment_free( env );
+  bosl_binding_free();
   bosl_object_free();
   bosl_parser_free();
   bosl_scanner_free();
