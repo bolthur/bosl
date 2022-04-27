@@ -17,8 +17,8 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined( _LIBRARY_CONFIG_H )
-#define _LIBRARY_CONFIG_H
+#if !defined( _BOSL_LIBRARY_CONFIG_H )
+#define _BOSL_LIBRARY_CONFIG_H
 
 #if defined( HAVE_CONFIG_H )
   #include <config.h>

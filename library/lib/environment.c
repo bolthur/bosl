@@ -19,7 +19,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include "environment.h"
 #include "collection/hashmap.h"
 #include "scanner.h"
@@ -45,7 +44,7 @@ bosl_environment_t* bosl_environment_init( bosl_environment_t* enclosing ) {
   if ( ! environment ) {
     return NULL;
   }
-  // clearout
+  // clear out
   memset( environment, 0, sizeof( bosl_environment_t ) );
   // setup hashmap
   environment->value = hashmap_construct( environment_cleanup );

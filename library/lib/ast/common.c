@@ -34,7 +34,7 @@ bosl_ast_node_t* bosl_ast_node_allocate( void ) {
   if ( ! node ) {
     return NULL;
   }
-  // clearout
+  // clear out
   memset( node, 0, sizeof( bosl_ast_node_t ) );
   // return data
   return node;

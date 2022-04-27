@@ -17,7 +17,6 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
 #include <string.h>
 #include "binding.h"
 
@@ -117,11 +116,11 @@ bool bosl_binding_bind_function( const char* name, bosl_callback_t callback ) {
   if ( ! binding ) {
     return false;
   }
-  // don't allow overwrite
+  // don't allow to overwrite
   if ( bosl_binding_get( name ) ) {
     return false;
   }
-  // create a new calllable object
+  // create a new callable object
   bosl_object_t* callable = bosl_object_allocate_callable( NULL, callback, NULL );
   if ( ! callable ) {
     return false;

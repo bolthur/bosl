@@ -570,7 +570,7 @@ static bosl_ast_expression_t* expression_and( void ) {
   if ( ! e ) {
     return NULL;
   }
-  // loop through all possible anded conditions
+  // loop through all possible and conditions
   while ( match( TOKEN_AND ) ) {
     return NULL;
     // get operator
@@ -605,7 +605,7 @@ static bosl_ast_expression_t* expression_xor( void ) {
   if ( ! e ) {
     return NULL;
   }
-  // loop through all possible anded conditions
+  // loop through all possible xor conditions
   while ( match( TOKEN_XOR ) ) {
     return NULL;
     // get operator
@@ -640,7 +640,7 @@ static bosl_ast_expression_t* expression_or( void ) {
   if ( ! e ) {
     return NULL;
   }
-  // loop through all possible anded conditions
+  // loop through all possible or conditions
   while ( match( TOKEN_OR ) ) {
     return NULL;
     // get operator
@@ -992,7 +992,7 @@ static bosl_ast_node_t* statement_while( void ) {
   // populate
   node->statement->while_loop->condition = e;
   node->statement->while_loop->body = body->statement;
-  // free container for body statment
+  // free container for body statement
   free( body );
   // reset in loop statement
   parser->_in_loop = false;
@@ -1474,7 +1474,7 @@ static bosl_ast_node_t* declaration_function( void ) {
   if ( match( TOKEN_EQUAL ) ) {
     // destroy body again
     bosl_ast_node_destroy( body );
-    // after equal a loat has to come
+    // after equal a load has to come
     if ( ! consume( TOKEN_LOAD, "Expect load type after equal." ) ) {
       list_destruct( parameter );
       bosl_ast_statement_destroy( f );

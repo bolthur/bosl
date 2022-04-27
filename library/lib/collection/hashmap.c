@@ -33,7 +33,7 @@ static void default_cleanup( __unused void* a ) {}
 static size_t hashmap_generate_hash( const char* key ) {
   // determine length of null terminated key
   size_t len = strlen( key );
-  // transform to const uint8 poitner
+  // transform to const uint8 pointer
   const uint8_t* byte = ( const uint8_t* )key;
   // hash variable
   size_t hash = 0;
@@ -101,7 +101,7 @@ static char* duplicate_key( const char* key, size_t len ) {
   // clear out
   memset( tmp, 0, sizeof( char ) * key_len );
   // copy content
-  strncpy( tmp, key, len );
+  memcpy( tmp, key, sizeof( char ) * len );
   // return key
   return tmp;
 }

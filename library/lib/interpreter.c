@@ -241,20 +241,20 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     }
   }
   // variables for values
-  int64_t lsnum = 0;
-  uint64_t lunum = 0;
-  long double ldnum = 0;
-  int64_t rsnum = 0;
-  uint64_t runum = 0;
-  long double rdnum = 0;
+  int64_t left_signed_number = 0;
+  uint64_t left_unsigned_number = 0;
+  long double left_float_number = 0;
+  int64_t right_signed_number = 0;
+  uint64_t right_unsigned_number = 0;
+  long double right_float_number = 0;
   // extract stuff
   if (
     b->operator->type != TOKEN_EQUAL_EQUAL
     && b->operator->type != TOKEN_BANG_EQUAL
     && b->operator->type != TOKEN_BANG
     && (
-      ! bosl_object_extract_number( left, &lunum, &lsnum, &ldnum )
-      || ! bosl_object_extract_number( right, &runum, &rsnum, &rdnum )
+      ! bosl_object_extract_number( left, &left_unsigned_number, &left_signed_number, &left_float_number )
+      || ! bosl_object_extract_number( right, &right_unsigned_number, &right_signed_number, &right_float_number )
     )
   ) {
     bosl_interpreter_emit_error( b->operator, "Number extraction failed." );
@@ -271,7 +271,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( right );
     // handle float
     if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
-      long double result = ldnum - rdnum;
+      long double result = left_float_number - right_float_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_FLOAT,
         BOSL_OBJECT_TYPE_FLOAT,
@@ -281,7 +281,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     }
     // handle unsigned int / hex
     if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
-      uint64_t result = lunum - runum;
+      uint64_t result = left_unsigned_number - right_unsigned_number;
       return bosl_object_allocate(
         type,
         BOSL_OBJECT_TYPE_UINT64,
@@ -291,7 +291,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     }
     // handle signed int / hex
     if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
-      int64_t result = lsnum - rsnum;
+      int64_t result = left_signed_number - right_signed_number;
       return bosl_object_allocate(
         type,
         BOSL_OBJECT_TYPE_INT64,
@@ -309,7 +309,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( right );
     // handle float
     if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
-      long double result = ldnum + rdnum;
+      long double result = left_float_number + right_float_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_FLOAT,
         BOSL_OBJECT_TYPE_FLOAT,
@@ -319,7 +319,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     }
     // handle unsigned int / hex
     if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
-      uint64_t result = lunum + runum;
+      uint64_t result = left_unsigned_number + right_unsigned_number;
       return bosl_object_allocate(
         type,
         BOSL_OBJECT_TYPE_UINT64,
@@ -329,7 +329,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     }
     // handle signed int / hex
     if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
-      int64_t result = lsnum + rsnum;
+      int64_t result = left_signed_number + right_signed_number;
       return bosl_object_allocate(
         type,
         BOSL_OBJECT_TYPE_INT64,
@@ -347,7 +347,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( right );
     // handle float
     if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
-      long double result = ldnum / rdnum;
+      long double result = left_float_number / right_float_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_FLOAT,
         BOSL_OBJECT_TYPE_FLOAT,
@@ -357,7 +357,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     }
     // handle unsigned int / hex
     if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
-      uint64_t result = lunum / runum;
+      uint64_t result = left_unsigned_number / right_unsigned_number;
       return bosl_object_allocate(
         type,
         BOSL_OBJECT_TYPE_UINT64,
@@ -367,7 +367,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     }
     // handle signed int / hex
     if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
-      int64_t result = lsnum / rsnum;
+      int64_t result = left_signed_number / right_signed_number;
       return bosl_object_allocate(
         type,
         BOSL_OBJECT_TYPE_INT64,
@@ -385,7 +385,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( right );
     // handle float
     if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
-      long double result = ldnum * rdnum;
+      long double result = left_float_number * right_float_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_FLOAT,
         BOSL_OBJECT_TYPE_FLOAT,
@@ -395,7 +395,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     }
     // handle unsigned int / hex
     if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
-      uint64_t result = lunum * runum;
+      uint64_t result = left_unsigned_number * right_unsigned_number;
       return bosl_object_allocate(
         type,
         BOSL_OBJECT_TYPE_UINT64,
@@ -405,7 +405,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     }
     // handle signed int / hex
     if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
-      int64_t result = lsnum * rsnum;
+      int64_t result = left_signed_number * right_signed_number;
       return bosl_object_allocate(
         type,
         BOSL_OBJECT_TYPE_INT64,
@@ -423,19 +423,19 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( right );
     // handle float
     if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
-      bool result = ldnum > rdnum;
+      bool result = left_float_number > right_float_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
     if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
-      bool result = lunum > runum;
+      bool result = left_unsigned_number > right_unsigned_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
     if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
-      bool result = lsnum > rsnum;
+      bool result = left_signed_number > right_signed_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
@@ -449,19 +449,19 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( right );
     // handle float
     if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
-      bool result = ldnum >= rdnum;
+      bool result = left_float_number >= right_float_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
     if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
-      bool result = lunum >= runum;
+      bool result = left_unsigned_number >= right_unsigned_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
     if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
-      bool result = lsnum >= rsnum;
+      bool result = left_signed_number >= right_signed_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
@@ -475,19 +475,19 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( right );
     // handle float
     if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
-      bool result = ldnum < rdnum;
+      bool result = left_float_number < right_float_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
     if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
-      bool result = lunum < runum;
+      bool result = left_unsigned_number < right_unsigned_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
     if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
-      bool result = lsnum < rsnum;
+      bool result = left_signed_number < right_signed_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
@@ -501,19 +501,19 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     destroy_object( right );
     // handle float
     if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
-      bool result = ldnum <= rdnum;
+      bool result = left_float_number <= right_float_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle unsigned int / hex
     if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
-      bool result = lunum <= runum;
+      bool result = left_unsigned_number <= right_unsigned_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // handle signed int / hex
     if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
-      bool result = lsnum <= rsnum;
+      bool result = left_signed_number <= right_signed_number;
       return bosl_object_allocate(
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
@@ -576,16 +576,16 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
           bosl_interpreter_emit_error( b->operator, "Unknown left type" );
           return NULL;
       }
-      // handle invalid shift bit count
+      // handle invalid shift count
       if (
         (
           BOSL_OBJECT_VALUE_INT_UNSIGNED == left_value_type
-          && max_bit <= ( size_t )runum
+          && max_bit <= ( size_t )right_unsigned_number
         ) || (
           BOSL_OBJECT_VALUE_INT_SIGNED == left_value_type
           && (
-            max_bit <= ( size_t )rsnum
-            || 0 >= rsnum
+            max_bit <= ( size_t )right_signed_number
+            || 0 >= right_signed_number
           )
         )
       ) {
@@ -601,9 +601,9 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
       if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == left_value_type ) {
         uint64_t result;
         if ( TOKEN_SHIFT_LEFT == b->operator->type ) {
-          result = lunum << runum;
+          result = left_unsigned_number << right_unsigned_number;
         } else {
-          result = lunum >> runum;
+          result = left_unsigned_number >> right_unsigned_number;
         }
         return bosl_object_allocate(
           left_value_type,
@@ -614,15 +614,15 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
       }
       // handle signed int / hex
       if ( BOSL_OBJECT_VALUE_INT_SIGNED == left_value_type ) {
-        if ( 0 > rsnum ) {
+        if ( 0 > right_signed_number ) {
           bosl_interpreter_emit_error( b->operator, "Bits to shift has to be positive." );
           return NULL;
         }
         int64_t result;
         if ( TOKEN_SHIFT_LEFT == b->operator->type ) {
-          result = lsnum << rsnum;
+          result = left_signed_number << right_signed_number;
         } else {
-          result = lsnum >> rsnum;
+          result = left_signed_number >> right_signed_number;
         }
         return bosl_object_allocate(
           left_value_type,
@@ -644,7 +644,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
   destroy_object( right );
   // raise error and return NULL
   bosl_interpreter_emit_error( b->operator, "Unknown binary token." );
-  // any thing else is an error
+  // anything else is an error
   return NULL;
 }
 
@@ -701,7 +701,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
         // return NULL
         return NULL;
       }
-      // convert if type is wrong and it's not from environment
+      // convert if type is wrong, and it's not from environment
       if (
         ! right->environment
         && (
@@ -709,17 +709,17 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
           || BOSL_OBJECT_TYPE_INT64 < right->type
         )
       ) {
-        // now just change to largest possible integer
+        // now just change to the largest possible integer
         right->value_type = BOSL_OBJECT_VALUE_INT_SIGNED;
         right->type = BOSL_OBJECT_TYPE_INT64;
       }
     }
     // variables for values
-    int64_t snum = 0;
-    uint64_t unum = 0;
-    long double dnum = 0;
+    int64_t signed_number = 0;
+    uint64_t unsigned_number = 0;
+    long double float_number = 0;
     // extract stuff
-    if ( ! bosl_object_extract_number( right, &unum, &snum, &dnum ) ) {
+    if ( ! bosl_object_extract_number( right, &unsigned_number, &signed_number, &float_number ) ) {
       // raise error
       bosl_interpreter_emit_error( u->operator, "Runtime error unable to extract number" );
       // destroy object
@@ -733,13 +733,13 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     destroy_object( right );
     // apply negotiation
     if ( BOSL_OBJECT_VALUE_FLOAT == type ) {
-      dnum = -dnum;
+      float_number = -float_number;
       return bosl_object_allocate(
-        type, BOSL_OBJECT_TYPE_FLOAT, &dnum, sizeof( dnum ) );
+        type, BOSL_OBJECT_TYPE_FLOAT, &float_number, sizeof( float_number ) );
     } else if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
-      snum = -snum;
+      signed_number = -signed_number;
       return bosl_object_allocate(
-        type, BOSL_OBJECT_TYPE_INT64, &snum, sizeof( snum ) );
+        type, BOSL_OBJECT_TYPE_INT64, &signed_number, sizeof( signed_number ) );
     }
     // raise error
     bosl_interpreter_emit_error( u->operator, "Runtime error unknown" );
@@ -768,11 +768,11 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
       return NULL;
     }
     // variables for values
-    int64_t snum = 0;
-    uint64_t unum = 0;
-    long double dnum = 0;
+    int64_t signed_number = 0;
+    uint64_t unsigned_number = 0;
+    long double float_number = 0;
     // extract stuff
-    if ( ! bosl_object_extract_number( right, &unum, &snum, &dnum ) ) {
+    if ( ! bosl_object_extract_number( right, &unsigned_number, &signed_number, &float_number ) ) {
       bosl_interpreter_emit_error( u->operator, "Runtime error unable to extract number" );
       destroy_object( right );
       return NULL;
@@ -780,13 +780,13 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     bosl_object_value_type_t type = right->value_type;
     destroy_object( right );
     if ( BOSL_OBJECT_VALUE_INT_SIGNED == type ) {
-      snum = ~snum;
+      signed_number = ~signed_number;
       return bosl_object_allocate(
-        type, BOSL_OBJECT_TYPE_INT64, &snum, sizeof( snum ) );
+        type, BOSL_OBJECT_TYPE_INT64, &signed_number, sizeof( signed_number ) );
     } else if ( BOSL_OBJECT_VALUE_INT_UNSIGNED == type ) {
-      unum = ~unum;
+      unsigned_number = ~unsigned_number;
       return bosl_object_allocate(
-        type, BOSL_OBJECT_TYPE_UINT64, &unum, sizeof( unum ) );
+        type, BOSL_OBJECT_TYPE_UINT64, &unsigned_number, sizeof( unsigned_number ) );
     }
     // just return right
     bosl_interpreter_emit_error( u->operator, "Runtime error unknown" );
@@ -796,7 +796,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
   destroy_object( right );
   // raise error and return NULL
   bosl_interpreter_emit_error( u->operator, "Unknown unary token." );
-  // any thing else is an error
+  // anything else is an error
   return NULL;
 }
 
@@ -944,7 +944,7 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
       }
       // call function
       bosl_object_t* result = callee->callback( object, argument_list );
-      // in case an error ocurred during execution or binding was executed,
+      // in case an error occurred during execution or binding was executed,
       // cleanup is slightly different
       if ( interpreter->error || callee->statement->load_identifier ) {
         // destruct list and object normally

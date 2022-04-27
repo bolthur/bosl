@@ -19,8 +19,6 @@
 
 #include <stdlib.h>
 #include <check.h>
-#include <stdio.h>
-#include <unistd.h>
 #include "../lib/ast/common.h"
 #include "../lib/ast/statement.h"
 #include "../lib/ast/expression.h"

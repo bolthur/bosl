@@ -360,7 +360,7 @@ bool bosl_scanner_init( const char* source ) {
     free( scanner );
     return false;
   }
-  // populate hashmap with key words
+  // populate hashmap with keywords
   if (
     ! hashmap_value_set( scanner->keyword, "let", ( void* )TOKEN_LET )
     || ! hashmap_value_set( scanner->keyword, "const", ( void* )TOKEN_CONST )

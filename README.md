@@ -2,7 +2,7 @@
 
 `BOSL` which stands for `Bolthur Obligated Scripting Language` is a more or less
 simple scripting language which is used in raspi iomem server for more complex
-mmio sequences than readm write, wait until true / false / not equal / equal.
+mmio sequences than read, write, wait until true / false / not equal / equal.
 
 More specific grammar information might be found [here](markdown/grammar.md).
 
@@ -134,7 +134,7 @@ Overview about supported bitwise operations
 ~0x0f << 4 // binary right shift example, result: 0xF0
 ```
 
-### Assignment operatiors
+### Assignment operators
 
 Overview about supported assignment operators
 
@@ -220,29 +220,29 @@ Overview about control flow
 ```js
 // if condition
 if ( expression ) {
-  print "foo";
+  print( "foo" );
 }
 
 // if with else condition
 if ( expression ) {
-  print "foo";
+  print( "foo" );
 } else {
-  print "bar";
+  print( "bar" );
 }
 
 // if with multiple condition branches
 if ( expression1 ) {
-  print "expression1";
+  print( "expression1" );
 } else if ( expression2 ) {
-  print "expression2";
+  print( "expression2" );
 } else {
-  print "else";
+  print( "else" );
 }
 
 // while loop
 let i: uint32 = 0;
 while ( i < 5 ) {
-  print i * 2;
+  print( i * 2 );
   i = i + 1;
 }
 
@@ -252,7 +252,7 @@ while ( true ) {
   if ( n >= 5 ) {
     break;
   }
-  print i * 2;
+  print( i * 2 );
   i = i + 1;
 }
 
@@ -263,7 +263,7 @@ while ( true ) {
     if ( n >= 5 ) {
       break 2;
     }
-    print i * 2;
+    print( i * 2 );
     i = i + 1;
   }
 }
@@ -276,7 +276,7 @@ Functions are written by starting with the keyword fn in the following schema:
 
 After the keyword `fn` the name is set followed by round brackets with optional
 parameters. After the round brackets the return type is specified with a colon
-and the type. Finally the function body is added surrounded by braces.
+and the type. Finally, the function body is added surrounded by braces.
 
 To return a value from within a function, return keyword has to be used.
 
@@ -286,7 +286,7 @@ is also mandatory and has to be passed after a colon after closing round bracket
 ```js
 // function without return
 fn foo( parameter1: uint32 ): void {
-  print parameter1;
+  print( parameter1 );
 }
 
 // function with return
@@ -312,7 +312,7 @@ p2 = 5;
 let v: uint32 = p2;
 ```
 
-### Loading funcrions from application that embeds the script for execution
+### Loading functions from application that embeds the script for execution
 
 To use functions the container application is providing, some sort of function
 alias has to be added. The function is written as usual and the body is followed
@@ -348,7 +348,7 @@ TBD
 
 ### Overloading builtin functions in container
 
-It's possible to overload builting functions in container, which might become
+It's possible to overload builtin functions in container, which might become
 necessary, when you want to route all prints to some custom special printing
 routine printing to memory.
 

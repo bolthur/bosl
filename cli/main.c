@@ -60,7 +60,7 @@ static char* read_file( const char* path ) {
     fclose( f );
     return NULL;
   }
-  // clearout
+  // clear out
   memset( buffer, 0, sizeof( char ) * size );
   // read whole file into buffer
   if ( 1 != fread( buffer, size - 1, 1, f ) ) {
@@ -130,13 +130,13 @@ static bosl_object_t* c_foo3(
 }
 
 /**
- * @brief Interprete buffer
+ * @brief Interpret buffer
  *
  * @param print_ast print ast instead of interpreting
- * @param buffer code to interprete
+ * @param buffer code to interpret
  * @return
  */
-static bool interprete( bool print_ast, char* buffer ) {
+static bool interpret( bool print_ast, char* buffer ) {
   // initialize object handling
   if ( ! bosl_object_init() ) {
     fprintf( stderr, "Unable to init object!\r\n" );
@@ -290,8 +290,8 @@ int main( int argc, char* argv[] ) {
     arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
     return EXIT_FAILURE;
   }
-  // interprete it
-  if ( ! interprete( ast->count, buffer ) ) {
+  // interpret it
+  if ( ! interpret( ast->count, buffer ) ) {
     // free buffer and free argtable
     free( buffer );
     arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );

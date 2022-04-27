@@ -177,7 +177,7 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_literal(
     literal->size = 0;
   }
   literal->type = type;
-  // return succes
+  // return success
   return e;
 }
 
