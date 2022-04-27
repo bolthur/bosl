@@ -101,5 +101,7 @@ bool bosl_object_extract_number(
 bosl_object_type_t bosl_object_str_to_type( const char*, size_t );
 const char* bosl_object_type_to_str( bosl_object_type_t );
 char* bosl_object_stringify( bosl_object_t* );
+void* bosl_object_extract_parameter( list_manager_t*, size_t );
+bool bosl_object_validate( bosl_token_t*, bosl_object_t* );
 
 #endif

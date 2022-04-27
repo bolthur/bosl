@@ -55,4 +55,6 @@ typedef struct bosl_interpreter {
 bool bosl_interpreter_init( list_manager_t* );
 void bosl_interpreter_free( void );
 bool bosl_interpreter_run( void );
+void bosl_interpreter_emit_error( bosl_token_t*, const char* );
+
 #endif

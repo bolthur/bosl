@@ -75,34 +75,57 @@ static char* read_file( const char* path ) {
 
 /**
  * @brief Some simple c binding
- *
- * @todo move parameter get logic into helper function
  */
 static bosl_object_t* c_foo(
   __unused bosl_object_t* o,
   list_manager_t* parameter
 ) {
-  // handle invalid parameter count
-  if ( 1 != list_count_item( parameter ) ) {
+  // get parameter
+  bosl_object_t* parameter1 = bosl_object_extract_parameter( parameter, 0 );
+  if ( ! parameter1 ) {
+    bosl_interpreter_emit_error( NULL, "Unable to extract parameter!" );
     return NULL;
   }
-  // get first parameter item
-  list_item_t* item = list_get_item_at_pos( parameter, 0 );
-  if ( ! item ) {
-    return NULL;
-  }
-  // get object from list item
-  bosl_object_t* parameter1 = item->data;
   // ensure type
   if ( BOSL_OBJECT_TYPE_UINT8 != parameter1->type ) {
+    bosl_interpreter_emit_error( NULL, "Invalid parameter type received!" );
     return NULL;
   }
   // get and copy value ( everything is stored with maximum amount of space )
   uint64_t value = 0;
   memcpy( &value, parameter1->data, sizeof( value ) );
   // do something
-  printf( "hello from c binding!\r\nparameter1 = %"PRIu64"\r\n", value );
+  printf( "c_foo!\r\nparameter1 = %"PRIu64"\r\n", value );
   // return nothing as nothing will be returned
+  return NULL;
+}
+
+/**
+ * @brief Some simple c binding
+ */
+static bosl_object_t* c_foo2(
+  __unused bosl_object_t* o,
+  __unused list_manager_t* parameter
+) {
+  // do something
+  printf( "c_foo2!\r\n" );
+  bosl_object_t* r = bosl_binding_build_return_int( BOSL_OBJECT_TYPE_INT8, -1 );
+  if ( ! r ) {
+    bosl_interpreter_emit_error( NULL, "Unable to build return in binding!" );
+    return NULL;
+  }
+  // return nothing as nothing will be returned
+  return r;
+}
+
+/**
+ * @brief Some simple c binding
+ */
+static bosl_object_t* c_foo3(
+  __unused bosl_object_t* o,
+  __unused list_manager_t* parameter
+) {
+  bosl_interpreter_emit_error( NULL, "c_foo3 error!" );
   return NULL;
 }
 
@@ -154,6 +177,20 @@ static bool interprete( bool print_ast, char* buffer ) {
     return false;
   }
   if ( ! bosl_binding_bind_function( "c_foo", c_foo ) ) {
+    bosl_binding_free();
+    bosl_object_free();
+    bosl_parser_free();
+    bosl_scanner_free();
+    return false;
+  }
+  if ( ! bosl_binding_bind_function( "c_foo2", c_foo2 ) ) {
+    bosl_binding_free();
+    bosl_object_free();
+    bosl_parser_free();
+    bosl_scanner_free();
+    return false;
+  }
+  if ( ! bosl_binding_bind_function( "c_foo3", c_foo3 ) ) {
     bosl_binding_free();
     bosl_object_free();
     bosl_parser_free();

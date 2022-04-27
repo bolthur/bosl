@@ -101,17 +101,6 @@ static void object_list_cleanup( list_item_t* item ) {
 }
 
 /**
- * @brief Wrapper for bosl error raise including set of error flag
- *
- * @param token
- * @param message
- */
-static void raise_error( bosl_token_t* token, const char* message ) {
-  bosl_error_raise( token, message );
-  interpreter->error = true;
-}
-
-/**
  * @brief Helper to check whether object is truthy value
  *
  * @param object
@@ -125,7 +114,7 @@ static bosl_object_t* object_truthy(
 ) {
   // handle invalid
   if ( ! object || ! object->data ) {
-    raise_error( NULL, "Broken object passed to truthy." );
+    bosl_interpreter_emit_error( NULL, "Broken object passed to truthy." );
     return NULL;
   }
   bool flag = true;
@@ -168,7 +157,7 @@ static bosl_object_t* object_equal(
 ) {
   // handle invalid
   if ( ! left || ! left->data || ! right || ! right->data ) {
-    raise_error( NULL, "Broken objects passed to truthy." );
+    bosl_interpreter_emit_error( NULL, "Broken objects passed to truthy." );
     return NULL;
   }
   bool flag = false;
@@ -218,13 +207,13 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
   // evaluate left
   bosl_object_t* left = evaluate_expression( b->left );
   if ( ! left ) {
-    raise_error( b->operator, "Unable to evaluate left expression" );
+    bosl_interpreter_emit_error( b->operator, "Unable to evaluate left expression" );
     return NULL;
   }
   // evaluate right
   bosl_object_t* right = evaluate_expression( b->right );
   if ( ! right ) {
-    raise_error( b->operator, "Unable to evaluate right expression" );
+    bosl_interpreter_emit_error( b->operator, "Unable to evaluate right expression" );
     destroy_object( left );
     return NULL;
   }
@@ -245,7 +234,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
       left->value_type = right->value_type;
       same_type = true;
     } else {
-      raise_error( b->operator, "Different types for binary." );
+      bosl_interpreter_emit_error( b->operator, "Different types for binary." );
       destroy_object( left );
       destroy_object( right );
       return NULL;
@@ -268,7 +257,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
       || ! bosl_object_extract_number( right, &runum, &rsnum, &rdnum )
     )
   ) {
-    raise_error( b->operator, "Number extraction failed." );
+    bosl_interpreter_emit_error( b->operator, "Number extraction failed." );
     destroy_object( left );
     destroy_object( right );
     return NULL;
@@ -311,7 +300,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
       );
     }
     // unsupported
-    raise_error( b->operator, "Unknown error" );
+    bosl_interpreter_emit_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_PLUS == b->operator->type ) {
     // save type and destroy objects
@@ -349,7 +338,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
       );
     }
     // unsupported
-    raise_error( b->operator, "Unknown error" );
+    bosl_interpreter_emit_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_SLASH == b->operator->type ) {
     // save type and destroy objects
@@ -387,7 +376,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
       );
     }
     // unsupported
-    raise_error( b->operator, "Unknown error" );
+    bosl_interpreter_emit_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_STAR == b->operator->type ) {
     // save type and destroy objects
@@ -425,7 +414,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
       );
     }
     // unsupported
-    raise_error( b->operator, "Unknown error" );
+    bosl_interpreter_emit_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_GREATER == b->operator->type ) {
     // save type and destroy objects
@@ -451,7 +440,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
-    raise_error( b->operator, "Unknown error" );
+    bosl_interpreter_emit_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_GREATER_EQUAL == b->operator->type ) {
     // save type and destroy objects
@@ -477,7 +466,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
-    raise_error( b->operator, "Unknown error" );
+    bosl_interpreter_emit_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_LESS == b->operator->type ) {
     // save type and destroy objects
@@ -503,7 +492,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
-    raise_error( b->operator, "Unknown error" );
+    bosl_interpreter_emit_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_LESS_EQUAL == b->operator->type ) {
     // save type and destroy objects
@@ -529,7 +518,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
         BOSL_OBJECT_VALUE_BOOL, BOSL_OBJECT_TYPE_BOOL, &result, sizeof( result ) );
     }
     // unsupported
-    raise_error( b->operator, "Unknown error" );
+    bosl_interpreter_emit_error( b->operator, "Unknown error" );
     return NULL;
   } else if ( TOKEN_BANG_EQUAL == b->operator->type ) {
     // get equality status
@@ -584,7 +573,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
           max_bit = 64;
           break;
         default:
-          raise_error( b->operator, "Unknown left type" );
+          bosl_interpreter_emit_error( b->operator, "Unknown left type" );
           return NULL;
       }
       // handle invalid shift bit count
@@ -626,7 +615,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
       // handle signed int / hex
       if ( BOSL_OBJECT_VALUE_INT_SIGNED == left_value_type ) {
         if ( 0 > rsnum ) {
-          raise_error( b->operator, "Bits to shift has to be positive." );
+          bosl_interpreter_emit_error( b->operator, "Bits to shift has to be positive." );
           return NULL;
         }
         int64_t result;
@@ -643,18 +632,18 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
         );
       }
     } else {
-      raise_error( b->operator, "Shifting is restricted to integers." );
+      bosl_interpreter_emit_error( b->operator, "Shifting is restricted to integers." );
       return NULL;
     }
     // unsupported
-    raise_error( b->operator, "Unknown error" );
+    bosl_interpreter_emit_error( b->operator, "Unknown error" );
     return NULL;
   }
   // destroy object
   destroy_object( left );
   destroy_object( right );
   // raise error and return NULL
-  raise_error( b->operator, "Unknown binary token." );
+  bosl_interpreter_emit_error( b->operator, "Unknown binary token." );
   // any thing else is an error
   return NULL;
 }
@@ -671,7 +660,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
   // evaluate right
   bosl_object_t* right = evaluate_expression( u->right );
   if ( ! right ) {
-    raise_error( u->operator, "Unable to evaluate right expression" );
+    bosl_interpreter_emit_error( u->operator, "Unable to evaluate right expression" );
     return NULL;
   }
   // apply operators
@@ -686,7 +675,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     // validate type
     if ( right->value_type > BOSL_OBJECT_VALUE_INT_UNSIGNED ) {
       // raise error and return NULL
-      raise_error( u->operator, "Expect numeric" );
+      bosl_interpreter_emit_error( u->operator, "Expect numeric" );
       // free object
       destroy_object( right );
       // return NULL
@@ -706,7 +695,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
         )
       ) {
         // error message
-        raise_error( u->operator, "Expected signed variable." );
+        bosl_interpreter_emit_error( u->operator, "Expected signed variable." );
         // free object
         destroy_object( right );
         // return NULL
@@ -732,7 +721,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     // extract stuff
     if ( ! bosl_object_extract_number( right, &unum, &snum, &dnum ) ) {
       // raise error
-      raise_error( u->operator, "Runtime error unable to extract number" );
+      bosl_interpreter_emit_error( u->operator, "Runtime error unable to extract number" );
       // destroy object
       destroy_object( right );
       // return NULL
@@ -753,7 +742,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
         type, BOSL_OBJECT_TYPE_INT64, &snum, sizeof( snum ) );
     }
     // raise error
-    raise_error( u->operator, "Runtime error unknown" );
+    bosl_interpreter_emit_error( u->operator, "Runtime error unknown" );
     // return NULL
     return NULL;
   } else if ( TOKEN_PLUS == u->operator->type ) {
@@ -763,7 +752,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
       && right->value_type <= BOSL_OBJECT_VALUE_INT_UNSIGNED
     ) {
       // raise error and return NULL
-      raise_error( u->operator, "Expect numeric" );
+      bosl_interpreter_emit_error( u->operator, "Expect numeric" );
       return NULL;
     }
     // just return right
@@ -775,7 +764,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
       && right->value_type <= BOSL_OBJECT_VALUE_INT_UNSIGNED
     ) {
       // raise error and return NULL
-      raise_error( u->operator, "Expect numeric integer" );
+      bosl_interpreter_emit_error( u->operator, "Expect numeric integer" );
       return NULL;
     }
     // variables for values
@@ -784,7 +773,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     long double dnum = 0;
     // extract stuff
     if ( ! bosl_object_extract_number( right, &unum, &snum, &dnum ) ) {
-      raise_error( u->operator, "Runtime error unable to extract number" );
+      bosl_interpreter_emit_error( u->operator, "Runtime error unable to extract number" );
       destroy_object( right );
       return NULL;
     }
@@ -800,13 +789,13 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
         type, BOSL_OBJECT_TYPE_UINT64, &unum, sizeof( unum ) );
     }
     // just return right
-    raise_error( u->operator, "Runtime error unknown" );
+    bosl_interpreter_emit_error( u->operator, "Runtime error unknown" );
     return NULL;
   }
   // destroy right
   destroy_object( right );
   // raise error and return NULL
-  raise_error( u->operator, "Unknown unary token." );
+  bosl_interpreter_emit_error( u->operator, "Unknown unary token." );
   // any thing else is an error
   return NULL;
 }
@@ -843,7 +832,7 @@ static bosl_object_t* evaluate_literal( bosl_ast_expression_literal_t* l ) {
       object_type = BOSL_OBJECT_TYPE_STRING;
       break;
     default:
-      raise_error( NULL, "Unsupported object type in literal." );
+      bosl_interpreter_emit_error( NULL, "Unsupported object type in literal." );
       return NULL;
   }
   // allocate object
@@ -864,7 +853,7 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
         evaluate_expression( e->assign->value ) );
       // handle error
       if ( ! value ) {
-        raise_error( e->assign->token, "Unable to evaluate assign expression." );
+        bosl_interpreter_emit_error( e->assign->token, "Unable to evaluate assign expression." );
         return NULL;
       }
       // assign object value
@@ -875,7 +864,7 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
         value,
         false
       ) ) {
-        raise_error( e->assign->token, "Assignment failed." );
+        bosl_interpreter_emit_error( e->assign->token, "Assignment failed." );
         destroy_object( value );
         return NULL;
       }
@@ -890,12 +879,12 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
       );
       // handle error
       if ( ! object ) {
-        raise_error( e->call->paren, "Unable to evaluate callee expression." );
+        bosl_interpreter_emit_error( e->call->paren, "Unable to evaluate callee expression." );
         return NULL;
       }
       // handle not a callable
       if ( BOSL_OBJECT_VALUE_CALLABLE != object->value_type ) {
-        raise_error( e->call->paren, "Not a callable function." );
+        bosl_interpreter_emit_error( e->call->paren, "Not a callable function." );
         return NULL;
       }
       // extract callee information
@@ -904,7 +893,7 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
       list_manager_t* argument_list = list_construct(
         NULL, object_list_cleanup, NULL );
       if ( ! argument_list ) {
-        raise_error( e->call->paren, "Unable to allocate list for arguments." );
+        bosl_interpreter_emit_error( e->call->paren, "Unable to allocate list for arguments." );
         destroy_object( object );
         return NULL;
       }
@@ -917,7 +906,7 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
         // evaluate argument
         bosl_object_t* argument = evaluate_expression( current_item->data );
         if ( ! argument ) {
-          raise_error(
+          bosl_interpreter_emit_error(
             e->call->paren, "Unable to evaluate parameter expression." );
           list_destruct( argument_list );
           destroy_object( object );
@@ -925,7 +914,7 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
         }
         argument = bosl_object_duplicate_environment( argument );
         if ( ! argument ) {
-          raise_error(
+          bosl_interpreter_emit_error(
             e->call->paren, "Unable to duplicate parameter object." );
           list_destruct( argument_list );
           destroy_object( object );
@@ -933,7 +922,7 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
         }
         // push back
         if ( ! list_push_back_data( argument_list, argument ) ) {
-          raise_error(
+          bosl_interpreter_emit_error(
             e->call->paren, "Unable to push back parameter object." );
           list_destruct( argument_list );
           destroy_object( object );
@@ -945,7 +934,7 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
       size_t passed = list_count_item( argument_list );
       // check amount of passed arguments
       if ( expected != passed ) {
-        raise_error(
+        bosl_interpreter_emit_error(
           e->call->paren,
           "Argument mismatch, to less or much parameters passed."
         );
@@ -988,12 +977,12 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
       );
       // handle error
       if ( ! left ) {
-        raise_error( e->logical->operator, "Unable to evaluate left side." );
+        bosl_interpreter_emit_error( e->logical->operator, "Unable to evaluate left side." );
         return NULL;
       }
       bosl_object_t* truthy = object_truthy( left, false );
       if ( ! truthy ) {
-        raise_error( e->logical->operator, "Unable to allocate truthy object." );
+        bosl_interpreter_emit_error( e->logical->operator, "Unable to allocate truthy object." );
         destroy_object( left );
         return NULL;
       }
@@ -1018,7 +1007,7 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
       interpreter->env,
       e->variable->name );
   }
-  raise_error( NULL, "Unknown expression." );
+  bosl_interpreter_emit_error( NULL, "Unknown expression." );
   return NULL;
 }
 
@@ -1034,13 +1023,13 @@ static void execute_print( bosl_ast_statement_t* s ) {
   );
   // handle error
   if ( ! object ) {
-    raise_error( NULL, "Evaluate of inner expression for print failed." );
+    bosl_interpreter_emit_error( NULL, "Evaluate of inner expression for print failed." );
     return;
   }
   // print via stringify
   char* str = bosl_object_stringify( object );
   if ( ! str ) {
-    raise_error( NULL, "Stringify of evaluated object failed." );
+    bosl_interpreter_emit_error( NULL, "Stringify of evaluated object failed." );
     return;
   }
   // print string
@@ -1063,7 +1052,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       bosl_environment_t* inner = bosl_environment_init(
         interpreter->env );
       if ( ! inner ) {
-        raise_error( NULL, "Unable to allocate nested environment." );
+        bosl_interpreter_emit_error( NULL, "Unable to allocate nested environment." );
         break;
       }
       // backup current environment
@@ -1085,7 +1074,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
             // destroy object
             destroy_object( r );
             // raise error
-            raise_error( NULL, "Unable to duplicate return / break object." );
+            bosl_interpreter_emit_error( NULL, "Unable to duplicate return / break object." );
             break;
           }
           // restore previous environment
@@ -1097,7 +1086,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         }
         // handle error
         if ( interpreter->error ) {
-          raise_error( NULL, "Unable to execute block statement." );
+          bosl_interpreter_emit_error( NULL, "Unable to execute block statement." );
           break;
         }
         // get to next
@@ -1115,7 +1104,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       break;
     // handled by function shouldn't appear alone
     case STATEMENT_PARAMETER:
-      raise_error(
+      bosl_interpreter_emit_error(
         s->parameter->name,
         "Parameter statement is standalone not possible."
       );
@@ -1125,7 +1114,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       bosl_object_t* f = bosl_object_allocate_callable(
         s->function, execute_function, interpreter->env );
       if ( ! f ) {
-        raise_error(
+        bosl_interpreter_emit_error(
           s->function->token,
           "Unable to allocate function object."
         );
@@ -1138,7 +1127,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         // destroy object
         bosl_object_destroy( f );
         // raise error
-        raise_error(
+        bosl_interpreter_emit_error(
           s->function->token,
           "Unable to allocate function object."
         );
@@ -1151,13 +1140,13 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       bosl_object_t* condition = evaluate_expression(
         s->if_else->if_condition );
       if ( ! condition ) {
-        raise_error( NULL, "Unable to evaluate condition." );
+        bosl_interpreter_emit_error( NULL, "Unable to evaluate condition." );
         break;
       }
       // check condition for truthy
       bosl_object_t* truthy = object_truthy( condition, false );
       if ( ! truthy ) {
-        raise_error( NULL, "Unable to allocate truthy object." );
+        bosl_interpreter_emit_error( NULL, "Unable to allocate truthy object." );
         destroy_object( condition );
         break;
       }
@@ -1180,7 +1169,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           // destroy object
           destroy_object( r );
           // raise error
-          raise_error( NULL, "Unable to duplicate return / break object." );
+          bosl_interpreter_emit_error( NULL, "Unable to duplicate return / break object." );
           break;
         }
         return copy;
@@ -1196,7 +1185,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         // evaluate expression
         value = evaluate_expression( s->return_value->value );
         if ( ! value ) {
-          raise_error(
+          bosl_interpreter_emit_error(
             s->return_value->keyword,
             "Unable to evaluate return expression."
           );
@@ -1211,7 +1200,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           strlen( n ) + 1
         );
         if ( ! value ) {
-          raise_error(
+          bosl_interpreter_emit_error(
             s->return_value->keyword,
             "Unable to allocate return object."
           );
@@ -1221,7 +1210,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       // duplicate if environment variable
       bosl_object_t* copy = bosl_object_duplicate_environment( value );
       if ( ! copy ) {
-        raise_error( NULL, "Unable to duplicate return object.\r\n" );
+        bosl_interpreter_emit_error( NULL, "Unable to duplicate return object.\r\n" );
         break;
       }
       // set return flag
@@ -1236,7 +1225,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           evaluate_expression( s->variable->initializer )
         );
         if ( ! value ) {
-          raise_error(
+          bosl_interpreter_emit_error(
             s->variable->name,
             "Unable to evaluate initializer expression."
           );
@@ -1252,7 +1241,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           strlen( n ) + 1
         );
         if ( ! value ) {
-          raise_error(
+          bosl_interpreter_emit_error(
             s->variable->name,
             "Unable to allocate default initializer."
           );
@@ -1267,7 +1256,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         value,
         true
       ) ) {
-        raise_error(
+        bosl_interpreter_emit_error(
           s->variable->name,
           "Unable to push variable to environment."
         );
@@ -1283,7 +1272,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       );
       // handle error
       if ( ! value ) {
-        raise_error(
+        bosl_interpreter_emit_error(
           s->variable->name,
           "Unable to evaluate constant initializer expression."
         );
@@ -1299,7 +1288,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         value,
         true
       ) ) {
-        raise_error(
+        bosl_interpreter_emit_error(
           s->variable->name,
           "Unable to push constant to environment."
         );
@@ -1323,13 +1312,13 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           s->while_loop->condition );
         // handle error
         if ( ! condition ) {
-          raise_error( NULL, "Unable to evaluate condition." );
+          bosl_interpreter_emit_error( NULL, "Unable to evaluate condition." );
           break;
         }
         // check condition for truthy
         bosl_object_t* truthy = object_truthy( condition, false );
         if ( ! truthy ) {
-          raise_error( NULL, "Unable to allocate truthy object." );
+          bosl_interpreter_emit_error( NULL, "Unable to allocate truthy object." );
           destroy_object( condition );
           break;
         }
@@ -1357,7 +1346,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         if ( r && r->is_return ) {
           bosl_object_t* copy = bosl_object_duplicate_environment( r );
           if ( ! copy ) {
-            raise_error( NULL, "Unable to duplicate return object.\r\n" );
+            bosl_interpreter_emit_error( NULL, "Unable to duplicate return object.\r\n" );
             break;
           }
           return copy;
@@ -1394,7 +1383,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         // evaluate level expression
         level = evaluate_expression( s->break_continue->level );
         if ( ! level ) {
-          raise_error(
+          bosl_interpreter_emit_error(
             s->break_continue->token, "Unable to evaluate break condition." );
           break;
         }
@@ -1409,7 +1398,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           sizeof( i )
         );
         if ( ! level ) {
-          raise_error(
+          bosl_interpreter_emit_error(
             s->break_continue->token,
             "Unable to allocate default break object value." );
           break;
@@ -1421,7 +1410,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         && level->type != BOSL_OBJECT_TYPE_INT32
         && level->type != BOSL_OBJECT_TYPE_INT64
       ) {
-        raise_error(
+        bosl_interpreter_emit_error(
           s->break_continue->token,
           "break level has to be of type signed integer." );
         destroy_object( level );
@@ -1432,14 +1421,14 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       memcpy( &val, level->data, sizeof( val ) );
       // handle invalid value
       if ( 0 > val ) {
-        raise_error(
+        bosl_interpreter_emit_error(
           s->break_continue->token, "negative break level is not allowed." );
         destroy_object( level );
         break;
       }
       // handle more levels than loops are existing
       if ( val > interpreter->loop_level ) {
-        raise_error( s->break_continue->token, "Continue statement to high." );
+        bosl_interpreter_emit_error( s->break_continue->token, "Continue statement to high." );
         destroy_object( level );
         break;
       }
@@ -1454,7 +1443,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         // evaluate level expression
         level = evaluate_expression( s->break_continue->level );
         if ( ! level ) {
-          raise_error(
+          bosl_interpreter_emit_error(
             s->break_continue->token, "Unable to evaluate continue condition." );
           break;
         }
@@ -1469,7 +1458,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
           sizeof( i )
         );
         if ( ! level ) {
-          raise_error(
+          bosl_interpreter_emit_error(
             s->break_continue->token,
             "Unable to allocate default continue object value." );
           break;
@@ -1481,7 +1470,7 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
         && level->type != BOSL_OBJECT_TYPE_INT32
         && level->type != BOSL_OBJECT_TYPE_INT64
       ) {
-        raise_error(
+        bosl_interpreter_emit_error(
           s->break_continue->token,
           "continue level has to be of type signed integer." );
         destroy_object( level );
@@ -1492,14 +1481,14 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       memcpy( &val, level->data, sizeof( val ) );
       // handle invalid value
       if ( 0 > val ) {
-        raise_error(
+        bosl_interpreter_emit_error(
           s->break_continue->token, "negative continue level is not allowed." );
         destroy_object( level );
         break;
       }
       // handle more levels than loops are existing
       if ( val > interpreter->loop_level ) {
-        raise_error( s->break_continue->token, "Continue statement to high." );
+        bosl_interpreter_emit_error( s->break_continue->token, "Continue statement to high." );
         destroy_object( level );
         break;
       }
@@ -1509,11 +1498,11 @@ static bosl_object_t* execute( bosl_ast_statement_t* s ) {
       return level;
     }
     case STATEMENT_POINTER: {
-      raise_error( s->pointer->name, "Not implemented statement" );
+      bosl_interpreter_emit_error( s->pointer->name, "Not implemented statement" );
       break;
     }
     default:
-      raise_error( NULL, "Unknown ast statement" );
+      bosl_interpreter_emit_error( NULL, "Unknown ast statement" );
   }
   return NULL;
 }
@@ -1541,12 +1530,12 @@ static bosl_object_t* execute_function(
     );
     // handle no binding
     if ( ! binding ) {
-      raise_error( statement->load_identifier, "Function binding not found." );
+      bosl_interpreter_emit_error( statement->load_identifier, "Function binding not found." );
       return NULL;
     }
     // handle invalid binding
     if ( binding->value_type != BOSL_OBJECT_VALUE_CALLABLE ) {
-      raise_error( statement->load_identifier, "Function binding is not a callable." );
+      bosl_interpreter_emit_error( statement->load_identifier, "Function binding is not a callable." );
       return NULL;
     }
     // get callable
@@ -1557,7 +1546,7 @@ static bosl_object_t* execute_function(
   // create new closure environment
   bosl_environment_t* closure = bosl_environment_init( callable->closure );
   if ( ! closure ) {
-    raise_error( NULL, "Unable to allocate closure for function execution." );
+    bosl_interpreter_emit_error( NULL, "Unable to allocate closure for function execution." );
     return NULL;
   }
   // backup current environment
@@ -1566,39 +1555,40 @@ static bosl_object_t* execute_function(
   interpreter->env = closure;
   // push parameter to environment
   for ( size_t index = 0, max = list_count_item( parameter ); index < max; index++ ) {
-    // get argument and value from list
-    list_item_t* argument_item = list_get_item_at_pos(
+    // get argument name from list
+    bosl_ast_statement_t* argument = bosl_object_extract_parameter(
       statement->parameter, index );
-    if ( ! argument_item ) {
+    if ( ! argument ) {
       // restore interpreter environment
       interpreter->env = previous_env;
       // destroy closure
       bosl_environment_free( closure );
-      raise_error( NULL, "Unable to get parameter name from callable." );
+      bosl_interpreter_emit_error( NULL, "Unable to get parameter name from callable." );
       return NULL;
     }
     // get value from list
-    list_item_t* value_item = list_get_item_at_pos( parameter, index );
-    if ( ! value_item ) {
+    bosl_object_t* value = bosl_object_extract_parameter( parameter, index );
+    if ( ! value ) {
       // restore interpreter environment
       interpreter->env = previous_env;
       // destroy closure
       bosl_environment_free( closure );
-      raise_error( NULL, "Unable to get parameter value for callable." );
+      bosl_interpreter_emit_error( NULL, "Unable to get parameter value for callable." );
       return NULL;
     }
-    // extract values
-    bosl_ast_statement_t* argument = argument_item->data;
-    bosl_object_t* value = value_item->data;
     // push to environment
-    if ( ! bosl_environment_push_value(
-      interpreter->env, argument->parameter->name, value
+    if ( ! bosl_object_assign_push_value(
+      interpreter->env,
+      argument->parameter->name,
+      argument->parameter->type,
+      value,
+      true
     ) ) {
       // restore interpreter environment
       interpreter->env = previous_env;
       // destroy closure
       bosl_environment_free( closure );
-      raise_error( NULL, "Unable to get parameter value for callable." );
+      bosl_interpreter_emit_error( NULL, "Unable to get parameter value for callable." );
       return NULL;
     }
   }
@@ -1606,14 +1596,30 @@ static bosl_object_t* execute_function(
   bosl_object_t* o = execute( statement->body );
   // handle return
   if ( o && o->is_return ) {
-    // duplicate if environment object
-    bosl_object_t* copy = bosl_object_duplicate_environment( o );
-    if ( ! copy ) {
+    // validate return
+    if ( ! bosl_object_validate( statement->return_type, o ) ) {
+      // destroy object
+      destroy_object( o );
       // restore interpreter environment
       interpreter->env = previous_env;
       // destroy closure
       bosl_environment_free( closure );
-      raise_error( NULL, "Unable to duplicate return object after function." );
+      bosl_interpreter_emit_error(
+        statement->return_type,
+        "Invalid return value received."
+      );
+      return NULL;
+    }
+    // duplicate if environment object
+    bosl_object_t* copy = bosl_object_duplicate_environment( o );
+    if ( ! copy ) {
+      // destroy object
+      destroy_object( o );
+      // restore interpreter environment
+      interpreter->env = previous_env;
+      // destroy closure
+      bosl_environment_free( closure );
+      bosl_interpreter_emit_error( NULL, "Unable to duplicate return object after function." );
       return NULL;
     }
     // overwrite o with copy
@@ -1636,7 +1642,7 @@ static bosl_object_t* execute_function(
 static void execute_ast_node( bosl_ast_node_t* node ) {
   // handle no statement
   if ( ! node->statement ) {
-    raise_error( NULL, "Invalid ast node" );
+    bosl_interpreter_emit_error( NULL, "Invalid ast node" );
     return;
   }
   // reset loop break remaining, continue remaining and loop level
@@ -1719,4 +1725,15 @@ bool bosl_interpreter_run( void ) {
   }
   // return success
   return true;
+}
+
+/**
+ * @brief Wrapper for bosl error raise including set of error flag
+ *
+ * @param token
+ * @param message
+ */
+void bosl_interpreter_emit_error( bosl_token_t* token, const char* message ) {
+  bosl_error_raise( token, message );
+  interpreter->error = true;
 }

@@ -17,6 +17,8 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include "binding.h"
 
 static hashmap_table_t* binding = NULL;
@@ -26,8 +28,57 @@ static hashmap_table_t* binding = NULL;
  *
  * @param object
  */
-static void environment_cleanup( void* object ) {
+static void binding_cleanup( void* object ) {
   bosl_object_destroy( object );
+}
+
+/**
+ * @brief Helper to build a return from c
+ *
+ * @param type
+ * @param data
+ * @param size
+ * @return
+ */
+static bosl_object_t* build_return(
+  bosl_object_type_t type,
+  void* data,
+  size_t size
+) {
+  // determine value type
+  bosl_object_value_type_t value_type;
+  switch( type ) {
+    case BOSL_OBJECT_TYPE_BOOL:
+      value_type = BOSL_OBJECT_VALUE_BOOL;
+      break;
+    case BOSL_OBJECT_TYPE_UINT8:
+    case BOSL_OBJECT_TYPE_UINT16:
+    case BOSL_OBJECT_TYPE_UINT32:
+    case BOSL_OBJECT_TYPE_UINT64:
+      value_type = BOSL_OBJECT_VALUE_INT_UNSIGNED;
+      break;
+    case BOSL_OBJECT_TYPE_INT8:
+    case BOSL_OBJECT_TYPE_INT16:
+    case BOSL_OBJECT_TYPE_INT32:
+    case BOSL_OBJECT_TYPE_INT64:
+      value_type = BOSL_OBJECT_VALUE_INT_SIGNED;
+      break;
+    case BOSL_OBJECT_TYPE_STRING:
+      value_type = BOSL_OBJECT_VALUE_STRING;
+      break;
+    case BOSL_OBJECT_TYPE_FLOAT:
+      value_type = BOSL_OBJECT_VALUE_FLOAT;
+      break;
+    default:
+      return NULL;
+  }
+  // build object and return it
+  return bosl_object_allocate(
+    value_type,
+    type,
+    data,
+    size
+  );
 }
 
 /**
@@ -37,7 +88,7 @@ static void environment_cleanup( void* object ) {
  */
 bool bosl_binding_init( void ) {
   // create hash map
-  binding = hashmap_construct( environment_cleanup );
+  binding = hashmap_construct( binding_cleanup );
   // return result of construct as success or false
   return binding;
 }
@@ -127,4 +178,75 @@ bosl_object_t* bosl_binding_nget( const char* name, size_t length ) {
   }
   // try to get binding from hashmap
   return hashmap_value_nget( binding, name, length );
+}
+
+/**
+ * @brief Return unsigned integer helper
+ *
+ * @param type
+ * @param data
+ * @return
+ */
+bosl_object_t* bosl_binding_build_return_uint(
+  bosl_object_type_t type,
+  uint64_t data
+) {
+  // handle invalid type
+  if ( type < BOSL_OBJECT_TYPE_UINT8 || type > BOSL_OBJECT_TYPE_UINT64 ) {
+    return NULL;
+  }
+  return build_return( type, &data, sizeof( data ) );
+}
+
+/**
+ * @brief Return signed integer helper
+ *
+ * @param type
+ * @param data
+ * @return
+ */
+bosl_object_t* bosl_binding_build_return_int(
+  bosl_object_type_t type,
+  int64_t data
+) {
+  // handle invalid type
+  if ( type < BOSL_OBJECT_TYPE_INT8 || type > BOSL_OBJECT_TYPE_INT64 ) {
+    return NULL;
+  }
+  return build_return( type, &data, sizeof( data ) );
+}
+
+/**
+ * @brief Return float helper
+ *
+ * @param data
+ * @return
+ */
+bosl_object_t* bosl_binding_build_return_float( long double data ) {
+  return build_return(
+    BOSL_OBJECT_TYPE_FLOAT, &data, sizeof( data ) );
+}
+
+/**
+ * @brief Return string helper
+ *
+ * @param data
+ * @return
+ */
+bosl_object_t* bosl_binding_build_return_string(
+  const char* data
+) {
+  return build_return(
+    BOSL_OBJECT_TYPE_STRING, data, sizeof( char ) * strlen( data ) );
+}
+
+/**
+ * @brief Return bool helper
+ *
+ * @param data
+ * @return
+ */
+bosl_object_t* bosl_binding_build_return_bool( bool data ) {
+  return build_return(
+    BOSL_OBJECT_TYPE_BOOL, &data, sizeof( data ) );
 }

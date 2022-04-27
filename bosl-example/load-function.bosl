@@ -1,4 +1,18 @@
 
+fn abc(): uint8 {
+  return 5;
+}
+
+fn def(): int8 {
+  return 5;
+}
+
 fn foo( parameter1: uint8 ): void {} = load fn c_foo;
+fn foo2(): int8 {} = load fn c_foo2;
+fn foo3(): void {} = load fn c_foo3;
 let a: uint8 = 5;
 foo( a );
+print( foo2() );
+print( abc() );
+print( def() );
+//foo3();

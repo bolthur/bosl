@@ -397,7 +397,8 @@ bool bosl_object_assign_push_value(
       && BOSL_OBJECT_TYPE_INT64 >= value->type
     ) {
       if ( ! value_fits_float( name, value, object_type ) ) {
-        return NULL;
+        // return false
+        return false;
       }
       // allocate new data
       void* new_data = malloc( sizeof( long double ) );
@@ -406,7 +407,8 @@ bool bosl_object_assign_push_value(
           name, "Not enough memory for object type %s.",
           bosl_object_type_to_str( object_type )
         );
-        return NULL;
+        // return false
+        return false;
       }
       // clear out
       memset( new_data, 0, sizeof( long double ) );
@@ -437,8 +439,8 @@ bool bosl_object_assign_push_value(
       if ( ! value_str ) {
         // raise error
         bosl_error_raise( name, "Not enough memory for stringify value." );
-        // return null
-        return NULL;
+        // return false
+        return false;
       }
       // backup type
       backup = value->type;
@@ -454,8 +456,8 @@ bool bosl_object_assign_push_value(
         free( value_str );
         // raise error
         bosl_error_raise( name, "Not enough memory for stringify value." );
-        // return null
-        return NULL;
+        // return false
+        return false;
       }
       // treat different string lengths or comparison mismatch as incompatible
       if (
@@ -471,8 +473,8 @@ bool bosl_object_assign_push_value(
         // free strings
         free( value_str );
         free( converted_str );
-        // return null
-        return NULL;
+        // return false
+        return false;
       }
       // free strings again
       free( value_str );
@@ -705,4 +707,136 @@ char* bosl_object_stringify( bosl_object_t* object ) {
   }
   // return buffer
   return buffer;
+}
+
+/**
+ * @brief Simple helper to extract parameter by index
+ *
+ * @param list
+ * @param index
+ * @return
+ */
+void* bosl_object_extract_parameter( list_manager_t* list, size_t index ) {
+  // get list item
+  list_item_t* item = list_get_item_at_pos( list, index );
+  if ( ! item ) {
+    return NULL;
+  }
+  // return data
+  return item->data;
+}
+
+/**
+ * @brief Helper to validate an object
+ *
+ * @param name
+ * @param value
+ * @return
+ */
+bool bosl_object_validate(
+  bosl_token_t* name,
+  bosl_object_t* value
+) {
+  bosl_object_type_t object_type = bosl_object_str_to_type(
+    name->start, name->length );
+  // Check usual incompatibilites
+  if (
+    // handle string expected but no string in value
+    (
+      BOSL_OBJECT_TYPE_STRING == object_type
+      && BOSL_OBJECT_TYPE_STRING != value->type
+    // handle integer expected but decimal received
+    ) || (
+      BOSL_OBJECT_TYPE_UINT8 <= object_type
+      && BOSL_OBJECT_TYPE_INT64 >= object_type
+      && (
+        BOSL_OBJECT_TYPE_BOOL == value->type
+        || BOSL_OBJECT_TYPE_FLOAT == value->type
+        || BOSL_OBJECT_TYPE_STRING == value->type
+      )
+    )
+  ) {
+    bosl_error_raise(
+      name, "Cannot assign %s to %s.",
+      bosl_object_type_to_str( value->type ),
+      bosl_object_type_to_str( object_type )
+    );
+    return false;
+  }
+
+  // check whether it's possible to convert between types
+  if ( object_type != value->type ) {
+    // extract numbers
+    int64_t snum;
+    uint64_t unum;
+    long double dnum;
+    if ( ! bosl_object_extract_number( value, &unum, &snum, &dnum ) ) {
+      bosl_error_raise( name, "Unable to extract value number." );
+      return false;
+    }
+
+    // signed / unsigned integer to float conversion
+    if (
+      BOSL_OBJECT_TYPE_FLOAT == object_type
+      && BOSL_OBJECT_TYPE_UINT8 <= value->type
+      && BOSL_OBJECT_TYPE_INT64 >= value->type
+    ) {
+      if ( ! value_fits_float( name, value, object_type ) ) {
+        bosl_error_raise( name, "Value to big for type float." );
+        return false;
+      }
+    } else if (
+      BOSL_OBJECT_TYPE_UINT8 <= object_type
+      && BOSL_OBJECT_TYPE_INT64 >= object_type
+      && BOSL_OBJECT_TYPE_UINT8 <= value->type
+      && BOSL_OBJECT_TYPE_INT64 >= value->type
+    ) {
+      bosl_object_type_t backup = value->type;
+      // transform value to string
+      char* value_str = bosl_object_stringify( value );
+      if ( ! value_str ) {
+        // raise error
+        bosl_error_raise( name, "Not enough memory for stringify value." );
+        // return null
+        return NULL;
+      }
+      // temporary change type to possible new type
+      value->type = object_type;
+      // convert to string
+      char* converted_str = bosl_object_stringify( value );
+      // restore type
+      value->type = backup;
+      // handle error
+      if ( ! converted_str ) {
+        // free string
+        free( value_str );
+        // raise error
+        bosl_error_raise( name, "Not enough memory for stringify value." );
+        // return null
+        return false;
+      }
+      // treat different string lengths or comparison mismatch as incompatible
+      if (
+        strlen( value_str ) != strlen( converted_str )
+        || 0 != strcmp( value_str, converted_str )
+      ) {
+        // raise error
+        bosl_error_raise(
+          name, "Range error: %s is not in range of type %s.",
+          value_str,
+          bosl_object_type_to_str( object_type )
+        );
+        // free strings
+        free( value_str );
+        free( converted_str );
+        // return null
+        return false;
+      }
+      // free strings again
+      free( value_str );
+      free( converted_str );
+    }
+  }
+  // success
+  return true;
 }
