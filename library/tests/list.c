@@ -32,14 +32,14 @@ typedef struct {
 static foobar_t* create_foobar( size_t data ) {
   // create entry
   foobar_t* c = malloc( sizeof( foobar_t ) );
-  if ( ! c ) {
+  if ( !c ) {
     return NULL;
   }
   // clear out
   memset( c, 0, sizeof( foobar_t ) );
   // allocate dynamic
   c->foo = malloc( sizeof( int ) );
-  if ( ! c->foo ) {
+  if ( !c->foo ) {
     free( c );
     return NULL;
   }
@@ -118,7 +118,7 @@ START_TEST( test_push_front_data ) {
   ck_assert( list_push_front_data( list, data[ 1 ] ) );
   ck_assert( list_push_front_data( list, data[ 0 ] ) );
   // ensure list is not empty and different
-  ck_assert( ! list_empty( list ) );
+  ck_assert( !list_empty( list ) );
   ck_assert_ptr_ne( list->first, list->last );
   // loop through data
   list_item_t* current = list->first;
@@ -146,7 +146,7 @@ START_TEST( test_push_back_data ) {
   ck_assert( list_push_back_data( list, data[ 1 ] ) );
   ck_assert( list_push_back_data( list, data[ 2 ] ) );
   // ensure list is not empty and different
-  ck_assert( ! list_empty( list ) );
+  ck_assert( !list_empty( list ) );
   ck_assert_ptr_ne( list->first, list->last );
   // loop through data
   list_item_t* current = list->first;
@@ -164,23 +164,23 @@ END_TEST
 
 START_TEST( test_remove_item_first ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_insert_data( list, data1 ) );
-  ck_assert( list_insert_data( list, data2 ) );
-  ck_assert( list_insert_data( list, data3 ) );
+  ck_assert( list_insert_data( list, data_1 ) );
+  ck_assert( list_insert_data( list, data_2 ) );
+  ck_assert( list_insert_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // remove middle item
   ck_assert( list_remove_item( list, list->first ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data2 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_2 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
   // assert connection between item 1 and 3
   ck_assert_ptr_null( list->first->previous );
   ck_assert_ptr_eq( list->first->next, list->last );
@@ -191,23 +191,23 @@ END_TEST
 
 START_TEST( test_remove_item_middle ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_insert_data( list, data1 ) );
-  ck_assert( list_insert_data( list, data2 ) );
-  ck_assert( list_insert_data( list, data3 ) );
+  ck_assert( list_insert_data( list, data_1 ) );
+  ck_assert( list_insert_data( list, data_2 ) );
+  ck_assert( list_insert_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // remove middle item
   ck_assert( list_remove_item( list, list->first->next ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
   // assert connection between item 1 and 3
   ck_assert_ptr_null( list->first->previous );
   ck_assert_ptr_eq( list->first->next, list->last );
@@ -218,23 +218,23 @@ END_TEST
 
 START_TEST( test_remove_item_last ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_insert_data( list, data1 ) );
-  ck_assert( list_insert_data( list, data2 ) );
-  ck_assert( list_insert_data( list, data3 ) );
+  ck_assert( list_insert_data( list, data_1 ) );
+  ck_assert( list_insert_data( list, data_2 ) );
+  ck_assert( list_insert_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // remove middle item
   ck_assert( list_remove_item( list, list->last ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data2 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_2 );
   // assert connection between item 1 and 3
   ck_assert_ptr_null( list->first->previous );
   ck_assert_ptr_eq( list->first->next, list->last );
@@ -245,23 +245,23 @@ END_TEST
 
 START_TEST( test_remove_data_first ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_push_back_data( list, data1 ) );
-  ck_assert( list_push_back_data( list, data2 ) );
-  ck_assert( list_push_back_data( list, data3 ) );
+  ck_assert( list_push_back_data( list, data_1 ) );
+  ck_assert( list_push_back_data( list, data_2 ) );
+  ck_assert( list_push_back_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // remove last item
-  ck_assert( list_remove_data( list, data1 ) );
+  ck_assert( list_remove_data( list, data_1 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data2 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_2 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
   // assert connection between remaining items
   ck_assert_ptr_null( list->first->previous );
   ck_assert_ptr_eq( list->first->next, list->last );
@@ -272,23 +272,23 @@ END_TEST
 
 START_TEST( test_remove_data_middle ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_push_back_data( list, data1 ) );
-  ck_assert( list_push_back_data( list, data2 ) );
-  ck_assert( list_push_back_data( list, data3 ) );
+  ck_assert( list_push_back_data( list, data_1 ) );
+  ck_assert( list_push_back_data( list, data_2 ) );
+  ck_assert( list_push_back_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // remove last item
-  ck_assert( list_remove_data( list, data2 ) );
+  ck_assert( list_remove_data( list, data_2 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
   // assert connection between remaining items
   ck_assert_ptr_null( list->first->previous );
   ck_assert_ptr_eq( list->first->next, list->last );
@@ -299,23 +299,23 @@ END_TEST
 
 START_TEST( test_remove_data_last ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_push_back_data( list, data1 ) );
-  ck_assert( list_push_back_data( list, data2 ) );
-  ck_assert( list_push_back_data( list, data3 ) );
+  ck_assert( list_push_back_data( list, data_1 ) );
+  ck_assert( list_push_back_data( list, data_2 ) );
+  ck_assert( list_push_back_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // remove last item
-  ck_assert( list_remove_data( list, data3 ) );
+  ck_assert( list_remove_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data2 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_2 );
   // assert connection between remaining items
   ck_assert_ptr_null( list->first->previous );
   ck_assert_ptr_eq( list->first->next, list->last );
@@ -326,35 +326,35 @@ END_TEST
 
 START_TEST( test_pop_front ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_push_back_data( list, data1 ) );
-  ck_assert( list_push_back_data( list, data2 ) );
-  ck_assert( list_push_back_data( list, data3 ) );
+  ck_assert( list_push_back_data( list, data_1 ) );
+  ck_assert( list_push_back_data( list, data_2 ) );
+  ck_assert( list_push_back_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // pop front
   void* front = list_pop_front_data( list );
-  ck_assert_ptr_eq( front, data1 );
+  ck_assert_ptr_eq( front, data_1 );
   // check for changed head and tail
-  ck_assert_ptr_eq( list->first->data, data2 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_2 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // pop front
   front = list_pop_front_data( list );
-  ck_assert_ptr_eq( front, data2 );
+  ck_assert_ptr_eq( front, data_2 );
   // check for changed head and tail
-  ck_assert_ptr_eq( list->first->data, data3 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_3 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // pop front
   front = list_pop_front_data( list );
-  ck_assert_ptr_eq( front, data3 );
+  ck_assert_ptr_eq( front, data_3 );
   // check for empty
   ck_assert( list_empty( list ) );
 
@@ -368,35 +368,35 @@ END_TEST
 
 START_TEST( test_pop_back ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_push_back_data( list, data1 ) );
-  ck_assert( list_push_back_data( list, data2 ) );
-  ck_assert( list_push_back_data( list, data3 ) );
+  ck_assert( list_push_back_data( list, data_1 ) );
+  ck_assert( list_push_back_data( list, data_2 ) );
+  ck_assert( list_push_back_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // pop back
   void* back = list_pop_back_data( list );
-  ck_assert_ptr_eq( back, data3 );
+  ck_assert_ptr_eq( back, data_3 );
   // check for changed head and tail
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data2 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_2 );
 
   // pop back
   back = list_pop_back_data( list );
-  ck_assert_ptr_eq( back, data2 );
+  ck_assert_ptr_eq( back, data_2 );
   // check for changed head and tail
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data1 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_1 );
 
   // pop back
   back = list_pop_back_data( list );
-  ck_assert_ptr_eq( back, data1 );
+  ck_assert_ptr_eq( back, data_1 );
   // check for empty
   ck_assert( list_empty( list ) );
 
@@ -410,93 +410,93 @@ END_TEST
 
 START_TEST( test_peek_front ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_push_back_data( list, data1 ) );
-  ck_assert( list_push_back_data( list, data2 ) );
-  ck_assert( list_push_back_data( list, data3 ) );
+  ck_assert( list_push_back_data( list, data_1 ) );
+  ck_assert( list_push_back_data( list, data_2 ) );
+  ck_assert( list_push_back_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // pop front
   void* front = list_peek_front_data( list );
-  ck_assert_ptr_eq( front, data1 );
+  ck_assert_ptr_eq( front, data_1 );
   // check for changed head
-  ck_assert_ptr_eq( list->first->data, data1 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
 }
 END_TEST
 
 START_TEST( test_peek_back ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_push_back_data( list, data1 ) );
-  ck_assert( list_push_back_data( list, data2 ) );
-  ck_assert( list_push_back_data( list, data3 ) );
+  ck_assert( list_push_back_data( list, data_1 ) );
+  ck_assert( list_push_back_data( list, data_2 ) );
+  ck_assert( list_push_back_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // pop front
   void* back = list_peek_back_data( list );
-  ck_assert_ptr_eq( back, data3 );
+  ck_assert_ptr_eq( back, data_3 );
   // check for changed head
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 }
 END_TEST
 
 START_TEST( test_lookup_data_default ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
-  void* data4 = ( void* )20;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
+  void* data_4 = ( void* )20;
 
   // insert items
-  ck_assert( list_insert_data( list, data1 ) );
-  ck_assert( list_insert_data( list, data2 ) );
-  ck_assert( list_insert_data( list, data3 ) );
+  ck_assert( list_insert_data( list, data_1 ) );
+  ck_assert( list_insert_data( list, data_2 ) );
+  ck_assert( list_insert_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // test lookup of data
-  ck_assert_ptr_eq( list_lookup_data( list, data3 ), list->last );
-  ck_assert_ptr_eq( list_lookup_data( list, data2 ), list->first->next );
-  ck_assert_ptr_eq( list_lookup_data( list, data2 ), list->last->previous );
-  ck_assert_ptr_eq( list_lookup_data( list, data1 ), list->first );
-  ck_assert_ptr_null( list_lookup_data( list, data4 ) );
+  ck_assert_ptr_eq( list_lookup_data( list, data_3 ), list->last );
+  ck_assert_ptr_eq( list_lookup_data( list, data_2 ), list->first->next );
+  ck_assert_ptr_eq( list_lookup_data( list, data_2 ), list->last->previous );
+  ck_assert_ptr_eq( list_lookup_data( list, data_1 ), list->first );
+  ck_assert_ptr_null( list_lookup_data( list, data_4 ) );
 }
 END_TEST
 
 START_TEST( test_lookup_item_default ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
-  void* data4 = ( void* )20;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
+  void* data_4 = ( void* )20;
 
   // insert items
-  ck_assert( list_insert_data( list, data1 ) );
-  ck_assert( list_insert_data( list, data2 ) );
-  ck_assert( list_insert_data( list, data3 ) );
+  ck_assert( list_insert_data( list, data_1 ) );
+  ck_assert( list_insert_data( list, data_2 ) );
+  ck_assert( list_insert_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // test lookup of item
   ck_assert_ptr_eq( list_lookup_item( list, list->last ), list->last );
   ck_assert_ptr_eq( list_lookup_item( list, list->first->next ), list->first->next );
   ck_assert_ptr_eq( list_lookup_item( list, list->first->next ), list->last->previous );
   ck_assert_ptr_eq( list_lookup_item( list, list->first ), list->first );
-  ck_assert_ptr_null( list_lookup_data( list, data4 ) );
+  ck_assert_ptr_null( list_lookup_data( list, data_4 ) );
 }
 END_TEST
 
@@ -507,32 +507,32 @@ START_TEST( test_lookup_data_custom ) {
   ck_assert_ptr_nonnull( list );
   ck_assert( list_empty( list ) );
 
-  void* lookup_data1 = ( void* )5;
-  void* lookup_data2 = ( void* )10;
-  void* lookup_data3 = ( void* )15;
-  void* lookup_data4 = ( void* )20;
+  void* lookup_data_1 = ( void* )5;
+  void* lookup_data_2 = ( void* )10;
+  void* lookup_data_3 = ( void* )15;
+  void* lookup_data_4 = ( void* )20;
 
-  foobar_t* data1 = create_foobar( 5 );
-  foobar_t* data2 = create_foobar( 10 );
-  foobar_t* data3 = create_foobar( 15 );
-  ck_assert_ptr_nonnull( data1 );
-  ck_assert_ptr_nonnull( data2 );
-  ck_assert_ptr_nonnull( data3 );
+  foobar_t* data_1 = create_foobar( 5 );
+  foobar_t* data_2 = create_foobar( 10 );
+  foobar_t* data_3 = create_foobar( 15 );
+  ck_assert_ptr_nonnull( data_1 );
+  ck_assert_ptr_nonnull( data_2 );
+  ck_assert_ptr_nonnull( data_3 );
 
   // insert items
-  ck_assert( list_insert_data( list, data1 ) );
-  ck_assert( list_insert_data( list, data2 ) );
-  ck_assert( list_insert_data( list, data3 ) );
+  ck_assert( list_insert_data( list, data_1 ) );
+  ck_assert( list_insert_data( list, data_2 ) );
+  ck_assert( list_insert_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // test lookup of data
-  ck_assert_ptr_eq( list_lookup_data( list, lookup_data3 ), list->last );
-  ck_assert_ptr_eq( list_lookup_data( list, lookup_data2 ), list->first->next );
-  ck_assert_ptr_eq( list_lookup_data( list, lookup_data2 ), list->last->previous );
-  ck_assert_ptr_eq( list_lookup_data( list, lookup_data1 ), list->first );
-  ck_assert_ptr_null( list_lookup_data( list, lookup_data4 ) );
+  ck_assert_ptr_eq( list_lookup_data( list, lookup_data_3 ), list->last );
+  ck_assert_ptr_eq( list_lookup_data( list, lookup_data_2 ), list->first->next );
+  ck_assert_ptr_eq( list_lookup_data( list, lookup_data_2 ), list->last->previous );
+  ck_assert_ptr_eq( list_lookup_data( list, lookup_data_1 ), list->first );
+  ck_assert_ptr_null( list_lookup_data( list, lookup_data_4 ) );
 }
 END_TEST
 
@@ -543,34 +543,34 @@ START_TEST( test_lookup_item_custom ) {
   ck_assert_ptr_nonnull( list );
   ck_assert( list_empty( list ) );
 
-  foobar_t* data1 = create_foobar( 5 );
-  foobar_t* data2 = create_foobar( 10 );
-  foobar_t* data3 = create_foobar( 15 );
-  foobar_t* data4 = create_foobar( 20 );
-  ck_assert_ptr_nonnull( data1 );
-  ck_assert_ptr_nonnull( data2 );
-  ck_assert_ptr_nonnull( data3 );
-  ck_assert_ptr_nonnull( data4 );
+  foobar_t* data_1 = create_foobar( 5 );
+  foobar_t* data_2 = create_foobar( 10 );
+  foobar_t* data_3 = create_foobar( 15 );
+  foobar_t* data_4 = create_foobar( 20 );
+  ck_assert_ptr_nonnull( data_1 );
+  ck_assert_ptr_nonnull( data_2 );
+  ck_assert_ptr_nonnull( data_3 );
+  ck_assert_ptr_nonnull( data_4 );
 
-  list_item_t* item4 = list_item_create( data4 );
-  ck_assert_ptr_nonnull( item4 );
+  list_item_t* item_4 = list_item_create( data_4 );
+  ck_assert_ptr_nonnull( item_4 );
 
   // insert items
-  ck_assert( list_insert_data( list, data1 ) );
-  ck_assert( list_insert_data( list, data2 ) );
-  ck_assert( list_insert_data( list, data3 ) );
+  ck_assert( list_insert_data( list, data_1 ) );
+  ck_assert( list_insert_data( list, data_2 ) );
+  ck_assert( list_insert_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // test lookup of data
   ck_assert_ptr_eq( list_lookup_item( list, list->last ), list->last );
   ck_assert_ptr_eq( list_lookup_item( list, list->first->next ), list->first->next );
   ck_assert_ptr_eq( list_lookup_item( list, list->first->next ), list->last->previous );
   ck_assert_ptr_eq( list_lookup_item( list, list->first ), list->first );
-  ck_assert_ptr_null( list_lookup_item( list, item4 ) );
+  ck_assert_ptr_null( list_lookup_item( list, item_4 ) );
 
-  list_custom_cleanup( item4 );
+  list_custom_cleanup( item_4 );
 }
 END_TEST
 
@@ -578,17 +578,17 @@ START_TEST( test_print ) {
   ck_assert_ptr_nonnull( list );
   ck_assert( list_empty( list ) );
 
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_insert_data( list, data1 ) );
-  ck_assert( list_insert_data( list, data2 ) );
-  ck_assert( list_insert_data( list, data3 ) );
+  ck_assert( list_insert_data( list, data_1 ) );
+  ck_assert( list_insert_data( list, data_2 ) );
+  ck_assert( list_insert_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 
   // allocate buffer and expected for print
   char* buffer = malloc( sizeof( char ) * 1024 );
@@ -599,9 +599,9 @@ START_TEST( test_print ) {
   memset( buffer, 0, 1024 * sizeof( char ) );
 
   // prepare expected
-  sprintf( expected, "list->data = %p\r\n", data1 );
-  sprintf( expected + strlen( expected ), "list->data = %p\r\n", data2 );
-  sprintf( expected + strlen( expected ), "list->data = %p\r\n", data3 );
+  sprintf( expected, "list->data = %p\r\n", data_1 );
+  sprintf( expected + strlen( expected ), "list->data = %p\r\n", data_2 );
+  sprintf( expected + strlen( expected ), "list->data = %p\r\n", data_3 );
 
   // redirect stdout
   fflush( stdout );
@@ -631,48 +631,48 @@ END_TEST
 
 START_TEST( test_list_insert_default ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_insert_data( list, data1 ) );
-  ck_assert( list_insert_data( list, data2 ) );
-  ck_assert( list_insert_data( list, data3 ) );
+  ck_assert( list_insert_data( list, data_1 ) );
+  ck_assert( list_insert_data( list, data_2 ) );
+  ck_assert( list_insert_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data1 );
-  ck_assert_ptr_eq( list->first->next->data, data2 );
-  ck_assert_ptr_eq( list->first->next->previous->data, data1 );
-  ck_assert_ptr_eq( list->first->next->next->data, data3 );
-  ck_assert_ptr_eq( list->first->next->next->previous->data, data2 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_1 );
+  ck_assert_ptr_eq( list->first->next->data, data_2 );
+  ck_assert_ptr_eq( list->first->next->previous->data, data_1 );
+  ck_assert_ptr_eq( list->first->next->next->data, data_3 );
+  ck_assert_ptr_eq( list->first->next->next->previous->data, data_2 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 }
 END_TEST
 
 START_TEST( test_list_insert_before_default ) {
   ck_assert( list_empty( list ) );
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_insert_data( list, data3 ) );
-  ck_assert_ptr_eq( list->first->data, data3 );
-  ck_assert_ptr_eq( list->last->data, data3 );
-  ck_assert( list_insert_data_before( list, list->first, data2 ) );
-  ck_assert_ptr_eq( list->first->data, data2 );
-  ck_assert_ptr_eq( list->last->data, data3 );
-  ck_assert( list_insert_data_before( list, list->last, data1 ) );
-  ck_assert_ptr_eq( list->first->data, data2 );
-  ck_assert_ptr_eq( list->first->next->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert( list_insert_data( list, data_3 ) );
+  ck_assert_ptr_eq( list->first->data, data_3 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
+  ck_assert( list_insert_data_before( list, list->first, data_2 ) );
+  ck_assert_ptr_eq( list->first->data, data_2 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
+  ck_assert( list_insert_data_before( list, list->last, data_1 ) );
+  ck_assert_ptr_eq( list->first->data, data_2 );
+  ck_assert_ptr_eq( list->first->next->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data2 );
-  ck_assert_ptr_eq( list->first->next->data, data1 );
-  ck_assert_ptr_eq( list->first->next->previous->data, data2 );
-  ck_assert_ptr_eq( list->first->next->next->data, data3 );
-  ck_assert_ptr_eq( list->first->next->next->previous->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data3 );
+  ck_assert_ptr_eq( list->first->data, data_2 );
+  ck_assert_ptr_eq( list->first->next->data, data_1 );
+  ck_assert_ptr_eq( list->first->next->previous->data, data_2 );
+  ck_assert_ptr_eq( list->first->next->next->data, data_3 );
+  ck_assert_ptr_eq( list->first->next->next->previous->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_3 );
 }
 END_TEST
 
@@ -683,23 +683,23 @@ START_TEST( test_list_custom_insert ) {
   ck_assert_ptr_nonnull( list );
   ck_assert( list_empty( list ) );
 
-  void* data1 = ( void* )5;
-  void* data2 = ( void* )10;
-  void* data3 = ( void* )15;
+  void* data_1 = ( void* )5;
+  void* data_2 = ( void* )10;
+  void* data_3 = ( void* )15;
 
   // insert items
-  ck_assert( list_insert_data( list, data1 ) );
-  ck_assert( list_insert_data( list, data2 ) );
-  ck_assert( list_insert_data( list, data3 ) );
+  ck_assert( list_insert_data( list, data_1 ) );
+  ck_assert( list_insert_data( list, data_2 ) );
+  ck_assert( list_insert_data( list, data_3 ) );
   // assert first and last pointer
-  ck_assert_ptr_eq( list->first->data, data3 );
-  ck_assert_ptr_eq( list->last->data, data1 );
+  ck_assert_ptr_eq( list->first->data, data_3 );
+  ck_assert_ptr_eq( list->last->data, data_1 );
 
   // test lookup of data
-  ck_assert_ptr_eq( list->first->data, data3 );
-  ck_assert_ptr_eq( list->first->next->data, data2 );
-  ck_assert_ptr_eq( list->first->next->next->data, data1 );
-  ck_assert_ptr_eq( list->last->data, data1 );
+  ck_assert_ptr_eq( list->first->data, data_3 );
+  ck_assert_ptr_eq( list->first->next->data, data_2 );
+  ck_assert_ptr_eq( list->first->next->next->data, data_1 );
+  ck_assert_ptr_eq( list->last->data, data_1 );
 }
 END_TEST
 
@@ -742,8 +742,8 @@ static Suite* list_suite( void ) {
 
 int main( void ) {
   int number_failed;
-  Suite *s;
-  SRunner *sr;
+  Suite* s;
+  SRunner* sr;
 
   // init random
   srand( ( unsigned int )time( NULL ) );
@@ -754,7 +754,5 @@ int main( void ) {
   srunner_run_all( sr, CK_VERBOSE );
   number_failed = srunner_ntests_failed( sr );
   srunner_free( sr );
-  return ( 0 == number_failed )
-    ? EXIT_SUCCESS
-    : EXIT_FAILURE;
+  return ( 0 == number_failed ) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -28,8 +28,12 @@
   #include <bosl/collection/hashmap.h>
 #endif
 
-#if ! defined( _BOSL_SCANNER_H )
-#define _BOSL_SCANNER_H
+#if !defined( BOSL_SCANNER_H )
+#define BOSL_SCANNER_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum {
   // single character tokens
@@ -116,5 +120,9 @@ typedef struct bosl_scanner {
 bool bosl_scanner_init( const char* );
 void bosl_scanner_free( void );
 list_manager_t* bosl_scanner_scan( void );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

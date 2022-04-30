@@ -17,11 +17,11 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined( _BOSL_CLI_CONFIG_H )
-#define _BOSL_CLI_CONFIG_H
+#if !defined( BOSL_CONFIG_H )
+#define BOSL_CONFIG_H
 
 #if defined( HAVE_CONFIG_H )
-  #include <config.h>
+#include <config.h>
 #endif
 
 #endif

@@ -77,7 +77,7 @@ static void list_node_cleanup( list_item_t* item ) {
  * @return
  */
 static bosl_token_t* previous( void ) {
-  return ( bosl_token_t* )( parser->_current->previous->data );
+  return ( bosl_token_t* )( parser->current_item->previous->data );
 }
 
 /**
@@ -86,7 +86,7 @@ static bosl_token_t* previous( void ) {
  * @return
  */
 static bosl_token_t* current( void ) {
-  return ( bosl_token_t* )( parser->_current->data );
+  return ( bosl_token_t* )( parser->current_item->data );
 }
 
 /**
@@ -96,7 +96,7 @@ static bosl_token_t* current( void ) {
  */
 static bosl_token_t* next( void ) {
   if ( TOKEN_EOF != parser->current()->type ) {
-    parser->_current = parser->_current->next;
+    parser->current_item = parser->current_item->next;
   }
   return parser->previous();
 }
@@ -129,7 +129,7 @@ static bosl_token_t* consume( bosl_token_type_t type, const char* error_message 
   // check for mismatch
   if ( parser->current()->type != type ) {
     // raise error and return false
-    bosl_error_raise( parser->current(), error_message );
+    bosl_error_raise( parser->current(), "%s", error_message );
     // return null
     return NULL;
   }
@@ -141,19 +141,17 @@ static bosl_token_t* consume( bosl_token_type_t type, const char* error_message 
  * @brief Handle primary expression
  *
  * @return
- *
- * @todo raise errors where NULL is returned if necessary
  */
 static bosl_ast_expression_t* expression_primary( void ) {
   if ( match( TOKEN_FALSE ) ) {
     bool b = false;
     return bosl_ast_expression_allocate_literal(
-      &b, sizeof( false ), EXPRESSION_LITERAL_TYPE_BOOL );
+      &b, sizeof( b ), EXPRESSION_LITERAL_TYPE_BOOL );
   }
   if ( match( TOKEN_TRUE ) ) {
     bool b = true;
     return bosl_ast_expression_allocate_literal(
-      &b, sizeof( true ), EXPRESSION_LITERAL_TYPE_BOOL );
+      &b, sizeof( b ), EXPRESSION_LITERAL_TYPE_BOOL );
   }
   if ( match( TOKEN_NULL ) ) {
     return bosl_ast_expression_allocate_literal(
@@ -192,9 +190,8 @@ static bosl_ast_expression_t* expression_primary( void ) {
     }
 
     char* end;
-    // push float literal
     if ( is_float ) {
-      // translate to number
+      // push float literal
       long double num = strtold( token->start, &end );
       if ( end != token->start + token->length ) {
         return NULL;
@@ -202,9 +199,8 @@ static bosl_ast_expression_t* expression_primary( void ) {
       // push to literal
       return bosl_ast_expression_allocate_literal(
         &num, sizeof( num ), EXPRESSION_LITERAL_TYPE_NUMBER_FLOAT );
-    // push number literal
     } else {
-      // translate to number
+      // push number literal
       uint64_t num = strtoull( token->start, &end, 0 );
       if ( end != token->start + token->length ) {
         return NULL;
@@ -219,7 +215,7 @@ static bosl_ast_expression_t* expression_primary( void ) {
     // create variable expression
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate(
       EXPRESSION_VARIABLE );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       return NULL;
     }
     // get pointer to data
@@ -231,17 +227,17 @@ static bosl_ast_expression_t* expression_primary( void ) {
   if ( match( TOKEN_LEFT_PARENTHESIS ) ) {
     // translate expression
     bosl_ast_expression_t* e = expression();
-    if ( ! e ) {
+    if ( !e ) {
       return NULL;
     }
     // expect closing parenthesis
-    if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after expression." ) ) {
+    if ( !consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after expression." ) ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
     // create group expression
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate( EXPRESSION_GROUPING );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
@@ -268,7 +264,7 @@ static bosl_ast_expression_t* expression_call_finish(
   // create arguments list
   list_manager_t* arguments = list_construct(
     NULL, list_expression_cleanup, NULL );
-  if ( ! arguments ) {
+  if ( !arguments ) {
     return NULL;
   }
   // handle possible arguments
@@ -276,12 +272,12 @@ static bosl_ast_expression_t* expression_call_finish(
     do {
       // get argument expression
       bosl_ast_expression_t* arg = expression();
-      if ( ! arg ) {
+      if ( !arg ) {
         list_destruct( arguments );
         return NULL;
       }
       // push back
-      if ( ! list_push_back_data( arguments, arg ) ) {
+      if ( !list_push_back_data( arguments, arg ) ) {
         bosl_ast_expression_destroy( arg );
         list_destruct( arguments );
         return NULL;
@@ -291,13 +287,13 @@ static bosl_ast_expression_t* expression_call_finish(
   bosl_token_t* previous_token = consume(
     TOKEN_RIGHT_PARENTHESIS, "Expected ')' after arguments." );
   // check for closing parenthesis
-  if ( ! previous_token ) {
+  if ( !previous_token ) {
     list_destruct( arguments );
     return NULL;
   }
   // allocate call expression
   bosl_ast_expression_t* e = bosl_ast_expression_allocate( EXPRESSION_CALL );
-  if ( ! e ) {
+  if ( !e ) {
     list_destruct( arguments );
     return NULL;
   }
@@ -315,14 +311,14 @@ static bosl_ast_expression_t* expression_call_finish(
  */
 static bosl_ast_expression_t* expression_call( void ) {
   bosl_ast_expression_t* e = expression_primary();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   // handle possible function call
   while ( true ) {
     if ( match( TOKEN_LEFT_PARENTHESIS ) ) {
       bosl_ast_expression_t* new_e = expression_call_finish( e );
-      if ( ! new_e ) {
+      if ( !new_e ) {
         bosl_ast_expression_destroy( e );
         return NULL;
       }
@@ -345,7 +341,7 @@ static bosl_ast_expression_t* expression_load( void ) {
   if ( match( TOKEN_IDENTIFIER ) ) {
     // create group expression
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate( EXPRESSION_LOAD );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       return NULL;
     }
     // populate data
@@ -367,7 +363,7 @@ static bosl_ast_expression_t* expression_pointer( void ) {
     // create pointer expression
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate(
       EXPRESSION_POINTER );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       return NULL;
     }
     // populate data
@@ -394,11 +390,11 @@ static bosl_ast_expression_t* expression_unary( void ) {
   ) {
     bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_unary();
-    if ( ! right ) {
+    if ( !right ) {
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate( EXPRESSION_UNARY );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       bosl_ast_expression_destroy( right );
       return NULL;
     }
@@ -413,7 +409,7 @@ static bosl_ast_expression_t* expression_unary( void ) {
     return expression_load();
   }
   // handle pointer
-  if ( match ( TOKEN_POINTER ) ) {
+  if ( match( TOKEN_POINTER ) ) {
     return expression_pointer();
   }
   // continue with call expression
@@ -428,7 +424,7 @@ static bosl_ast_expression_t* expression_unary( void ) {
 static bosl_ast_expression_t* expression_factor( void ) {
   // handle possible unary
   bosl_ast_expression_t* e = expression_unary();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   while (
@@ -438,13 +434,13 @@ static bosl_ast_expression_t* expression_factor( void ) {
   ) {
     bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_unary();
-    if ( ! right ) {
+    if ( !right ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_binary(
       e, operator, right );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       bosl_ast_expression_destroy( e );
       bosl_ast_expression_destroy( right );
       return NULL;
@@ -464,19 +460,19 @@ static bosl_ast_expression_t* expression_factor( void ) {
 static bosl_ast_expression_t* expression_term( void ) {
   // handle possible factor
   bosl_ast_expression_t* e = expression_factor();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   while ( match( TOKEN_MINUS ) || match( TOKEN_PLUS ) ) {
     bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_factor();
-    if ( ! right ) {
+    if ( !right ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_binary(
       e, operator, right );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       bosl_ast_expression_destroy( e );
       bosl_ast_expression_destroy( right );
       return NULL;
@@ -496,7 +492,7 @@ static bosl_ast_expression_t* expression_term( void ) {
 static bosl_ast_expression_t* expression_comparison( void ) {
   // handle possible term
   bosl_ast_expression_t* e = expression_term();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   while (
@@ -509,13 +505,13 @@ static bosl_ast_expression_t* expression_comparison( void ) {
   ) {
     bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_term();
-    if ( ! right ) {
+    if ( !right ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_binary(
       e, operator, right );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       bosl_ast_expression_destroy( e );
       bosl_ast_expression_destroy( right );
       return NULL;
@@ -535,19 +531,19 @@ static bosl_ast_expression_t* expression_comparison( void ) {
 static bosl_ast_expression_t* expression_equality( void ) {
   // handle possible comparison
   bosl_ast_expression_t* e = expression_comparison();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
-  while( match( TOKEN_BANG_EQUAL ) || match( TOKEN_EQUAL_EQUAL ) ) {
+  while ( match( TOKEN_BANG_EQUAL ) || match( TOKEN_EQUAL_EQUAL ) ) {
     bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_comparison();
-    if ( ! right ) {
+    if ( !right ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_binary(
       e, operator, right );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       bosl_ast_expression_destroy( e );
       bosl_ast_expression_destroy( right );
       return NULL;
@@ -567,7 +563,7 @@ static bosl_ast_expression_t* expression_equality( void ) {
 static bosl_ast_expression_t* expression_and( void ) {
   // handle possible equality
   bosl_ast_expression_t* e = expression_equality();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   // loop through all possible and conditions
@@ -577,13 +573,13 @@ static bosl_ast_expression_t* expression_and( void ) {
     bosl_token_t* operator = parser->previous();
     // evaluate right expression
     bosl_ast_expression_t* right = expression_equality();
-    if ( ! right ) {
+    if ( !right ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_logical(
       e, operator, right );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       bosl_ast_expression_destroy( e );
       bosl_ast_expression_destroy( right );
       return NULL;
@@ -602,7 +598,7 @@ static bosl_ast_expression_t* expression_and( void ) {
 static bosl_ast_expression_t* expression_xor( void ) {
   // handle possible equality
   bosl_ast_expression_t* e = expression_and();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   // loop through all possible xor conditions
@@ -612,13 +608,13 @@ static bosl_ast_expression_t* expression_xor( void ) {
     bosl_token_t* operator = parser->previous();
     // evaluate right expression
     bosl_ast_expression_t* right = expression_and();
-    if ( ! right ) {
+    if ( !right ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_logical(
       e, operator, right );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       bosl_ast_expression_destroy( e );
       bosl_ast_expression_destroy( right );
       return NULL;
@@ -637,7 +633,7 @@ static bosl_ast_expression_t* expression_xor( void ) {
 static bosl_ast_expression_t* expression_or( void ) {
   // handle possible equality
   bosl_ast_expression_t* e = expression_xor();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   // loop through all possible or conditions
@@ -647,13 +643,13 @@ static bosl_ast_expression_t* expression_or( void ) {
     bosl_token_t* operator = parser->previous();
     // evaluate right expression
     bosl_ast_expression_t* right = expression_xor();
-    if ( ! right ) {
+    if ( !right ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_logical(
       e, operator, right );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       bosl_ast_expression_destroy( e );
       bosl_ast_expression_destroy( right );
       return NULL;
@@ -672,22 +668,22 @@ static bosl_ast_expression_t* expression_or( void ) {
 static bosl_ast_expression_t* expression_logic_and( void ) {
   // handle possible equality
   bosl_ast_expression_t* e = expression_or();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
-  // loop through all possible anded conditions
+  // loop through all possible conditions connected by logical and
   while ( match( TOKEN_AND_AND ) ) {
     // get operator
     bosl_token_t* operator = parser->previous();
     // evaluate right expression
     bosl_ast_expression_t* right = expression_or();
-    if ( ! right ) {
+    if ( !right ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_logical(
       e, operator, right );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       bosl_ast_expression_destroy( e );
       bosl_ast_expression_destroy( right );
       return NULL;
@@ -706,22 +702,22 @@ static bosl_ast_expression_t* expression_logic_and( void ) {
 static bosl_ast_expression_t* expression_logic_or( void ) {
   // handle possible and
   bosl_ast_expression_t* e = expression_logic_and();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
-  // loop through all possible orred conditions
+  // loop through all possible conditions connected by logical or
   while ( match( TOKEN_OR_OR ) ) {
     // get operator
     bosl_token_t* operator = parser->previous();
     // evaluate right expression
     bosl_ast_expression_t* right = expression_logic_and();
-    if ( ! right ) {
+    if ( !right ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
     bosl_ast_expression_t* new_e = bosl_ast_expression_allocate_logical(
       e, operator, right );
-    if ( ! new_e ) {
+    if ( !new_e ) {
       bosl_ast_expression_destroy( e );
       bosl_ast_expression_destroy( right );
       return NULL;
@@ -741,7 +737,7 @@ static bosl_ast_expression_t* expression_logic_or( void ) {
 static bosl_ast_expression_t* expression_assignment( void ) {
   // handle possible or
   bosl_ast_expression_t* e = expression_logic_or();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   // handle assignment
@@ -750,7 +746,7 @@ static bosl_ast_expression_t* expression_assignment( void ) {
     bosl_token_t* previous_token = parser->previous();
     // get value for assignment
     bosl_ast_expression_t* value = expression_assignment();
-    if ( ! value ) {
+    if ( !value ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
@@ -759,7 +755,7 @@ static bosl_ast_expression_t* expression_assignment( void ) {
     if ( EXPRESSION_VARIABLE == e->type ) {
       // build and return assign expression
       bosl_ast_expression_t* new_e = bosl_ast_expression_allocate( EXPRESSION_ASSIGN );
-      if ( ! new_e ) {
+      if ( !new_e ) {
         bosl_ast_expression_destroy( e );
         bosl_ast_expression_destroy( value );
         return NULL;
@@ -797,35 +793,35 @@ static bosl_ast_expression_t* expression( void ) {
 static bosl_ast_node_t* statement_if( void ) {
   // allocate new node
   bosl_ast_node_t* node = bosl_ast_node_allocate();
-  if ( ! node ) {
+  if ( !node ) {
     return NULL;
   }
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_IF );
-  if ( ! node->statement ) {
+  if ( !node->statement ) {
     bosl_ast_node_destroy( node );
     return NULL;
   }
   // expect opening parenthesis
-  if ( ! consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after 'if'." ) ) {
+  if ( !consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after 'if'." ) ) {
     bosl_ast_node_destroy( node );
     return NULL;
   }
   // evaluate expression
   bosl_ast_expression_t* if_expression = expression();
-  if ( ! if_expression ) {
+  if ( !if_expression ) {
     bosl_ast_node_destroy( node );
     return NULL;
   }
   // expect parenthesis
-  if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after 'if'." ) ) {
+  if ( !consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after 'if'." ) ) {
     bosl_ast_node_destroy( node );
     bosl_ast_expression_destroy( if_expression );
     return NULL;
   }
   // consume statement
   bosl_ast_node_t* if_statement = statement();
-  if ( ! if_statement ) {
+  if ( !if_statement ) {
     bosl_ast_node_destroy( node );
     bosl_ast_expression_destroy( if_expression );
     return NULL;
@@ -839,7 +835,7 @@ static bosl_ast_node_t* statement_if( void ) {
   if ( match( TOKEN_ELSE ) ) {
     // get else branch
     else_branch = statement();
-    if ( ! else_branch ) {
+    if ( !else_branch ) {
       bosl_ast_node_destroy( node );
       return NULL;
     }
@@ -859,33 +855,33 @@ static bosl_ast_node_t* statement_if( void ) {
  */
 static bosl_ast_node_t* statement_print( void ) {
   // expect opening parenthesis
-  if ( ! consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after print." ) ) {
+  if ( !consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after print." ) ) {
     return NULL;
   }
   // get expression
   bosl_ast_expression_t* e = expression();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   // expect closing parenthesis
-  if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after expression." ) ) {
+  if ( !consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after expression." ) ) {
     bosl_ast_expression_destroy( e );
     return NULL;
   }
   // expect semicolon
-  if ( ! consume( TOKEN_SEMICOLON, "Expect ';' at end of print." ) ) {
+  if ( !consume( TOKEN_SEMICOLON, "Expect ';' at end of print." ) ) {
     bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new node
   bosl_ast_node_t* node = bosl_ast_node_allocate();
-  if ( ! node ) {
+  if ( !node ) {
     bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_PRINT );
-  if ( ! node->statement ) {
+  if ( !node->statement ) {
     bosl_ast_expression_destroy( e );
     bosl_ast_node_destroy( node );
     return NULL;
@@ -903,7 +899,7 @@ static bosl_ast_node_t* statement_print( void ) {
  */
 static bosl_ast_node_t* statement_return( void ) {
   // handle return not in function
-  if ( ! parser->_in_function ) {
+  if ( !parser->in_function ) {
     bosl_error_raise(
       parser->current(), "Return is only in functions allowed" );
     return NULL;
@@ -917,7 +913,7 @@ static bosl_ast_node_t* statement_return( void ) {
     value = expression();
   }
   // expect semicolon
-  if ( ! consume( TOKEN_SEMICOLON, "Expect ';' after return value." ) ) {
+  if ( !consume( TOKEN_SEMICOLON, "Expect ';' after return value." ) ) {
     if ( value ) {
       bosl_ast_expression_destroy( value );
     }
@@ -925,7 +921,7 @@ static bosl_ast_node_t* statement_return( void ) {
   }
   // allocate new node
   bosl_ast_node_t* node = bosl_ast_node_allocate();
-  if ( ! node ) {
+  if ( !node ) {
     if ( value ) {
       bosl_ast_expression_destroy( value );
     }
@@ -933,7 +929,7 @@ static bosl_ast_node_t* statement_return( void ) {
   }
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_RETURN );
-  if ( ! node->statement ) {
+  if ( !node->statement ) {
     if ( value ) {
       bosl_ast_expression_destroy( value );
     }
@@ -954,36 +950,36 @@ static bosl_ast_node_t* statement_return( void ) {
  */
 static bosl_ast_node_t* statement_while( void ) {
   // set in loop statement
-  parser->_in_loop = true;
+  parser->in_loop = true;
   // Expect opening parenthesis
-  if ( ! consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after 'while'." ) ) {
+  if ( !consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after 'while'." ) ) {
     return NULL;
   }
   // evaluate expression
   bosl_ast_expression_t* e = expression();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
-  if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after condition." ) ) {
+  if ( !consume( TOKEN_RIGHT_PARENTHESIS, "Expect ')' after condition." ) ) {
     bosl_ast_expression_destroy( e );
     return NULL;
   }
   // get body
   bosl_ast_node_t* body = statement();
-  if ( ! body ) {
+  if ( !body ) {
     bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new node
   bosl_ast_node_t* node = bosl_ast_node_allocate();
-  if ( ! node ) {
+  if ( !node ) {
     bosl_ast_expression_destroy( e );
     bosl_ast_node_destroy( body );
     return NULL;
   }
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_WHILE );
-  if ( ! node->statement ) {
+  if ( !node->statement ) {
     bosl_ast_expression_destroy( e );
     bosl_ast_node_destroy( body );
     bosl_ast_node_destroy( node );
@@ -995,7 +991,7 @@ static bosl_ast_node_t* statement_while( void ) {
   // free container for body statement
   free( body );
   // reset in loop statement
-  parser->_in_loop = false;
+  parser->in_loop = false;
   // return
   return node;
 }
@@ -1008,19 +1004,19 @@ static bosl_ast_node_t* statement_while( void ) {
 static bosl_ast_node_t* statement_block( void ) {
   // allocate new ast node
   bosl_ast_node_t* node = bosl_ast_node_allocate();
-  if ( ! node ) {
+  if ( !node ) {
     return NULL;
   }
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_BLOCK );
-  if ( ! node->statement ) {
+  if ( !node->statement ) {
     bosl_ast_node_destroy( node );
     return NULL;
   }
   // construct list
   node->statement->block->statements = list_construct(
     NULL, list_statement_cleanup, NULL );
-  if ( ! node->statement->block->statements ) {
+  if ( !node->statement->block->statements ) {
     bosl_ast_node_destroy( node );
     return NULL;
   }
@@ -1030,11 +1026,11 @@ static bosl_ast_node_t* statement_block( void ) {
   ) {
     // evaluate
     bosl_ast_node_t* inner = declaration();
-    if ( ! inner ) {
+    if ( !inner ) {
       bosl_ast_node_destroy( node );
       return NULL;
     }
-    if ( ! list_push_back_data(
+    if ( !list_push_back_data(
       node->statement->block->statements,
       inner->statement
     ) ) {
@@ -1046,7 +1042,7 @@ static bosl_ast_node_t* statement_block( void ) {
     free( inner );
   }
   // expect closing brace
-  if ( ! consume( TOKEN_RIGHT_BRACE, "Expect '}' after block." ) ) {
+  if ( !consume( TOKEN_RIGHT_BRACE, "Expect '}' after block." ) ) {
     bosl_ast_node_destroy( node );
     return NULL;
   }
@@ -1063,22 +1059,22 @@ static bosl_ast_node_t* statement_pointer( void ) {
   // get identifier
   bosl_token_t* identifier = consume(
     TOKEN_IDENTIFIER, "Expect identifier after pointer." );
-  if ( ! identifier ) {
+  if ( !identifier ) {
     return NULL;
   }
   // get statement
   bosl_ast_node_t* pointer_ast = statement();
-  if ( ! pointer_ast ) {
+  if ( !pointer_ast ) {
     return NULL;
   }
   // allocate new ast node
   bosl_ast_node_t* node = bosl_ast_node_allocate();
-  if ( ! node ) {
+  if ( !node ) {
     return NULL;
   }
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_POINTER );
-  if ( ! node->statement ) {
+  if ( !node->statement ) {
     bosl_ast_node_destroy( node );
     return NULL;
   }
@@ -1096,7 +1092,7 @@ static bosl_ast_node_t* statement_pointer( void ) {
  * @return
  */
 static bosl_ast_node_t* statement_break( void ) {
-  if ( ! parser->_in_loop ) {
+  if ( !parser->in_loop ) {
     bosl_error_raise( parser->current(), "Break is only allowed in a loop" );
     return NULL;
   }
@@ -1105,24 +1101,24 @@ static bosl_ast_node_t* statement_break( void ) {
   bosl_ast_expression_t* e = NULL;
   if ( parser->current()->type != TOKEN_SEMICOLON ) {
     e = expression();
-    if ( ! e ) {
+    if ( !e ) {
       bosl_error_raise( parser->current(), "Unable to evaluate expression" );
       return NULL;
     }
   }
   // expect semicolon
-  if ( ! consume( TOKEN_SEMICOLON, "Expect ';' at end of break." ) ) {
+  if ( !consume( TOKEN_SEMICOLON, "Expect ';' at end of break." ) ) {
     bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new ast node
   bosl_ast_node_t* node = bosl_ast_node_allocate();
-  if ( ! node ) {
+  if ( !node ) {
     return NULL;
   }
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_BREAK );
-  if ( ! node->statement ) {
+  if ( !node->statement ) {
     bosl_ast_node_destroy( node );
     return NULL;
   }
@@ -1139,7 +1135,7 @@ static bosl_ast_node_t* statement_break( void ) {
  * @return
  */
 static bosl_ast_node_t* statement_continue( void ) {
-  if ( ! parser->_in_loop ) {
+  if ( !parser->in_loop ) {
     bosl_error_raise( parser->current(), "Continue is only allowed in a loop." );
     return NULL;
   }
@@ -1148,24 +1144,24 @@ static bosl_ast_node_t* statement_continue( void ) {
   bosl_ast_expression_t* e = NULL;
   if ( parser->current()->type != TOKEN_SEMICOLON ) {
     e = expression();
-    if ( ! e ) {
+    if ( !e ) {
       bosl_error_raise( parser->current(), "Unable to evaluate expression" );
       return NULL;
     }
   }
   // expect semicolon
-  if ( ! consume( TOKEN_SEMICOLON, "Expect ';' at end of continue." ) ) {
+  if ( !consume( TOKEN_SEMICOLON, "Expect ';' at end of continue." ) ) {
     bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new ast node
   bosl_ast_node_t* node = bosl_ast_node_allocate();
-  if ( ! node ) {
+  if ( !node ) {
     return NULL;
   }
   // allocate new ast node
   node->statement = bosl_ast_statement_allocate( STATEMENT_CONTINUE );
-  if ( ! node->statement ) {
+  if ( !node->statement ) {
     bosl_ast_node_destroy( node );
     return NULL;
   }
@@ -1184,23 +1180,23 @@ static bosl_ast_node_t* statement_continue( void ) {
 static bosl_ast_node_t* statement_expression( void ) {
   // expression
   bosl_ast_expression_t* e = expression();
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   // check for trailing semicolon
-  if ( ! consume( TOKEN_SEMICOLON, "Expect ';' after expression." ) ) {
+  if ( !consume( TOKEN_SEMICOLON, "Expect ';' after expression." ) ) {
     bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new ast node
   bosl_ast_node_t* new_node = bosl_ast_node_allocate();
-  if ( ! new_node ) {
+  if ( !new_node ) {
     bosl_ast_expression_destroy( e );
     return NULL;
   }
   // allocate new ast node
   new_node->statement = bosl_ast_statement_allocate( STATEMENT_EXPRESSION );
-  if ( ! new_node->statement ) {
+  if ( !new_node->statement ) {
     bosl_ast_expression_destroy( e );
     bosl_ast_node_destroy( new_node );
     return NULL;
@@ -1253,42 +1249,42 @@ static bosl_ast_node_t* statement( void ) {
  */
 static bosl_ast_node_t* declaration_const( void ) {
   bosl_token_t* name = consume( TOKEN_IDENTIFIER, "Expect variable name." );
-  if ( ! name ) {
+  if ( !name ) {
     return NULL;
   }
-  if ( ! consume( TOKEN_COLON, "Expect colon after variable name." ) ) {
+  if ( !consume( TOKEN_COLON, "Expect colon after variable name." ) ) {
     return NULL;
   }
   // get type identifier
   bosl_token_t* type = consume(
     TOKEN_TYPE_IDENTIFIER, "Expect type identifier after colon." );
-  if ( ! type ) {
+  if ( !type ) {
     return NULL;
   }
   // handle missing initializer
-  if ( ! match( TOKEN_EQUAL ) ) {
+  if ( !match( TOKEN_EQUAL ) ) {
     bosl_error_raise( name, "Constants need an initializer." );
     return NULL;
   }
   // get initializer
   bosl_ast_expression_t* initializer = expression();
-  if ( ! initializer ) {
+  if ( !initializer ) {
     return NULL;
   }
   // assert semicolon at the end
-  if ( ! consume( TOKEN_SEMICOLON, "Expect ';' after variable declaration." ) ) {
+  if ( !consume( TOKEN_SEMICOLON, "Expect ';' after variable declaration." ) ) {
     bosl_ast_expression_destroy( initializer );
     return NULL;
   }
   // allocate node
   bosl_ast_node_t* node = bosl_ast_node_allocate();
-  if ( ! node ) {
+  if ( !node ) {
     bosl_ast_expression_destroy( initializer );
     return NULL;
   }
   // allocate statement
   node->statement = bosl_ast_statement_allocate( STATEMENT_CONST );
-  if ( ! node->statement ) {
+  if ( !node->statement ) {
     bosl_ast_expression_destroy( initializer );
     bosl_ast_node_destroy( node );
     return NULL;
@@ -1310,16 +1306,16 @@ static bosl_ast_node_t* declaration_let( void ) {
   // cache name
   bosl_token_t* name = consume( TOKEN_IDENTIFIER, "Expect variable name." );
   // expect name
-  if ( ! name ) {
+  if ( !name ) {
     return NULL;
   }
-  if ( ! consume( TOKEN_COLON, "Expect colon after variable name." ) ) {
+  if ( !consume( TOKEN_COLON, "Expect colon after variable name." ) ) {
     return NULL;
   }
   // get type identifier
   bosl_token_t* type = consume(
     TOKEN_TYPE_IDENTIFIER, "Expect type identifier after colon." );
-  if ( ! type ) {
+  if ( !type ) {
     return NULL;
   }
   // get possible initializer
@@ -1328,7 +1324,7 @@ static bosl_ast_node_t* declaration_let( void ) {
     initializer = expression();
   }
   // assert semicolon at the end
-  if ( ! consume( TOKEN_SEMICOLON, "Expect ';' after variable declaration." ) ) {
+  if ( !consume( TOKEN_SEMICOLON, "Expect ';' after variable declaration." ) ) {
     if ( initializer ) {
       bosl_ast_expression_destroy( initializer );
     }
@@ -1336,7 +1332,7 @@ static bosl_ast_node_t* declaration_let( void ) {
   }
   // allocate node
   bosl_ast_node_t* node = bosl_ast_node_allocate();
-  if ( ! node ) {
+  if ( !node ) {
     if ( initializer ) {
       bosl_ast_expression_destroy( initializer );
     }
@@ -1344,7 +1340,7 @@ static bosl_ast_node_t* declaration_let( void ) {
   }
   // allocate statement
   node->statement = bosl_ast_statement_allocate( STATEMENT_VARIABLE );
-  if ( ! node->statement ) {
+  if ( !node->statement ) {
     if ( initializer ) {
       bosl_ast_expression_destroy( initializer );
     }
@@ -1366,26 +1362,26 @@ static bosl_ast_node_t* declaration_let( void ) {
  */
 static bosl_ast_node_t* declaration_function( void ) {
   // handle invalid depth
-  if ( 1 < parser->_depth ) {
+  if ( 1 < parser->depth ) {
     bosl_error_raise( parser->current(), "Functions are restricted to top level." );
     return NULL;
   }
   // set flag
-  parser->_in_function = true;
+  parser->in_function = true;
   // cache function name
   bosl_token_t* name = consume( TOKEN_IDENTIFIER, "Expect function name." );
   // expect function name
-  if ( ! name ) {
+  if ( !name ) {
     return NULL;
   }
   // create parameter list
   list_manager_t* parameter = list_construct(
     NULL, list_statement_cleanup, NULL );
-  if ( ! parameter ) {
+  if ( !parameter ) {
     return NULL;
   }
   // expect opening parenthesis
-  if ( ! consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after function name." ) ) {
+  if ( !consume( TOKEN_LEFT_PARENTHESIS, "Expect '(' after function name." ) ) {
     list_destruct( parameter );
     return NULL;
   }
@@ -1398,12 +1394,12 @@ static bosl_ast_node_t* declaration_function( void ) {
       bosl_token_t* parameter_name = consume(
         TOKEN_IDENTIFIER, "Expect parameter name." );
       // expect parameter name
-      if ( ! parameter_name ) {
+      if ( !parameter_name ) {
         list_destruct( parameter );
         return NULL;
       }
       // expect colon
-      if ( ! consume( TOKEN_COLON, "Expect colon after parameter name." ) ) {
+      if ( !consume( TOKEN_COLON, "Expect colon after parameter name." ) ) {
         list_destruct( parameter );
         return NULL;
       }
@@ -1411,14 +1407,14 @@ static bosl_ast_node_t* declaration_function( void ) {
       bosl_token_t* parameter_type = consume(
         TOKEN_TYPE_IDENTIFIER, "Expect type identifier after colon." );
       // expect type identifier
-      if ( ! parameter_type ) {
+      if ( !parameter_type ) {
         list_destruct( parameter );
         return NULL;
       }
       // build object to push
       bosl_ast_statement_t* p = bosl_ast_statement_allocate(
         STATEMENT_PARAMETER );
-      if ( ! p ) {
+      if ( !p ) {
         list_destruct( parameter );
         return NULL;
       }
@@ -1426,7 +1422,7 @@ static bosl_ast_node_t* declaration_function( void ) {
       p->parameter->name = parameter_name;
       p->parameter->type = parameter_type;
       // push back
-      if ( ! list_push_back_data( parameter, p ) ) {
+      if ( !list_push_back_data( parameter, p ) ) {
         bosl_ast_statement_destroy( p );
         list_destruct( parameter );
         return NULL;
@@ -1434,12 +1430,12 @@ static bosl_ast_node_t* declaration_function( void ) {
     } while ( match( TOKEN_COMMA ) );
   }
   // check for closing parenthesis
-  if ( ! consume( TOKEN_RIGHT_PARENTHESIS, "Expected ')' after arguments." ) ) {
+  if ( !consume( TOKEN_RIGHT_PARENTHESIS, "Expected ')' after arguments." ) ) {
     list_destruct( parameter );
     return NULL;
   }
   // expect colon
-  if ( ! consume( TOKEN_COLON, "Expect colon after closing parenthesis." ) ) {
+  if ( !consume( TOKEN_COLON, "Expect colon after closing parenthesis." ) ) {
     list_destruct( parameter );
     return NULL;
   }
@@ -1447,25 +1443,25 @@ static bosl_ast_node_t* declaration_function( void ) {
   bosl_token_t* return_type = consume(
     TOKEN_TYPE_IDENTIFIER, "Expect return type identifier." );
   // expect type identifier
-  if ( ! return_type ) {
+  if ( !return_type ) {
     list_destruct( parameter );
     return NULL;
   }
   // check opening brace
-  if ( ! consume( TOKEN_LEFT_BRACE, "Expected '{' before body." ) ) {
+  if ( !consume( TOKEN_LEFT_BRACE, "Expected '{' before body." ) ) {
     list_destruct( parameter );
     return NULL;
   }
   // build object to push
   bosl_ast_statement_t* f = bosl_ast_statement_allocate(
     STATEMENT_FUNCTION );
-  if ( ! f ) {
+  if ( !f ) {
     list_destruct( parameter );
     return NULL;
   }
   // create block for body
   bosl_ast_node_t* body = statement_block();
-  if ( ! body ) {
+  if ( !body ) {
     list_destruct( parameter );
     bosl_ast_statement_destroy( f );
     return NULL;
@@ -1475,13 +1471,13 @@ static bosl_ast_node_t* declaration_function( void ) {
     // destroy body again
     bosl_ast_node_destroy( body );
     // after equal a load has to come
-    if ( ! consume( TOKEN_LOAD, "Expect load type after equal." ) ) {
+    if ( !consume( TOKEN_LOAD, "Expect load type after equal." ) ) {
       list_destruct( parameter );
       bosl_ast_statement_destroy( f );
       return NULL;
     }
     // consume fn tag
-    if ( ! consume( TOKEN_FUNCTION, "Expect fn after load." ) ) {
+    if ( !consume( TOKEN_FUNCTION, "Expect fn after load." ) ) {
       list_destruct( parameter );
       bosl_ast_statement_destroy( f );
       return NULL;
@@ -1489,13 +1485,13 @@ static bosl_ast_node_t* declaration_function( void ) {
     // set load identifier
     f->function->load_identifier = consume(
       TOKEN_IDENTIFIER, "Expect identifier after load." );
-    if ( ! f->function->load_identifier ) {
+    if ( !f->function->load_identifier ) {
       list_destruct( parameter );
       bosl_ast_statement_destroy( f );
       return NULL;
     }
     // consume semicolon
-    if ( ! consume( TOKEN_SEMICOLON, "Expect ';' after load identifier." ) ) {
+    if ( !consume( TOKEN_SEMICOLON, "Expect ';' after load identifier." ) ) {
       list_destruct( parameter );
       bosl_ast_statement_destroy( f );
       return NULL;
@@ -1511,14 +1507,14 @@ static bosl_ast_node_t* declaration_function( void ) {
   f->function->return_type = return_type;
   // allocate node
   bosl_ast_node_t* node = bosl_ast_node_allocate();
-  if ( ! node ) {
+  if ( !node ) {
     bosl_ast_statement_destroy( f );
     return NULL;
   }
   // populate node
   node->statement = f;
   // reset flag
-  parser->_in_function = false;
+  parser->in_function = false;
   // finally return it
   return node;
 }
@@ -1530,7 +1526,7 @@ static bosl_ast_node_t* declaration_function( void ) {
  */
 static bosl_ast_node_t* declaration( void ) {
   // increase depth
-  parser->_depth += 1;
+  parser->depth += 1;
   // handle function
   if ( match( TOKEN_FUNCTION ) ) {
     return declaration_function();
@@ -1560,23 +1556,23 @@ bool bosl_parser_init( list_manager_t* token ) {
   }
   // allocate parser structure
   parser = malloc( sizeof( bosl_parser_t ) );
-  if ( ! parser ) {
+  if ( !parser ) {
     return false;
   }
   // clear out
   memset( parser, 0, sizeof( bosl_parser_t ) );
   // construct ast list
   parser->ast = list_construct( NULL, list_node_cleanup, NULL );
-  if ( ! parser->ast ) {
+  if ( !parser->ast ) {
     free( parser );
     return false;
   }
   // push in token list and set current to first element
-  parser->_token = token;
-  parser->_current = token->first;
-  parser->_in_function = false;
-  parser->_in_loop = false;
-  parser->_depth = 0;
+  parser->token = token;
+  parser->current_item = token->first;
+  parser->in_function = false;
+  parser->in_loop = false;
+  parser->depth = 0;
   // push back convenience helper
   parser->current = current;
   parser->next = next;
@@ -1590,7 +1586,7 @@ bool bosl_parser_init( list_manager_t* token ) {
  */
 void bosl_parser_free( void ) {
   // handle not initialized
-  if ( ! parser ) {
+  if ( !parser ) {
     return;
   }
   // free ast
@@ -1608,26 +1604,26 @@ void bosl_parser_free( void ) {
  */
 list_manager_t* bosl_parser_scan( void ) {
   // handle not initialized
-  if ( ! parser ) {
+  if ( !parser ) {
     return NULL;
   }
   // loop until end
-  while ( parser->_current && TOKEN_EOF != parser->current()->type ) {
+  while ( parser->current_item && TOKEN_EOF != parser->current()->type ) {
     // handle eof by break
     bosl_token_t* token = parser->current();
     if ( TOKEN_EOF == token->type ) {
       break;
     }
     // reset depth
-    parser->_depth = 0;
+    parser->depth = 0;
     // evaluate
     bosl_ast_node_t* tmp = declaration();
-    if ( ! tmp ) {
+    if ( !tmp ) {
       // return null
       return NULL;
     }
     // add to list
-    if ( ! list_push_back_data( parser->ast, tmp ) ) {
+    if ( !list_push_back_data( parser->ast, tmp ) ) {
       bosl_error_raise(
         parser->current(),
         "Unable to push back ast node!"
@@ -1806,13 +1802,13 @@ static void print_statement( bosl_ast_statement_t* s ) {
   switch ( s->type ) {
     case STATEMENT_FUNCTION: {
       // handle invalid depth
-      if ( 1 < parser->_depth ) {
+      if ( 1 < parser->depth ) {
         bosl_error_raise(
           s->function->token, "Functions are restricted to top level." );
         break;
       }
       // set flag
-      parser->_in_function = true;
+      parser->in_function = true;
       // opening block
       fprintf(
         stdout, "(fn %*.*s (",
@@ -1855,7 +1851,7 @@ static void print_statement( bosl_ast_statement_t* s ) {
       // closing block
       fprintf( stdout, ")" );
       // reset flag
-      parser->_in_function = true;
+      parser->in_function = true;
       break;
     }
     case STATEMENT_VARIABLE: {
@@ -1890,7 +1886,7 @@ static void print_statement( bosl_ast_statement_t* s ) {
       break;
     }
     case STATEMENT_IF: {
-      if ( ! s->if_else->else_statement ) {
+      if ( !s->if_else->else_statement ) {
         // opening block
         fprintf( stdout, "(if " );
         // condition and statement
@@ -1919,12 +1915,12 @@ static void print_statement( bosl_ast_statement_t* s ) {
     }
     case STATEMENT_RETURN: {
       // handle return not in function
-      if ( ! parser->_in_function ) {
+      if ( !parser->in_function ) {
         bosl_error_raise(
           s->return_value->keyword, "Return is only in functions allowed" );
         break;
       }
-      if ( ! s->return_value->value ) {
+      if ( !s->return_value->value ) {
         fprintf( stdout, "(return)" );
       } else {
         // opening block
@@ -1938,7 +1934,7 @@ static void print_statement( bosl_ast_statement_t* s ) {
     }
     case STATEMENT_WHILE: {
       // set in loop statement
-      parser->_in_loop = true;
+      parser->in_loop = true;
       // opening block
       fprintf( stdout, "(while " );
       // condition
@@ -1950,11 +1946,11 @@ static void print_statement( bosl_ast_statement_t* s ) {
       // closing block
       fprintf( stdout, ")" );
       // reset in loop statement
-      parser->_in_loop = false;
+      parser->in_loop = false;
       break;
     }
     case STATEMENT_BREAK: {
-      if ( ! parser->_in_loop ) {
+      if ( !parser->in_loop ) {
         bosl_error_raise( parser->current(), "Break is only allowed in a loop" );
         break;
       }
@@ -1971,7 +1967,7 @@ static void print_statement( bosl_ast_statement_t* s ) {
       break;
     }
     case STATEMENT_CONTINUE: {
-      if ( ! parser->_in_loop ) {
+      if ( !parser->in_loop ) {
         bosl_error_raise( parser->current(), "Continue is only allowed in a loop." );
         break;
       }
@@ -2037,7 +2033,7 @@ static void print_statement( bosl_ast_statement_t* s ) {
  * @param n
  */
 static void print_node( bosl_ast_node_t* n ) {
-  parser->_depth += 1;
+  parser->depth += 1;
   print_statement( n->statement );
   // flush output
   fflush( stdout );
@@ -2048,7 +2044,7 @@ static void print_node( bosl_ast_node_t* n ) {
  */
 void bosl_parser_print( void ) {
   // handle not initialized
-  if ( ! parser ) {
+  if ( !parser ) {
     return;
   }
   // loop through nodes and print them
@@ -2057,7 +2053,7 @@ void bosl_parser_print( void ) {
     current_item;
     current_item = current_item->next
   ) {
-    parser->_depth = 0;
+    parser->depth = 0;
     print_node( current_item->data );
   }
   // final newline

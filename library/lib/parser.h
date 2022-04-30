@@ -27,12 +27,16 @@
   #include <bosl/scanner.h>
 #endif
 
-#if ! defined( _BOSL_PARSER_H )
-#define _BOSL_PARSER_H
+#if !defined( BOSL_PARSER_H )
+#define BOSL_PARSER_H
 
-typedef bosl_token_t* ( *parser_previous_t )( void );
-typedef bosl_token_t* ( *parser_current_t )( void );
-typedef bosl_token_t* ( *parser_next_t )( void );
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef bosl_token_t* ( * parser_previous_t )( void );
+typedef bosl_token_t* ( * parser_current_t )( void );
+typedef bosl_token_t* ( * parser_next_t )( void );
 
 typedef struct {
   parser_previous_t previous;
@@ -40,17 +44,21 @@ typedef struct {
   parser_next_t next;
 
   list_manager_t* ast;
-  list_manager_t* _token;
-  list_item_t* _current;
+  list_manager_t* token;
+  list_item_t* current_item;
 
-  bool _in_function;
-  bool _in_loop;
-  size_t _depth;
+  bool in_function;
+  bool in_loop;
+  size_t depth;
 } bosl_parser_t;
 
 bool bosl_parser_init( list_manager_t* );
 void bosl_parser_free( void );
 list_manager_t* bosl_parser_scan( void );
 void bosl_parser_print( void );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

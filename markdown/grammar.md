@@ -1,4 +1,3 @@
-
 # Syntax grammar
 
 ## General

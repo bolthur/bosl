@@ -28,11 +28,11 @@
  * @return
  */
 bosl_ast_expression_t* bosl_ast_expression_allocate( bosl_ast_expression_type_t type ) {
-  size_t allocated_size = 0;
+  size_t allocated_size;
   void* inner_block = NULL;
   // allocate container
   bosl_ast_expression_t* expression = malloc( sizeof( bosl_ast_expression_t ) );
-  if ( ! expression ) {
+  if ( !expression ) {
     return NULL;
   }
   // clear out
@@ -69,15 +69,17 @@ bosl_ast_expression_t* bosl_ast_expression_allocate( bosl_ast_expression_type_t 
     case EXPRESSION_VARIABLE:
       allocated_size = sizeof( bosl_ast_expression_variable_t );
       break;
+    default:
+      allocated_size = 0;
   }
   // handle error
-  if ( ! allocated_size ) {
+  if ( !allocated_size ) {
     free( expression );
     return NULL;
   }
   // allocate inner structure
   inner_block = malloc( allocated_size );
-  if ( ! inner_block ) {
+  if ( !inner_block ) {
     free( expression );
     return NULL;
   }
@@ -103,7 +105,7 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_binary(
   bosl_ast_expression_t* right
 ) {
   bosl_ast_expression_t* e = bosl_ast_expression_allocate( EXPRESSION_BINARY );
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   // get inner data
@@ -129,7 +131,7 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_logical(
   bosl_ast_expression_t* right
 ) {
   bosl_ast_expression_t* e = bosl_ast_expression_allocate( EXPRESSION_LOGICAL );
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   // get inner data
@@ -156,7 +158,7 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_literal(
 ) {
   // allocate expression
   bosl_ast_expression_t* e = bosl_ast_expression_allocate( EXPRESSION_LITERAL );
-  if ( ! e ) {
+  if ( !e ) {
     return NULL;
   }
   // get inner type
@@ -164,7 +166,7 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_literal(
   // allocate space for literal
   if ( data ) {
     literal->value = malloc( size );
-    if ( ! literal->value ) {
+    if ( !literal->value ) {
       bosl_ast_expression_destroy( e );
       return NULL;
     }
@@ -187,7 +189,7 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_literal(
  * @param expression
  */
 void bosl_ast_expression_destroy( bosl_ast_expression_t* expression ) {
-  if ( ! expression ) {
+  if ( !expression ) {
     return;
   }
   if ( expression->data ) {
@@ -204,8 +206,6 @@ void bosl_ast_expression_destroy( bosl_ast_expression_t* expression ) {
         bosl_ast_expression_destroy( expression->call->callee );
         break;
       case EXPRESSION_LOAD:
-        // contains only token reference
-        break;
       case EXPRESSION_POINTER:
         // contains only token reference
         break;

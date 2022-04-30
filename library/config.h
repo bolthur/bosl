@@ -17,11 +17,36 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined( _BOSL_LIBRARY_CONFIG_H )
-#define _BOSL_LIBRARY_CONFIG_H
+#if !defined( BOSL_CONFIG_H )
+#define BOSL_CONFIG_H
+
+#if defined _WIN32 || defined __CYGWIN__
+#ifdef BUILDING_DLL
+    #ifdef __GNUC__
+      #define DLL_PUBLIC __attribute__ ((dllexport))
+    #else
+      #define DLL_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+  #else
+    #ifdef __GNUC__
+      #define DLL_PUBLIC __attribute__ ((dllimport))
+    #else
+      #define DLL_PUBLIC __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+  #endif
+  #define DLL_LOCAL
+#else
+#if __GNUC__ >= 4
+#define DLL_PUBLIC __attribute__ ((visibility ("default")))
+#define DLL_LOCAL  __attribute__ ((visibility ("hidden")))
+#else
+#define DLL_PUBLIC
+    #define DLL_LOCAL
+#endif
+#endif
 
 #if defined( HAVE_CONFIG_H )
-  #include <config.h>
+#include <config.h>
 #endif
 
 #endif

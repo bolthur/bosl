@@ -138,8 +138,8 @@ static Suite* error_suite( void ) {
 
 int main( void ) {
   int number_failed;
-  Suite *s;
-  SRunner *sr;
+  Suite* s;
+  SRunner* sr;
 
   s = error_suite();
   sr = srunner_create( s );

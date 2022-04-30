@@ -38,21 +38,21 @@ static hashmap_table_t* type_map = NULL;
 bool bosl_object_init( void ) {
   // create and fill hash map
   type_map = hashmap_construct( NULL );
-  if ( ! type_map ) {
+  if ( !type_map ) {
     return false;
   }
   // populate hashmap with keywords
   if (
-    ! hashmap_value_set( type_map, "int8", ( void* )BOSL_OBJECT_TYPE_INT8 )
-    || ! hashmap_value_set( type_map, "int16", ( void* )BOSL_OBJECT_TYPE_INT16 )
-    || ! hashmap_value_set( type_map, "int32", ( void* )BOSL_OBJECT_TYPE_INT32 )
-    || ! hashmap_value_set( type_map, "int64", ( void* )BOSL_OBJECT_TYPE_INT64 )
-    || ! hashmap_value_set( type_map, "uint8", ( void* )BOSL_OBJECT_TYPE_UINT8 )
-    || ! hashmap_value_set( type_map, "uint16", ( void* )BOSL_OBJECT_TYPE_UINT16 )
-    || ! hashmap_value_set( type_map, "uint32", ( void* )BOSL_OBJECT_TYPE_UINT32 )
-    || ! hashmap_value_set( type_map, "uint64", ( void* )BOSL_OBJECT_TYPE_UINT64 )
-    || ! hashmap_value_set( type_map, "float", ( void* )BOSL_OBJECT_TYPE_FLOAT )
-    || ! hashmap_value_set( type_map, "string", ( void* )BOSL_OBJECT_TYPE_STRING )
+    !hashmap_value_set( type_map, "int8", ( void* )BOSL_OBJECT_TYPE_INT_8 )
+    || !hashmap_value_set( type_map, "int16", ( void* )BOSL_OBJECT_TYPE_INT_16 )
+    || !hashmap_value_set( type_map, "int32", ( void* )BOSL_OBJECT_TYPE_INT_32 )
+    || !hashmap_value_set( type_map, "int64", ( void* )BOSL_OBJECT_TYPE_INT_64 )
+    || !hashmap_value_set( type_map, "uint8", ( void* )BOSL_OBJECT_TYPE_UINT_8 )
+    || !hashmap_value_set( type_map, "uint16", ( void* )BOSL_OBJECT_TYPE_UINT_16 )
+    || !hashmap_value_set( type_map, "uint32", ( void* )BOSL_OBJECT_TYPE_UINT_32 )
+    || !hashmap_value_set( type_map, "uint64", ( void* )BOSL_OBJECT_TYPE_UINT_64 )
+    || !hashmap_value_set( type_map, "float", ( void* )BOSL_OBJECT_TYPE_FLOAT )
+    || !hashmap_value_set( type_map, "string", ( void* )BOSL_OBJECT_TYPE_STRING )
   ) {
     hashmap_destruct( type_map );
     return false;
@@ -65,7 +65,7 @@ bool bosl_object_init( void ) {
  * @brief Free object handling stuff
  */
 void bosl_object_free( void ) {
-  if ( ! type_map ) {
+  if ( !type_map ) {
     return;
   }
   hashmap_destruct( type_map );
@@ -78,7 +78,7 @@ void bosl_object_free( void ) {
  */
 void bosl_object_destroy( bosl_object_t* object ) {
   // handle no object
-  if ( ! object ) {
+  if ( !object ) {
     return;
   }
   // destroy data
@@ -106,12 +106,12 @@ bosl_object_t* bosl_object_allocate(
 ) {
   // allocate object
   bosl_object_t* o = malloc( sizeof( bosl_object_t ) );
-  if ( ! o ) {
+  if ( !o ) {
     return NULL;
   }
   // allocate data
   o->data = malloc( size );
-  if ( ! o->data ) {
+  if ( !o->data ) {
     bosl_object_destroy( o );
     return NULL;
   }
@@ -141,8 +141,6 @@ bosl_object_t* bosl_object_allocate(
  * @param callback
  * @param closure
  * @return
- *
- * @todo add support for load statement
  */
 bosl_object_t* bosl_object_allocate_callable(
   bosl_ast_statement_function_t* statement,
@@ -151,12 +149,12 @@ bosl_object_t* bosl_object_allocate_callable(
 ) {
   // allocate object
   bosl_object_t* o = malloc( sizeof( bosl_object_t ) );
-  if ( ! o ) {
+  if ( !o ) {
     return NULL;
   }
   // allocate data
   o->data = malloc( sizeof( bosl_object_callable_t ) );
-  if ( ! o->data ) {
+  if ( !o->data ) {
     bosl_object_destroy( o );
     return NULL;
   }
@@ -185,11 +183,11 @@ bosl_object_t* bosl_object_allocate_callable(
  */
 bosl_object_t* bosl_object_duplicate_environment( bosl_object_t* obj ) {
   // handle invalid pointer
-  if ( ! obj ) {
+  if ( !obj ) {
     return NULL;
   }
   // no duplication necessary if not from environment
-  if ( ! obj->environment ) {
+  if ( !obj->environment ) {
     return obj;
   }
   // return duplicate
@@ -200,7 +198,7 @@ bosl_object_t* bosl_object_duplicate_environment( bosl_object_t* obj ) {
     obj->size
   );
   // handle error
-  if ( ! duplicate ) {
+  if ( !duplicate ) {
     return NULL;
   }
   // copy over rest of necessary properties
@@ -220,8 +218,8 @@ bosl_object_t* bosl_object_duplicate_environment( bosl_object_t* obj ) {
  * @return
  */
 bosl_object_type_t bosl_object_str_to_type( const char* str, size_t length ) {
-  void* result = hashmap_value_nget( type_map, str, length );
-  if ( ! result ) {
+  void* result = hashmap_value_get_n( type_map, str, length );
+  if ( !result ) {
     return BOSL_OBJECT_TYPE_UNDEFINED;
   }
   return ( bosl_object_type_t )result;
@@ -260,7 +258,7 @@ static bool value_fits_float( bosl_token_t* name, bosl_object_t* value ) {
   int64_t signed_number;
   uint64_t unsigned_number;
   long double float_number;
-  if ( ! bosl_object_extract_number(
+  if ( !bosl_object_extract_number(
     value,
     &unsigned_number,
     &signed_number,
@@ -271,8 +269,8 @@ static bool value_fits_float( bosl_token_t* name, bosl_object_t* value ) {
   }
   // uint to double
   if (
-    BOSL_OBJECT_TYPE_UINT8 <= value->type
-    && BOSL_OBJECT_TYPE_UINT64 >= value->type
+    BOSL_OBJECT_TYPE_UINT_8 <= value->type
+    && BOSL_OBJECT_TYPE_UINT_64 >= value->type
   ) {
     // test whether value can be stored safely by converting with conversion
     // back and comparison
@@ -282,15 +280,16 @@ static bool value_fits_float( bosl_token_t* name, bosl_object_t* value ) {
     // handle no assign possible
     if ( round_trip_value != unsigned_number ) {
       bosl_error_raise(
-        name, "Cannot assign value %"PRIu64" with type %s to %s "
+        name,
+        "Cannot assign value %"PRIu64" with type %s to %s "
         "( cannot be converted safely ).", unsigned_number,
         bosl_object_type_to_str( value->type ),
         bosl_object_type_to_str( BOSL_OBJECT_TYPE_FLOAT )
       );
       return false;
     }
-  // int to double
   } else {
+    // int to double conversion
     // test whether value can be stored safely by converting with conversion
     // back and comparison
     long double repr;
@@ -299,7 +298,8 @@ static bool value_fits_float( bosl_token_t* name, bosl_object_t* value ) {
     // handle no assign possible
     if ( round_trip_value != signed_number ) {
       bosl_error_raise(
-        name, "Cannot assign value %"PRId64" with type %s to %s "
+        name,
+        "Cannot assign value %"PRId64" with type %s to %s "
         "( cannot be converted safely ).", unsigned_number,
         bosl_object_type_to_str( value->type ),
         bosl_object_type_to_str( BOSL_OBJECT_TYPE_FLOAT )
@@ -329,11 +329,11 @@ bool bosl_object_assign_push_value(
   // variable for object type
   bosl_object_type_t object_type;
   // check for constant if not pushing a variable
-  if ( ! push ) {
+  if ( !push ) {
     // get current value
     bosl_object_t* current = bosl_environment_get_value( environment, name );
     // handle error
-    if ( ! current ) {
+    if ( !current ) {
       bosl_error_raise( name, "Variable not found." );
       return false;
     }
@@ -346,7 +346,7 @@ bool bosl_object_assign_push_value(
     object_type = current->type;
   } else {
     // handle missing type name
-    if ( ! type ) {
+    if ( !type ) {
       bosl_error_raise( name, "Type token internally not passed." );
       return false;
     }
@@ -356,14 +356,14 @@ bool bosl_object_assign_push_value(
 
   // Check usual incompatibilities
   if (
-    // handle string expected but no string in value
     (
+      // handle string expected but no string in value
       BOSL_OBJECT_TYPE_STRING == object_type
       && BOSL_OBJECT_TYPE_STRING != value->type
-    // handle integer expected but decimal received
     ) || (
-      BOSL_OBJECT_TYPE_UINT8 <= object_type
-      && BOSL_OBJECT_TYPE_INT64 >= object_type
+      // handle integer expected but decimal received
+      BOSL_OBJECT_TYPE_UINT_8 <= object_type
+      && BOSL_OBJECT_TYPE_INT_64 >= object_type
       && (
         BOSL_OBJECT_TYPE_BOOL == value->type
         || BOSL_OBJECT_TYPE_FLOAT == value->type
@@ -385,7 +385,7 @@ bool bosl_object_assign_push_value(
     int64_t signed_number;
     uint64_t unsigned_number;
     long double float_number;
-    if ( ! bosl_object_extract_number(
+    if ( !bosl_object_extract_number(
       value,
       &unsigned_number,
       &signed_number,
@@ -398,16 +398,16 @@ bool bosl_object_assign_push_value(
     // signed / unsigned integer to float conversion
     if (
       BOSL_OBJECT_TYPE_FLOAT == object_type
-      && BOSL_OBJECT_TYPE_UINT8 <= value->type
-      && BOSL_OBJECT_TYPE_INT64 >= value->type
+      && BOSL_OBJECT_TYPE_UINT_8 <= value->type
+      && BOSL_OBJECT_TYPE_INT_64 >= value->type
     ) {
-      if ( ! value_fits_float( name, value ) ) {
+      if ( !value_fits_float( name, value ) ) {
         // return false
         return false;
       }
       // allocate new data
       void* new_data = malloc( sizeof( long double ) );
-      if ( ! new_data ) {
+      if ( !new_data ) {
         bosl_error_raise(
           name, "Not enough memory for object type %s.",
           bosl_object_type_to_str( object_type )
@@ -420,8 +420,8 @@ bool bosl_object_assign_push_value(
       // transform to bool
       long double* new_val = new_data;
       if (
-        BOSL_OBJECT_TYPE_UINT8 <= value->type
-        && BOSL_OBJECT_TYPE_UINT64 >= value->type
+        BOSL_OBJECT_TYPE_UINT_8 <= value->type
+        && BOSL_OBJECT_TYPE_UINT_64 >= value->type
       ) {
         *new_val = ( long double )unsigned_number;
       } else {
@@ -433,15 +433,15 @@ bool bosl_object_assign_push_value(
       value->data = new_data;
       value->size = sizeof( long double );
     } else if (
-      BOSL_OBJECT_TYPE_UINT8 <= object_type
-      && BOSL_OBJECT_TYPE_INT64 >= object_type
-      && BOSL_OBJECT_TYPE_UINT8 <= value->type
-      && BOSL_OBJECT_TYPE_INT64 >= value->type
+      BOSL_OBJECT_TYPE_UINT_8 <= object_type
+      && BOSL_OBJECT_TYPE_INT_64 >= object_type
+      && BOSL_OBJECT_TYPE_UINT_8 <= value->type
+      && BOSL_OBJECT_TYPE_INT_64 >= value->type
     ) {
       bosl_object_type_t backup = value->type;
       // transform value to string
       char* value_str = bosl_object_stringify( value );
-      if ( ! value_str ) {
+      if ( !value_str ) {
         // raise error
         bosl_error_raise( name, "Not enough memory for stringify value." );
         // return false
@@ -454,7 +454,7 @@ bool bosl_object_assign_push_value(
       // restore type
       value->type = backup;
       // handle error
-      if ( ! converted_str ) {
+      if ( !converted_str ) {
         // free string
         free( value_str );
         // raise error
@@ -544,7 +544,7 @@ char* bosl_object_stringify( bosl_object_t* object ) {
   const char* buffer;
   // determine buffer size
   size_t buffer_size = sizeof( char );
-  char count_buffer[ 8 ];
+  char count_buffer[8];
   int digits = 0;
   // variables for numbers
   long double float_number;
@@ -558,7 +558,7 @@ char* bosl_object_stringify( bosl_object_t* object ) {
       memcpy( &flag, object->data, sizeof( flag ) );
       digits = ( int )( flag ? strlen( "true" ) : strlen( "false" ) );
       break;
-    case BOSL_OBJECT_TYPE_UINT8: {
+    case BOSL_OBJECT_TYPE_UINT_8: {
       // copy number
       memcpy( &unsigned_number, object->data, sizeof( unsigned_number ) );
       // enforce 8 bit unsigned integer
@@ -567,7 +567,7 @@ char* bosl_object_stringify( bosl_object_t* object ) {
       digits = snprintf( count_buffer, 7, "%"PRIu8, ( uint8_t )unsigned_number );
       break;
     }
-    case BOSL_OBJECT_TYPE_UINT16: {
+    case BOSL_OBJECT_TYPE_UINT_16: {
       // copy number
       memcpy( &unsigned_number, object->data, sizeof( unsigned_number ) );
       // enforce 16 bit unsigned integer
@@ -576,7 +576,7 @@ char* bosl_object_stringify( bosl_object_t* object ) {
       digits = snprintf( count_buffer, 7, "%"PRIu16, ( uint16_t )unsigned_number );
       break;
     }
-    case BOSL_OBJECT_TYPE_UINT32: {
+    case BOSL_OBJECT_TYPE_UINT_32: {
       // copy number
       memcpy( &unsigned_number, object->data, sizeof( unsigned_number ) );
       // enforce 32 bit unsigned integer
@@ -585,13 +585,13 @@ char* bosl_object_stringify( bosl_object_t* object ) {
       digits = snprintf( count_buffer, 7, "%"PRIu32, ( uint32_t )unsigned_number );
       break;
     }
-    case BOSL_OBJECT_TYPE_UINT64: {
+    case BOSL_OBJECT_TYPE_UINT_64: {
       memcpy( &unsigned_number, object->data, sizeof( unsigned_number ) );
       // determine digits
       digits = snprintf( count_buffer, 7, "%"PRIu64, unsigned_number );
       break;
     }
-    case BOSL_OBJECT_TYPE_INT8: {
+    case BOSL_OBJECT_TYPE_INT_8: {
       // copy number
       memcpy( &signed_number, object->data, sizeof( signed_number ) );
       // enforce 8 bit signed integer
@@ -600,7 +600,7 @@ char* bosl_object_stringify( bosl_object_t* object ) {
       digits = snprintf( count_buffer, 7, "%"PRId8, ( int8_t )signed_number );
       break;
     }
-    case BOSL_OBJECT_TYPE_INT16: {
+    case BOSL_OBJECT_TYPE_INT_16: {
       // copy number
       memcpy( &signed_number, object->data, sizeof( signed_number ) );
       // enforce 16 bit signed integer
@@ -609,7 +609,7 @@ char* bosl_object_stringify( bosl_object_t* object ) {
       digits = snprintf( count_buffer, 7, "%"PRId16, ( int16_t )signed_number );
       break;
     }
-    case BOSL_OBJECT_TYPE_INT32: {
+    case BOSL_OBJECT_TYPE_INT_32: {
       // copy number
       memcpy( &signed_number, object->data, sizeof( signed_number ) );
       // enforce 32 bit signed integer
@@ -618,7 +618,7 @@ char* bosl_object_stringify( bosl_object_t* object ) {
       digits = snprintf( count_buffer, 7, "%"PRId32, ( int32_t )signed_number );
       break;
     }
-    case BOSL_OBJECT_TYPE_INT64: {
+    case BOSL_OBJECT_TYPE_INT_64: {
       // copy number
       memcpy( &signed_number, object->data, sizeof( signed_number ) );
       // determine digits
@@ -641,7 +641,8 @@ char* bosl_object_stringify( bosl_object_t* object ) {
         digits = snprintf( count_buffer, 7, "<fn %*.*s>", length, length, token->start );
       }
       break;
-    default: return NULL;
+    default:
+      return NULL;
   }
   // handle error
   if ( 0 >= digits ) {
@@ -651,7 +652,7 @@ char* bosl_object_stringify( bosl_object_t* object ) {
   buffer_size *= ( size_t )( digits + 1 );
   // allocate buffer
   buffer = malloc( buffer_size );
-  if ( ! buffer ) {
+  if ( !buffer ) {
     return NULL;
   }
   // clear out
@@ -659,30 +660,30 @@ char* bosl_object_stringify( bosl_object_t* object ) {
   // print to allocated buffer
   switch ( object->type ) {
     case BOSL_OBJECT_TYPE_BOOL:
-      sprintf( buffer, "%s", flag ? "true": "false" );
+      sprintf( buffer, "%s", flag ? "true" : "false" );
       break;
-    case BOSL_OBJECT_TYPE_UINT8:
+    case BOSL_OBJECT_TYPE_UINT_8:
       sprintf( buffer, "%"PRIu8, ( uint8_t )unsigned_number );
       break;
-    case BOSL_OBJECT_TYPE_UINT16:
+    case BOSL_OBJECT_TYPE_UINT_16:
       sprintf( buffer, "%"PRIu16, ( uint16_t )unsigned_number );
       break;
-    case BOSL_OBJECT_TYPE_UINT32:
+    case BOSL_OBJECT_TYPE_UINT_32:
       sprintf( buffer, "%"PRIu32, ( uint32_t )unsigned_number );
       break;
-    case BOSL_OBJECT_TYPE_UINT64:
+    case BOSL_OBJECT_TYPE_UINT_64:
       sprintf( buffer, "%"PRIu64, unsigned_number );
       break;
-    case BOSL_OBJECT_TYPE_INT8:
+    case BOSL_OBJECT_TYPE_INT_8:
       sprintf( buffer, "%"PRId8, ( int8_t )signed_number );
       break;
-    case BOSL_OBJECT_TYPE_INT16:
+    case BOSL_OBJECT_TYPE_INT_16:
       sprintf( buffer, "%"PRId16, ( int16_t )signed_number );
       break;
-    case BOSL_OBJECT_TYPE_INT32:
+    case BOSL_OBJECT_TYPE_INT_32:
       sprintf( buffer, "%"PRId32, ( int32_t )signed_number );
       break;
-    case BOSL_OBJECT_TYPE_INT64:
+    case BOSL_OBJECT_TYPE_INT_64:
       sprintf( buffer, "%"PRId64, signed_number );
       break;
     case BOSL_OBJECT_TYPE_STRING:
@@ -722,7 +723,7 @@ char* bosl_object_stringify( bosl_object_t* object ) {
 void* bosl_object_extract_parameter( list_manager_t* list, size_t index ) {
   // get list item
   list_item_t* item = list_get_item_at_pos( list, index );
-  if ( ! item ) {
+  if ( !item ) {
     return NULL;
   }
   // return data
@@ -738,20 +739,23 @@ void* bosl_object_extract_parameter( list_manager_t* list, size_t index ) {
  */
 bool bosl_object_validate(
   bosl_token_t* name,
+  bosl_object_type_t object_type,
   bosl_object_t* value
 ) {
-  bosl_object_type_t object_type = bosl_object_str_to_type(
-    name->start, name->length );
+  if ( name ) {
+    object_type = bosl_object_str_to_type(
+      name->start, name->length );
+  }
   // Check usual incompatibilities
   if (
-    // handle string expected but no string in value
     (
+      // handle string expected but no string in value
       BOSL_OBJECT_TYPE_STRING == object_type
       && BOSL_OBJECT_TYPE_STRING != value->type
-    // handle integer expected but decimal received
     ) || (
-      BOSL_OBJECT_TYPE_UINT8 <= object_type
-      && BOSL_OBJECT_TYPE_INT64 >= object_type
+      // handle integer expected but decimal received
+      BOSL_OBJECT_TYPE_UINT_8 <= object_type
+      && BOSL_OBJECT_TYPE_INT_64 >= object_type
       && (
         BOSL_OBJECT_TYPE_BOOL == value->type
         || BOSL_OBJECT_TYPE_FLOAT == value->type
@@ -773,7 +777,7 @@ bool bosl_object_validate(
     int64_t signed_number;
     uint64_t unsigned_number;
     long double float_number;
-    if ( ! bosl_object_extract_number(
+    if ( !bosl_object_extract_number(
       value,
       &unsigned_number,
       &signed_number,
@@ -786,23 +790,23 @@ bool bosl_object_validate(
     // signed / unsigned integer to float conversion
     if (
       BOSL_OBJECT_TYPE_FLOAT == object_type
-      && BOSL_OBJECT_TYPE_UINT8 <= value->type
-      && BOSL_OBJECT_TYPE_INT64 >= value->type
+      && BOSL_OBJECT_TYPE_UINT_8 <= value->type
+      && BOSL_OBJECT_TYPE_INT_64 >= value->type
     ) {
-      if ( ! value_fits_float( name, value ) ) {
+      if ( !value_fits_float( name, value ) ) {
         bosl_error_raise( name, "Value to big for type float." );
         return false;
       }
     } else if (
-      BOSL_OBJECT_TYPE_UINT8 <= object_type
-      && BOSL_OBJECT_TYPE_INT64 >= object_type
-      && BOSL_OBJECT_TYPE_UINT8 <= value->type
-      && BOSL_OBJECT_TYPE_INT64 >= value->type
+      BOSL_OBJECT_TYPE_UINT_8 <= object_type
+      && BOSL_OBJECT_TYPE_INT_64 >= object_type
+      && BOSL_OBJECT_TYPE_UINT_8 <= value->type
+      && BOSL_OBJECT_TYPE_INT_64 >= value->type
     ) {
       bosl_object_type_t backup = value->type;
       // transform value to string
       char* value_str = bosl_object_stringify( value );
-      if ( ! value_str ) {
+      if ( !value_str ) {
         // raise error
         bosl_error_raise( name, "Not enough memory for stringify value." );
         // return null
@@ -815,7 +819,7 @@ bool bosl_object_validate(
       // restore type
       value->type = backup;
       // handle error
-      if ( ! converted_str ) {
+      if ( !converted_str ) {
         // free string
         free( value_str );
         // raise error

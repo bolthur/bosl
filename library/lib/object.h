@@ -30,8 +30,12 @@
   typedef struct bosl_environment bosl_environment_t;
 #endif
 
-#if ! defined( _BOSL_OBJECT_H )
-#define _BOSL_OBJECT_H
+#if !defined( BOSL_OBJECT_H )
+#define BOSL_OBJECT_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // interpreter structure forward declaration
 typedef struct bosl_interpreter bosl_interpreter_t;
@@ -39,14 +43,14 @@ typedef struct bosl_interpreter bosl_interpreter_t;
 typedef enum bosl_object_type {
   BOSL_OBJECT_TYPE_UNDEFINED,
   BOSL_OBJECT_TYPE_BOOL,
-  BOSL_OBJECT_TYPE_UINT8,
-  BOSL_OBJECT_TYPE_UINT16,
-  BOSL_OBJECT_TYPE_UINT32,
-  BOSL_OBJECT_TYPE_UINT64,
-  BOSL_OBJECT_TYPE_INT8,
-  BOSL_OBJECT_TYPE_INT16,
-  BOSL_OBJECT_TYPE_INT32,
-  BOSL_OBJECT_TYPE_INT64,
+  BOSL_OBJECT_TYPE_UINT_8,
+  BOSL_OBJECT_TYPE_UINT_16,
+  BOSL_OBJECT_TYPE_UINT_32,
+  BOSL_OBJECT_TYPE_UINT_64,
+  BOSL_OBJECT_TYPE_INT_8,
+  BOSL_OBJECT_TYPE_INT_16,
+  BOSL_OBJECT_TYPE_INT_32,
+  BOSL_OBJECT_TYPE_INT_64,
   BOSL_OBJECT_TYPE_STRING,
   BOSL_OBJECT_TYPE_FLOAT,
 } bosl_object_type_t;
@@ -102,6 +106,10 @@ bosl_object_type_t bosl_object_str_to_type( const char*, size_t );
 const char* bosl_object_type_to_str( bosl_object_type_t );
 char* bosl_object_stringify( bosl_object_t* );
 void* bosl_object_extract_parameter( list_manager_t*, size_t );
-bool bosl_object_validate( bosl_token_t*, bosl_object_t* );
+bool bosl_object_validate( bosl_token_t*, bosl_object_type_t, bosl_object_t* );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

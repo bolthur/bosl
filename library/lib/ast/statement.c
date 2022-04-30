@@ -28,11 +28,11 @@
  * @return
  */
 bosl_ast_statement_t* bosl_ast_statement_allocate( bosl_ast_statement_type_t type ) {
-  size_t allocated_size = 0;
+  size_t allocated_size;
   void* inner_block = NULL;
   // allocate container
   bosl_ast_statement_t* statement = malloc( sizeof( bosl_ast_statement_t ) );
-  if ( ! statement ) {
+  if ( !statement ) {
     return NULL;
   }
   // clear out
@@ -76,14 +76,16 @@ bosl_ast_statement_t* bosl_ast_statement_allocate( bosl_ast_statement_type_t typ
     case STATEMENT_POINTER:
       allocated_size = sizeof( bosl_ast_statement_pointer_t );
       break;
+    default:
+      allocated_size = 0;
   }
   // handle error
-  if ( ! allocated_size ) {
+  if ( !allocated_size ) {
     return NULL;
   }
   // allocate inner structure
   inner_block = malloc( allocated_size );
-  if ( ! inner_block ) {
+  if ( !inner_block ) {
     free( statement );
     return NULL;
   }
@@ -102,7 +104,7 @@ bosl_ast_statement_t* bosl_ast_statement_allocate( bosl_ast_statement_type_t typ
  * @param statement
  */
 void bosl_ast_statement_destroy( bosl_ast_statement_t* statement ) {
-  if ( ! statement ) {
+  if ( !statement ) {
     return;
   }
   if ( statement->data ) {

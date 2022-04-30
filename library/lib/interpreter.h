@@ -29,8 +29,12 @@
   typedef struct bosl_environment bosl_environment_t;
 #endif
 
-#if ! defined( _BOSL_INTERPRETER_H )
-#define _BOSL_INTERPRETER_H
+#if !defined( BOSL_INTERPRETER_H )
+#define BOSL_INTERPRETER_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef bosl_ast_statement_t* ( *interpreter_previous_t )( void );
 typedef bosl_ast_statement_t* ( *interpreter_current_t )( void );
@@ -48,13 +52,17 @@ typedef struct bosl_interpreter {
   int64_t loop_continue_remaining;
   int64_t loop_level;
 
-  list_manager_t* _ast;
-  list_item_t* _current;
+  list_manager_t* ast;
+  list_item_t* current_item;
 } bosl_interpreter_t;
 
 bool bosl_interpreter_init( list_manager_t* );
 void bosl_interpreter_free( void );
 bool bosl_interpreter_run( void );
 void bosl_interpreter_emit_error( bosl_token_t*, const char* );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

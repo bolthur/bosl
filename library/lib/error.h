@@ -18,17 +18,25 @@
  */
 
 #include <stdint.h>
+#include <stdio.h>
 
 #if defined( _COMPILING_BOSL )
-  #include "scanner.h"
+#include "scanner.h"
 #else
-  #include <bosl/scanner.h>
+#include <bosl/scanner.h>
 #endif
 
-#if ! defined( _BOSL_ERROR_H )
-#define _BOSL_ERROR_H
+#if !defined( BOSL_ERROR_H )
+#define BOSL_ERROR_H
 
-void bosl_error_raise( bosl_token_t*, const char*, ... )
-  __attribute__( ( format( printf, 2, 3 ) ) );
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void bosl_error_raise( bosl_token_t*, const char*, ... ) __attribute__( ( format( printf, 2, 3 ) ) );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

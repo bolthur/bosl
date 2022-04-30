@@ -31,7 +31,7 @@
 bosl_ast_node_t* bosl_ast_node_allocate( void ) {
   // allocate new ast node
   bosl_ast_node_t* node = malloc( sizeof( bosl_ast_node_t ) );
-  if ( ! node ) {
+  if ( !node ) {
     return NULL;
   }
   // clear out
@@ -46,7 +46,7 @@ bosl_ast_node_t* bosl_ast_node_allocate( void ) {
  * @param node
  */
 void bosl_ast_node_destroy( bosl_ast_node_t* node ) {
-  if ( ! node ) {
+  if ( !node ) {
     return;
   }
   bosl_ast_statement_destroy( node->statement );

@@ -17,23 +17,27 @@
  * along with bolthur/bosl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if ! defined( _LIST_H )
-#define _LIST_H
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+
+#if !defined( LIST_H )
+#define LIST_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // forward declaration
 typedef struct list_item list_item_t;
 typedef struct list_manager list_manager_t;
 
-typedef int32_t ( *list_lookup_func_t )(
+typedef int32_t ( * list_lookup_func_t )(
   const list_item_t* a,
   const void* data
 );
-typedef void ( *list_cleanup_func_t )( list_item_t* a );
-typedef bool ( *list_insert_func_t )( list_manager_t*, void* );
+typedef void ( * list_cleanup_func_t )( list_item_t* a );
+typedef bool ( * list_insert_func_t )( list_manager_t*, void* );
 
 // generic list item
 struct list_item {
@@ -74,5 +78,9 @@ list_item_t* list_get_item_at_pos( list_manager_t*, size_t );
 int32_t list_default_lookup( const list_item_t*, const void* );
 void list_default_cleanup( list_item_t* );
 bool list_default_insert( list_manager_t*, void* );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

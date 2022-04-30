@@ -29,8 +29,12 @@
   #include <bosl/object.h>
 #endif
 
-#if ! defined( _BOSL_ENVIRONMENT_H )
-#define _BOSL_ENVIRONMENT_H
+#if !defined( BOSL_ENVIRONMENT_H )
+#define BOSL_ENVIRONMENT_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct bosl_environment bosl_environment_t;
 
@@ -44,5 +48,9 @@ void bosl_environment_free( bosl_environment_t* );
 bool bosl_environment_push_value( bosl_environment_t*, bosl_token_t*, bosl_object_t* );
 bosl_object_t* bosl_environment_get_value( bosl_environment_t*, bosl_token_t* );
 bool bosl_environment_assign_value( bosl_environment_t*, bosl_token_t*, bosl_object_t* );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

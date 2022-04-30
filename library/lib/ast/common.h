@@ -24,8 +24,13 @@
   #include <bosl/ast/statement.h>
   #include <bosl/ast/expression.h>
 #endif
-#if ! defined( _BOSL_AST_COMMON_H )
-#define _BOSL_AST_COMMON_H
+
+#if !defined( BOSL_AST_COMMON_H )
+#define BOSL_AST_COMMON_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
   bosl_ast_statement_t* statement;
@@ -33,5 +38,9 @@ typedef struct {
 
 bosl_ast_node_t* bosl_ast_node_allocate( void );
 void bosl_ast_node_destroy( bosl_ast_node_t* );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

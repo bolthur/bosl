@@ -24,8 +24,13 @@
   #include <bosl/scanner.h>
   #include <bosl/collection/list.h>
 #endif
-#if ! defined( _BOSL_AST_EXPRESSION_H )
-#define _BOSL_AST_EXPRESSION_H
+
+#if !defined( BOSL_AST_EXPRESSION_H )
+#define BOSL_AST_EXPRESSION_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum {
   EXPRESSION_ASSIGN,
@@ -126,5 +131,9 @@ bosl_ast_expression_t* bosl_ast_expression_allocate_logical(
   bosl_ast_expression_t*, bosl_token_t*, bosl_ast_expression_t* );
 bosl_ast_expression_t* bosl_ast_expression_allocate_literal(
   const void*, size_t, bosl_ast_expression_literal_type_t );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -76,7 +76,7 @@ static bool add_token(
   const char* message
 ) {
   // handle not initialized
-  if ( ! scanner || ! scanner->token ) {
+  if ( !scanner->token ) {
     return false;
   }
   // message parameter is for error token only
@@ -85,7 +85,7 @@ static bool add_token(
   }
   // allocate token
   bosl_token_t* token = malloc( sizeof( *token ) );
-  if ( ! token ) {
+  if ( !token ) {
     return false;
   }
   // clear out
@@ -95,7 +95,7 @@ static bool add_token(
     size_t len = strlen( message );
     // allocate space for message
     token->start = malloc( sizeof( char ) * ( len + 1 ) );
-    if ( ! token->start ) {
+    if ( !token->start ) {
       free( token );
       return false;
     }
@@ -110,7 +110,7 @@ static bool add_token(
   token->type = type;
   token->line = scanner->line;
   // try to push back
-  if ( ! list_push_back_data( scanner->token, token ) ) {
+  if ( !list_push_back_data( scanner->token, token ) ) {
     if ( message ) {
       free( ( void* )token->start );
     }
@@ -128,7 +128,7 @@ static bool add_token(
  */
 static bool scan_string( void ) {
   // handle not initialized
-  if ( ! scanner || ! scanner->token ) {
+  if ( !scanner->token ) {
     return false;
   }
   // loop until second double quotes
@@ -146,7 +146,7 @@ static bool scan_string( void ) {
   // get beyond closing double quotes
   advance();
   // return string token
-  if ( ! add_token( TOKEN_STRING, NULL ) ) {
+  if ( !add_token( TOKEN_STRING, NULL ) ) {
     return false;
   }
   // get last added and get rid of beginning and ending quotes
@@ -164,7 +164,7 @@ static bool scan_string( void ) {
  */
 static bool scan_identifier( void ) {
   // handle not initialized
-  if ( ! scanner || ! scanner->token ) {
+  if ( !scanner->token ) {
     return false;
   }
   // get beyond alpha numeric
@@ -173,12 +173,11 @@ static bool scan_identifier( void ) {
     && (
       isalnum( ( int )*scanner->current )
       || '_' == *scanner->current
-    )
-  ) {
+    ) ) {
     advance();
   }
   // try to get type
-  void* raw_type = hashmap_value_nget(
+  void* raw_type = hashmap_value_get_n(
     scanner->keyword,
     scanner->start,
     ( size_t )( scanner->current - scanner->start )
@@ -199,7 +198,7 @@ static bool scan_identifier( void ) {
  */
 static bool scan_number( void ) {
   // handle not initialized
-  if ( ! scanner || ! scanner->token ) {
+  if ( !scanner->token ) {
     return false;
   }
   // loop until non digit
@@ -236,48 +235,62 @@ static bool scan_token( void ) {
   // get character and increase current to next one
   char current = advance();
 
-  // handle start of number
   if ( isdigit( current ) ) {
+    // handle start of number
     return scan_number();
-  // handle start of identifier
   } else if ( isalpha( current ) ) {
+    // handle start of identifier
     return scan_identifier();
-  // handle start of string
   } else if ( '"' == current ) {
+    // handle start of string
     return scan_string();
   }
 
   // handle possible
   switch ( current ) {
     // single character tokens
-    case '(': return add_token( TOKEN_LEFT_PARENTHESIS, NULL );
-    case ')': return add_token( TOKEN_RIGHT_PARENTHESIS, NULL );
-    case '{': return add_token( TOKEN_LEFT_BRACE, NULL );
-    case '}': return add_token( TOKEN_RIGHT_BRACE, NULL );
-    case ',': return add_token( TOKEN_COMMA, NULL );
-    case ':': return add_token( TOKEN_COLON, NULL );
-    case ';': return add_token( TOKEN_SEMICOLON, NULL );
-    case '-': return add_token( TOKEN_MINUS, NULL );
-    case '+': return add_token( TOKEN_PLUS, NULL );
-    case '*': return add_token( TOKEN_STAR, NULL );
-    case '%': return add_token( TOKEN_MODULO, NULL );
-    case '^': return add_token( TOKEN_XOR, NULL );
-    case '~': return add_token( TOKEN_BINARY_ONE_COMPLEMENT, NULL );
-    // one or two character tokens
+    case '(':
+      return add_token( TOKEN_LEFT_PARENTHESIS, NULL );
+    case ')':
+      return add_token( TOKEN_RIGHT_PARENTHESIS, NULL );
+    case '{':
+      return add_token( TOKEN_LEFT_BRACE, NULL );
+    case '}':
+      return add_token( TOKEN_RIGHT_BRACE, NULL );
+    case ',':
+      return add_token( TOKEN_COMMA, NULL );
+    case ':':
+      return add_token( TOKEN_COLON, NULL );
+    case ';':
+      return add_token( TOKEN_SEMICOLON, NULL );
+    case '-':
+      return add_token( TOKEN_MINUS, NULL );
+    case '+':
+      return add_token( TOKEN_PLUS, NULL );
+    case '*':
+      return add_token( TOKEN_STAR, NULL );
+    case '%':
+      return add_token( TOKEN_MODULO, NULL );
+    case '^':
+      return add_token( TOKEN_XOR, NULL );
+    case '~':
+      return add_token( TOKEN_BINARY_ONE_COMPLEMENT, NULL );
     case '/': {
       // handle comment ( skip )
       if ( match( '/' ) ) {
         while ( *scanner->current && '\n' != *scanner->current ) {
           advance();
         }
-      // normal slash token
       } else {
+        // normal slash token
         return add_token( TOKEN_SLASH, NULL );
       }
       break;
     }
-    case '!': return add_token( match( '=' ) ? TOKEN_BANG_EQUAL : TOKEN_BANG, NULL );
-    case '=': return add_token( match( '=' ) ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL, NULL );
+    case '!':
+      return add_token( match( '=' ) ? TOKEN_BANG_EQUAL : TOKEN_BANG, NULL );
+    case '=':
+      return add_token( match( '=' ) ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL, NULL );
     case '>': {
       if ( match( '>' ) ) {
         return add_token( TOKEN_SHIFT_RIGHT, NULL );
@@ -290,19 +303,21 @@ static bool scan_token( void ) {
       }
       return add_token( match( '=' ) ? TOKEN_LESS_EQUAL : TOKEN_LESS, NULL );
     }
-    case '&': return add_token( match( '&' ) ? TOKEN_AND_AND : TOKEN_AND, NULL );
-    case '|': return add_token( match( '|' ) ? TOKEN_OR_OR : TOKEN_OR, NULL );
-    // whitespace / newline
+    case '&':
+      return add_token( match( '&' ) ? TOKEN_AND_AND : TOKEN_AND, NULL );
+    case '|':
+      return add_token( match( '|' ) ? TOKEN_OR_OR : TOKEN_OR, NULL );
     case ' ':
     case '\r':
     case '\t':
-      // ignore
+      // whitespace / newlines are ignore
       break;
     case '\n':
       scanner->line++;
       break;
-    // unknown token
-    default: return add_token( TOKEN_ERROR, "Unknown token" );
+    default:
+      // unknown token
+      return add_token( TOKEN_ERROR, "Unknown token" );
   }
   // return success
   return true;
@@ -337,7 +352,7 @@ bool bosl_scanner_init( const char* source ) {
   }
   // allocate and handle error
   scanner = malloc( sizeof( *scanner ) );
-  if ( ! scanner ) {
+  if ( !scanner ) {
     return false;
   }
   // clear out
@@ -349,46 +364,46 @@ bool bosl_scanner_init( const char* source ) {
   scanner->line = 1;
   // generate token list
   scanner->token = list_construct( NULL, token_list_cleanup, NULL );
-  if ( ! scanner->token ) {
+  if ( !scanner->token ) {
     free( scanner );
     return false;
   }
   // create and fill hash map
   scanner->keyword = hashmap_construct( NULL );
-  if ( ! scanner->keyword ) {
+  if ( !scanner->keyword ) {
     list_destruct( scanner->token );
     free( scanner );
     return false;
   }
   // populate hashmap with keywords
   if (
-    ! hashmap_value_set( scanner->keyword, "let", ( void* )TOKEN_LET )
-    || ! hashmap_value_set( scanner->keyword, "const", ( void* )TOKEN_CONST )
-    || ! hashmap_value_set( scanner->keyword, "pointer", ( void* )TOKEN_POINTER )
-    || ! hashmap_value_set( scanner->keyword, "true", ( void* )TOKEN_TRUE )
-    || ! hashmap_value_set( scanner->keyword, "false", ( void* )TOKEN_FALSE )
-    || ! hashmap_value_set( scanner->keyword, "null", ( void* )TOKEN_NULL )
-    || ! hashmap_value_set( scanner->keyword, "if", ( void* )TOKEN_IF )
-    || ! hashmap_value_set( scanner->keyword, "else", ( void* )TOKEN_ELSE )
-    || ! hashmap_value_set( scanner->keyword, "while", ( void* )TOKEN_WHILE )
-    || ! hashmap_value_set( scanner->keyword, "break", ( void* )TOKEN_BREAK )
-    || ! hashmap_value_set( scanner->keyword, "continue", ( void* )TOKEN_CONTINUE )
-    || ! hashmap_value_set( scanner->keyword, "fn", ( void* )TOKEN_FUNCTION )
-    || ! hashmap_value_set( scanner->keyword, "return", ( void* )TOKEN_RETURN )
-    || ! hashmap_value_set( scanner->keyword, "load", ( void* )TOKEN_LOAD )
-    || ! hashmap_value_set( scanner->keyword, "int8", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "int16", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "int32", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "int64", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "uint8", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "uint16", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "uint32", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "uint64", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "float", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "string", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "void", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "bool", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || ! hashmap_value_set( scanner->keyword, "print", ( void* )TOKEN_PRINT )
+    !hashmap_value_set( scanner->keyword, "let", ( void* )TOKEN_LET )
+    || !hashmap_value_set( scanner->keyword, "const", ( void* )TOKEN_CONST )
+    || !hashmap_value_set( scanner->keyword, "pointer", ( void* )TOKEN_POINTER )
+    || !hashmap_value_set( scanner->keyword, "true", ( void* )TOKEN_TRUE )
+    || !hashmap_value_set( scanner->keyword, "false", ( void* )TOKEN_FALSE )
+    || !hashmap_value_set( scanner->keyword, "null", ( void* )TOKEN_NULL )
+    || !hashmap_value_set( scanner->keyword, "if", ( void* )TOKEN_IF )
+    || !hashmap_value_set( scanner->keyword, "else", ( void* )TOKEN_ELSE )
+    || !hashmap_value_set( scanner->keyword, "while", ( void* )TOKEN_WHILE )
+    || !hashmap_value_set( scanner->keyword, "break", ( void* )TOKEN_BREAK )
+    || !hashmap_value_set( scanner->keyword, "continue", ( void* )TOKEN_CONTINUE )
+    || !hashmap_value_set( scanner->keyword, "fn", ( void* )TOKEN_FUNCTION )
+    || !hashmap_value_set( scanner->keyword, "return", ( void* )TOKEN_RETURN )
+    || !hashmap_value_set( scanner->keyword, "load", ( void* )TOKEN_LOAD )
+    || !hashmap_value_set( scanner->keyword, "int8", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "int16", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "int32", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "int64", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "uint8", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "uint16", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "uint32", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "uint64", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "float", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "string", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "void", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "bool", ( void* )TOKEN_TYPE_IDENTIFIER )
+    || !hashmap_value_set( scanner->keyword, "print", ( void* )TOKEN_PRINT )
   ) {
     hashmap_destruct( scanner->keyword );
     list_destruct( scanner->token );
@@ -404,7 +419,7 @@ bool bosl_scanner_init( const char* source ) {
  */
 void bosl_scanner_free( void ) {
   // skip if no instance allocated
-  if ( ! scanner ) {
+  if ( !scanner ) {
     return;
   }
   // destroy list and hash map
@@ -421,7 +436,7 @@ void bosl_scanner_free( void ) {
  */
 list_manager_t* bosl_scanner_scan( void ) {
   // handle call without init
-  if ( ! scanner ) {
+  if ( !scanner ) {
     return NULL;
   }
   // loop until end
@@ -429,14 +444,14 @@ list_manager_t* bosl_scanner_scan( void ) {
     // set start to current
     scanner->start = scanner->current;
     // scan token
-    if ( ! scan_token() ) {
+    if ( !scan_token() ) {
       return NULL;
     }
   }
   // push scanner start one more time
   scanner->start = scanner->current;
   // add eof token
-  if ( ! add_token( TOKEN_EOF, NULL ) ) {
+  if ( !add_token( TOKEN_EOF, NULL ) ) {
     return NULL;
   }
   // return list of tokens

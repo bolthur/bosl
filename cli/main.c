@@ -39,7 +39,7 @@
 static char* read_file( const char* path ) {
   // open script
   FILE* f = fopen( path, "r" );
-  if ( ! f ) {
+  if ( !f ) {
     perror( path );
     return NULL;
   }
@@ -56,7 +56,7 @@ static char* read_file( const char* path ) {
   rewind( f );
   // allocate memory
   char* buffer = malloc( sizeof( char ) * size );
-  if ( ! buffer ) {
+  if ( !buffer ) {
     fclose( f );
     return NULL;
   }
@@ -81,19 +81,19 @@ static bosl_object_t* c_foo(
   list_manager_t* parameter
 ) {
   // get parameter
-  bosl_object_t* parameter1 = bosl_object_extract_parameter( parameter, 0 );
-  if ( ! parameter1 ) {
+  bosl_object_t* parameter_object = bosl_object_extract_parameter( parameter, 0 );
+  if ( !parameter_object ) {
     bosl_interpreter_emit_error( NULL, "Unable to extract parameter!" );
     return NULL;
   }
   // ensure type
-  if ( BOSL_OBJECT_TYPE_UINT8 != parameter1->type ) {
+  if ( BOSL_OBJECT_TYPE_UINT_8 != parameter_object->type ) {
     bosl_interpreter_emit_error( NULL, "Invalid parameter type received!" );
     return NULL;
   }
   // get and copy value ( everything is stored with maximum amount of space )
   uint64_t value = 0;
-  memcpy( &value, parameter1->data, sizeof( value ) );
+  memcpy( &value, parameter_object->data, sizeof( value ) );
   // do something
   printf( "c_foo!\r\nparameter1 = %"PRIu64"\r\n", value );
   // return nothing as nothing will be returned
@@ -103,14 +103,14 @@ static bosl_object_t* c_foo(
 /**
  * @brief Some simple c binding
  */
-static bosl_object_t* c_foo2(
+static bosl_object_t* c_foo_2(
   __unused bosl_object_t* o,
   __unused list_manager_t* parameter
 ) {
   // do something
-  printf( "c_foo2!\r\n" );
-  bosl_object_t* r = bosl_binding_build_return_int( BOSL_OBJECT_TYPE_INT8, -1 );
-  if ( ! r ) {
+  printf( "c_foo_2!\r\n" );
+  bosl_object_t* r = bosl_binding_build_return_int( BOSL_OBJECT_TYPE_INT_8, -1 );
+  if ( !r ) {
     bosl_interpreter_emit_error( NULL, "Unable to build return in binding!" );
     return NULL;
   }
@@ -121,11 +121,11 @@ static bosl_object_t* c_foo2(
 /**
  * @brief Some simple c binding
  */
-static bosl_object_t* c_foo3(
+static bosl_object_t* c_foo_3(
   __unused bosl_object_t* o,
   __unused list_manager_t* parameter
 ) {
-  bosl_interpreter_emit_error( NULL, "c_foo3 error!" );
+  bosl_interpreter_emit_error( NULL, "c_foo_3 error!" );
   return NULL;
 }
 
@@ -138,59 +138,59 @@ static bosl_object_t* c_foo3(
  */
 static bool interpret( bool print_ast, char* buffer ) {
   // initialize object handling
-  if ( ! bosl_object_init() ) {
+  if ( !bosl_object_init() ) {
     fprintf( stderr, "Unable to init object!\r\n" );
     return false;
   }
   // initialize scanner
-  if ( ! bosl_scanner_init( buffer ) ) {
+  if ( !bosl_scanner_init( buffer ) ) {
     bosl_object_free();
     fprintf( stderr, "Unable to init scanner!\r\n" );
     return false;
   }
   // scan token
   list_manager_t* token_list = bosl_scanner_scan();
-  if ( ! token_list ) {
+  if ( !token_list ) {
     bosl_object_free();
     bosl_scanner_free();
     return false;
   }
   // init parser
-  if ( ! bosl_parser_init( token_list ) ) {
+  if ( !bosl_parser_init( token_list ) ) {
     bosl_object_free();
     bosl_scanner_free();
     return false;
   }
   // parse ast
   list_manager_t* ast_list = bosl_parser_scan();
-  if ( ! ast_list ) {
+  if ( !ast_list ) {
     bosl_object_free();
     bosl_parser_free();
     bosl_scanner_free();
     return false;
   }
   // setup bindings
-  if ( ! bosl_binding_init() ) {
+  if ( !bosl_binding_init() ) {
     bosl_object_free();
     bosl_parser_free();
     bosl_scanner_free();
     return false;
   }
-  if ( ! bosl_binding_bind_function( "c_foo", c_foo ) ) {
+  if ( !bosl_binding_bind_function( "c_foo", c_foo ) ) {
     bosl_binding_free();
     bosl_object_free();
     bosl_parser_free();
     bosl_scanner_free();
     return false;
   }
-  if ( ! bosl_binding_bind_function( "c_foo2", c_foo2 ) ) {
+  if ( !bosl_binding_bind_function( "c_foo_2", c_foo_2 ) ) {
     bosl_binding_free();
     bosl_object_free();
     bosl_parser_free();
     bosl_scanner_free();
     return false;
   }
-  if ( ! bosl_binding_bind_function( "c_foo3", c_foo3 ) ) {
+  if ( !bosl_binding_bind_function( "c_foo_3", c_foo_3 ) ) {
     bosl_binding_free();
     bosl_object_free();
     bosl_parser_free();
@@ -198,7 +198,7 @@ static bool interpret( bool print_ast, char* buffer ) {
     return false;
   }
   // setup interpreter
-  if ( ! bosl_interpreter_init( ast_list ) ) {
+  if ( !bosl_interpreter_init( ast_list ) ) {
     bosl_binding_free();
     bosl_object_free();
     bosl_parser_free();
@@ -211,7 +211,7 @@ static bool interpret( bool print_ast, char* buffer ) {
     bosl_parser_print();
   } else {
     // run code
-    if ( ! bosl_interpreter_run() ) {
+    if ( !bosl_interpreter_run() ) {
       bosl_binding_free();
       bosl_object_free();
       bosl_interpreter_free();
@@ -238,24 +238,24 @@ int main( int argc, char* argv[] ) {
   struct arg_lit* ast = arg_lit0( "a", "ast", "print ast" );
   struct arg_file* infile = arg_filen( NULL, NULL, NULL, 1, 1, "input file" );
   struct arg_end* end = arg_end( 20 );
-  void* argtable[] = { verbose, help, version, ast, infile, end, };
-  int nerrors;
+  void* argument_table[] = { verbose, help, version, ast, infile, end, };
+  int error_count;
 
-  // verify argtable entries have been allocated
-  if ( arg_nullcheck( argtable ) ) {
+  // verify argument_table entries have been allocated
+  if ( arg_nullcheck( argument_table ) ) {
     fprintf( stderr, "%s: insufficient memory\r\n", PACKAGE_NAME );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    arg_freetable( argument_table, sizeof( argument_table ) / sizeof( argument_table[ 0 ] ) );
     return EXIT_FAILURE;
   }
   // try to parse arguments
-  nerrors = arg_parse( argc, argv, argtable );
+  error_count = arg_parse( argc, argv, argument_table );
 
   // handle --help
   if ( help->count ) {
     fprintf( stdout, "Usage: %s", PACKAGE_NAME );
-    arg_print_syntax( stdout, argtable, "\r\n" );
-    arg_print_glossary( stdout, argtable, "  %-25s %s\n" );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    arg_print_syntax( stdout, argument_table, "\r\n" );
+    arg_print_glossary( stdout, argument_table, "  %-25s %s\n" );
+    arg_freetable( argument_table, sizeof( argument_table ) / sizeof( argument_table[ 0 ] ) );
     return EXIT_SUCCESS;
   }
   // handle --version
@@ -267,38 +267,38 @@ int main( int argc, char* argv[] ) {
       "or FITNESS FOR A PARTICULAR PURPOSE.\r\n",
       PACKAGE_STRING
     );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    arg_freetable( argument_table, sizeof( argument_table ) / sizeof( argument_table[ 0 ] ) );
     return EXIT_SUCCESS;
   }
 
   // check for errors
-  if ( nerrors ) {
+  if ( error_count ) {
     arg_print_errors( stderr, end, PACKAGE_NAME );
-    fprintf( stderr, "Try '%s --help' for more information.\r\n",PACKAGE_NAME );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    fprintf( stderr, "Try '%s --help' for more information.\r\n", PACKAGE_NAME );
+    arg_freetable( argument_table, sizeof( argument_table ) / sizeof( argument_table[ 0 ] ) );
     return EXIT_FAILURE;
   }
   // without arguments print help
   if ( 1 == argc ) {
     fprintf( stdout, "Try '%s --help' for more information.\r\n", PACKAGE_NAME );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    arg_freetable( argument_table, sizeof( argument_table ) / sizeof( argument_table[ 0 ] ) );
     return EXIT_SUCCESS;
   }
   // read file into buffer
   char* buffer = read_file( infile->filename[ 0 ] );
-  if ( ! buffer ) {
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+  if ( !buffer ) {
+    arg_freetable( argument_table, sizeof( argument_table ) / sizeof( argument_table[ 0 ] ) );
     return EXIT_FAILURE;
   }
   // interpret it
-  if ( ! interpret( ast->count, buffer ) ) {
-    // free buffer and free argtable
+  if ( !interpret( ast->count, buffer ) ) {
+    // free buffer and free argument_table
     free( buffer );
-    arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+    arg_freetable( argument_table, sizeof( argument_table ) / sizeof( argument_table[ 0 ] ) );
     return EXIT_FAILURE;
   }
-  // free buffer and free argtable
+  // free buffer and free argument_table
   free( buffer );
-  arg_freetable( argtable,sizeof( argtable ) / sizeof( argtable[ 0 ] ) );
+  arg_freetable( argument_table, sizeof( argument_table ) / sizeof( argument_table[ 0 ] ) );
   return EXIT_SUCCESS;
 }

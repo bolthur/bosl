@@ -26,8 +26,13 @@
   #include <bosl/collection/list.h>
   #include <bosl/ast/expression.h>
 #endif
-#if ! defined( _BOSL_AST_STATEMENT_H )
-#define _BOSL_AST_STATEMENT_H
+
+#if !defined( BOSL_AST_STATEMENT_H )
+#define BOSL_AST_STATEMENT_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum {
   STATEMENT_BLOCK,
@@ -132,5 +137,9 @@ typedef struct bosl_ast_statement {
 
 bosl_ast_statement_t* bosl_ast_statement_allocate( bosl_ast_statement_type_t );
 void bosl_ast_statement_destroy( bosl_ast_statement_t* );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

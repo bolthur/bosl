@@ -71,7 +71,7 @@ static hashmap_entry_t* hashmap_find_entry(
   // loop until non empty
   while ( entries[ index ].key ) {
     // check if found and return
-    if ( ! strcmp( key, entries[ index ].key ) )  {
+    if ( !strcmp( key, entries[ index ].key ) ) {
       return &entries[ index ];
     }
     // increment if key wasn't in slot and check for end reached
@@ -95,7 +95,7 @@ static char* duplicate_key( const char* key, size_t len ) {
   size_t key_len = len + 1;
   // allocate temporary
   char* tmp = malloc( sizeof( char ) * key_len );
-  if ( ! tmp ) {
+  if ( !tmp ) {
     return NULL;
   }
   // clear out
@@ -117,7 +117,7 @@ static bool adjust_capacity( hashmap_table_t* table, size_t capacity ) {
   // allocate new hashmap entries
   hashmap_entry_t* new_list = calloc( capacity, sizeof( hashmap_entry_t ) );
   // handle error
-  if ( ! new_list ) {
+  if ( !new_list ) {
     return false;
   }
   // clear out
@@ -126,7 +126,7 @@ static bool adjust_capacity( hashmap_table_t* table, size_t capacity ) {
   table->length = 0;
   for ( size_t i = 0; i < table->capacity; i++ ) {
     // skip unused entries
-    if ( ! table->entries[ i ].key ) {
+    if ( !table->entries[ i ].key ) {
       continue;
     }
     // find entry
@@ -155,7 +155,7 @@ static bool adjust_capacity( hashmap_table_t* table, size_t capacity ) {
 hashmap_table_t* hashmap_construct( hashmap_entry_cleanup_t cleanup ) {
   // allocate hashmap table
   hashmap_table_t* table = malloc( sizeof( hashmap_table_t ) );
-  if ( ! table ) {
+  if ( !table ) {
     return NULL;
   }
   // clear out
@@ -203,7 +203,7 @@ void hashmap_destruct( hashmap_table_t* table ) {
  */
 void* hashmap_value_get( hashmap_table_t* table, const char* key ) {
   // handle no entries yet
-  if ( ! table->entries ) {
+  if ( !table->entries ) {
     return NULL;
   }
   // get matching entry from map
@@ -220,14 +220,14 @@ void* hashmap_value_get( hashmap_table_t* table, const char* key ) {
  * @param len
  * @return Set value or NULL if not found
  */
-void* hashmap_value_nget( hashmap_table_t* table, const char* key, size_t len ) {
+void* hashmap_value_get_n( hashmap_table_t* table, const char* key, size_t len ) {
   // handle no entries yet
-  if ( ! table->entries ) {
+  if ( !table->entries ) {
     return NULL;
   }
   // duplicate key
   char* tmp = duplicate_key( key, len );
-  if ( ! tmp ) {
+  if ( !tmp ) {
     return NULL;
   }
   // get value using temporary key
@@ -254,21 +254,20 @@ const char* hashmap_value_set(
   // expand table if limit reached
   if (
     table->length + 1 >= table->capacity
-    && ! adjust_capacity( table, HASHMAP_ENLARGE_CAPACITY( table->capacity ) )
+    && !adjust_capacity( table, HASHMAP_ENLARGE_CAPACITY( table->capacity ) )
   ) {
     return NULL;
   }
   // get matching entry from map
   hashmap_entry_t* e = hashmap_find_entry( table->entries, key, table->capacity );
-  // handle no new key
   if ( e->key ) {
+    // handle no new key
     table->cleanup( e->value );
     e->value = value;
-  // handle new key
   } else {
-    // duplicate key
+    // handle new key ( duplicate key )
     char* new_key = duplicate_key( key, strlen( key ) );
-    if ( ! new_key ) {
+    if ( !new_key ) {
       return NULL;
     }
     // push back data
@@ -286,19 +285,19 @@ const char* hashmap_value_set(
  *
  * @param table
  * @param key
- * @param len
  * @param value
+ * @param len
  * @return
  */
-const char* hashmap_value_nset(
+const char* hashmap_value_set_n(
   hashmap_table_t* table,
   const char* key,
-  size_t len,
-  void* value
+  void* value,
+  size_t len
 ) {
   // duplicate key
   char* tmp = duplicate_key( key, len );
-  if ( ! tmp ) {
+  if ( !tmp ) {
     return NULL;
   }
   // add via normal set
@@ -320,7 +319,7 @@ bool hashmap_value_del( hashmap_table_t* table, const char* key ) {
   // find entry
   hashmap_entry_t* e = hashmap_find_entry( table->entries, key, table->capacity );
   // treat no key ( no entry ) as failure
-  if ( ! e->key ) {
+  if ( !e->key ) {
     return false;
   }
   // cleanup value
@@ -341,10 +340,10 @@ bool hashmap_value_del( hashmap_table_t* table, const char* key ) {
  * @param key
  * @param len
  */
-bool hashmap_value_ndel( hashmap_table_t* table, const char* key, size_t len ) {
+bool hashmap_value_del_n( hashmap_table_t* table, const char* key, size_t len ) {
   // duplicate key
   char* tmp = duplicate_key( key, len );
-  if ( ! tmp ) {
+  if ( !tmp ) {
     return false;
   }
   // delete value
@@ -374,8 +373,8 @@ size_t hashmap_length( hashmap_table_t* table ) {
 hashmap_iterator_t hashmap_iterator( hashmap_table_t* table ) {
   // local variable
   hashmap_iterator_t iterator = {
-    ._table = table,
-    ._index = 0,
+    .table = table,
+    .index = 0,
   };
   // return it
   return iterator;
@@ -389,16 +388,16 @@ hashmap_iterator_t hashmap_iterator( hashmap_table_t* table ) {
  */
 bool hashmap_next( hashmap_iterator_t* iterator ) {
   // loop while there is still something left
-  while ( iterator->_index < iterator->_table->capacity ) {
+  while ( iterator->index < iterator->table->capacity ) {
     // save current index
-    size_t index = iterator->_index;
+    size_t index = iterator->index;
     // increment to next one
-    iterator->_index++;
+    iterator->index++;
     // handle something in current index
-    if ( iterator->_table->entries[ index ].key ) {
+    if ( iterator->table->entries[ index ].key ) {
       // save key and value in iterator
-      iterator->key = iterator->_table->entries[ index ].key;
-      iterator->value = iterator->_table->entries[ index ].value;
+      iterator->key = iterator->table->entries[ index ].key;
+      iterator->value = iterator->table->entries[ index ].value;
       // return success
       return true;
     }

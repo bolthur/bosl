@@ -46,20 +46,20 @@ static bosl_object_t* build_return(
 ) {
   // determine value type
   bosl_object_value_type_t value_type;
-  switch( type ) {
+  switch ( type ) {
     case BOSL_OBJECT_TYPE_BOOL:
       value_type = BOSL_OBJECT_VALUE_BOOL;
       break;
-    case BOSL_OBJECT_TYPE_UINT8:
-    case BOSL_OBJECT_TYPE_UINT16:
-    case BOSL_OBJECT_TYPE_UINT32:
-    case BOSL_OBJECT_TYPE_UINT64:
+    case BOSL_OBJECT_TYPE_UINT_8:
+    case BOSL_OBJECT_TYPE_UINT_16:
+    case BOSL_OBJECT_TYPE_UINT_32:
+    case BOSL_OBJECT_TYPE_UINT_64:
       value_type = BOSL_OBJECT_VALUE_INT_UNSIGNED;
       break;
-    case BOSL_OBJECT_TYPE_INT8:
-    case BOSL_OBJECT_TYPE_INT16:
-    case BOSL_OBJECT_TYPE_INT32:
-    case BOSL_OBJECT_TYPE_INT64:
+    case BOSL_OBJECT_TYPE_INT_8:
+    case BOSL_OBJECT_TYPE_INT_16:
+    case BOSL_OBJECT_TYPE_INT_32:
+    case BOSL_OBJECT_TYPE_INT_64:
       value_type = BOSL_OBJECT_VALUE_INT_SIGNED;
       break;
     case BOSL_OBJECT_TYPE_STRING:
@@ -97,7 +97,7 @@ bool bosl_binding_init( void ) {
  */
 void bosl_binding_free( void ) {
   // handle not initialized
-  if ( ! binding ) {
+  if ( !binding ) {
     return;
   }
   // destroy hashmap
@@ -113,7 +113,7 @@ void bosl_binding_free( void ) {
  */
 bool bosl_binding_bind_function( const char* name, bosl_callback_t callback ) {
   // handle not initialized
-  if ( ! binding ) {
+  if ( !binding ) {
     return false;
   }
   // don't allow to overwrite
@@ -122,7 +122,7 @@ bool bosl_binding_bind_function( const char* name, bosl_callback_t callback ) {
   }
   // create a new callable object
   bosl_object_t* callable = bosl_object_allocate_callable( NULL, callback, NULL );
-  if ( ! callable ) {
+  if ( !callable ) {
     return false;
   }
   // add to bindings
@@ -137,11 +137,11 @@ bool bosl_binding_bind_function( const char* name, bosl_callback_t callback ) {
  */
 bool bosl_binding_unbind_function( const char* name ) {
   // handle not initialized
-  if ( ! binding ) {
+  if ( !binding ) {
     return false;
   }
   // return true in case there is no such binding
-  if ( ! bosl_binding_get( name ) ) {
+  if ( !bosl_binding_get( name ) ) {
     return true;
   }
   // remove from hashmap
@@ -156,7 +156,7 @@ bool bosl_binding_unbind_function( const char* name ) {
  */
 bosl_object_t* bosl_binding_get( const char* name ) {
   // handle not initialized
-  if ( ! binding ) {
+  if ( !binding ) {
     return NULL;
   }
   // try to get binding from hashmap
@@ -170,13 +170,13 @@ bosl_object_t* bosl_binding_get( const char* name ) {
  * @param length
  * @return
  */
-bosl_object_t* bosl_binding_nget( const char* name, size_t length ) {
+bosl_object_t* bosl_binding_get_n( const char* name, size_t length ) {
   // handle not initialized
-  if ( ! binding ) {
+  if ( !binding ) {
     return NULL;
   }
   // try to get binding from hashmap
-  return hashmap_value_nget( binding, name, length );
+  return hashmap_value_get_n( binding, name, length );
 }
 
 /**
@@ -191,7 +191,7 @@ bosl_object_t* bosl_binding_build_return_uint(
   uint64_t data
 ) {
   // handle invalid type
-  if ( type < BOSL_OBJECT_TYPE_UINT8 || type > BOSL_OBJECT_TYPE_UINT64 ) {
+  if ( type < BOSL_OBJECT_TYPE_UINT_8 || type > BOSL_OBJECT_TYPE_UINT_64 ) {
     return NULL;
   }
   return build_return( type, &data, sizeof( data ) );
@@ -209,7 +209,7 @@ bosl_object_t* bosl_binding_build_return_int(
   int64_t data
 ) {
   // handle invalid type
-  if ( type < BOSL_OBJECT_TYPE_INT8 || type > BOSL_OBJECT_TYPE_INT64 ) {
+  if ( type < BOSL_OBJECT_TYPE_INT_8 || type > BOSL_OBJECT_TYPE_INT_64 ) {
     return NULL;
   }
   return build_return( type, &data, sizeof( data ) );

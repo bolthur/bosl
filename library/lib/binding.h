@@ -27,20 +27,28 @@
   #include <bosl/object.h>
 #endif
 
-#if ! defined( _BOSL_BINDING_H )
-#define _BOSL_BINDING_H
+#if !defined( BOSL_BINDING_H )
+#define BOSL_BINDING_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 bool bosl_binding_init( void );
 void bosl_binding_free( void );
 bool bosl_binding_bind_function( const char*, bosl_callback_t );
 bool bosl_binding_unbind_function( const char* );
 bosl_object_t* bosl_binding_get( const char* );
-bosl_object_t* bosl_binding_nget( const char*, size_t );
+bosl_object_t* bosl_binding_get_n( const char*, size_t );
 
 bosl_object_t* bosl_binding_build_return_uint( bosl_object_type_t, uint64_t );
 bosl_object_t* bosl_binding_build_return_int( bosl_object_type_t, int64_t );
 bosl_object_t* bosl_binding_build_return_float( long double );
 bosl_object_t* bosl_binding_build_return_string( const char* );
 bosl_object_t* bosl_binding_build_return_bool( bool );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

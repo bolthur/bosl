@@ -154,12 +154,12 @@ START_TEST( test_hashmap_iterator ) {
   // get iterator
   hashmap_iterator_t it = hashmap_iterator( table );
   // some assertions
-  ck_assert( 0 == it._index );
-  ck_assert_ptr_eq( table, it._table );
+  ck_assert( 0 == it.index );
+  ck_assert_ptr_eq( table, it.table );
   // loop
-  while( hashmap_next( &it ) ) {
+  while ( hashmap_next( &it ) ) {
     size_t num;
-    char buf[ 10 ];
+    char buf[10];
     // get number
     ck_assert( 1 == sscanf( it.key, "%*[^0123456789]%zu", &num ) );
     // assert correct value
@@ -194,8 +194,8 @@ static Suite* hashmap_suite( void ) {
 
 int main( void ) {
   int number_failed;
-  Suite *s;
-  SRunner *sr;
+  Suite* s;
+  SRunner* sr;
 
   s = hashmap_suite();
   sr = srunner_create( s );

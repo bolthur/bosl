@@ -41,14 +41,14 @@ static void environment_cleanup( void* object ) {
 bosl_environment_t* bosl_environment_init( bosl_environment_t* enclosing ) {
   // allocate environment structure
   bosl_environment_t* environment = malloc( sizeof( bosl_environment_t ) );
-  if ( ! environment ) {
+  if ( !environment ) {
     return NULL;
   }
   // clear out
   memset( environment, 0, sizeof( bosl_environment_t ) );
   // setup hashmap
   environment->value = hashmap_construct( environment_cleanup );
-  if ( ! environment->value ) {
+  if ( !environment->value ) {
     free( environment );
     return NULL;
   }
@@ -65,7 +65,7 @@ bosl_environment_t* bosl_environment_init( bosl_environment_t* enclosing ) {
  */
 void bosl_environment_free( bosl_environment_t* environment ) {
   // handle not initialized
-  if ( ! environment ) {
+  if ( !environment ) {
     return;
   }
   // destroy hashmap
@@ -88,11 +88,11 @@ bool bosl_environment_push_value(
   bosl_object_t* object
 ) {
   // add to hashmap
-  const char* r = hashmap_value_nset(
+  const char* r = hashmap_value_set_n(
     environment->value,
     token->start,
-    token->length,
-    object
+    object,
+    token->length
   );
   // set environment member
   if ( r ) {
@@ -114,7 +114,7 @@ bosl_object_t* bosl_environment_get_value(
   bosl_token_t* token
 ) {
   // try to get value
-  bosl_object_t* value = hashmap_value_nget(
+  bosl_object_t* value = hashmap_value_get_n(
     environment->value,
     token->start,
     token->length
@@ -146,7 +146,7 @@ bool bosl_environment_assign_value(
   bosl_object_t* object
 ) {
   // try current level
-  if ( hashmap_value_nget( environment->value, token->start, token->length ) ) {
+  if ( hashmap_value_get_n( environment->value, token->start, token->length ) ) {
     return bosl_environment_push_value( environment, token, object );
   }
   // try enclosing
