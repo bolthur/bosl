@@ -254,8 +254,10 @@ const char* hashmap_value_set(
   // expand table if limit reached
   if (
     table->length + 1 >= table->capacity
-    && !adjust_capacity( table, HASHMAP_ENLARGE_CAPACITY( table->capacity ) )
-  ) {
+    && !adjust_capacity(
+      table,
+      HASHMAP_ENLARGE_CAPACITY( table->capacity )
+    ) ) {
     return NULL;
   }
   // get matching entry from map

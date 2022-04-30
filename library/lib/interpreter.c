@@ -179,8 +179,7 @@ static bosl_object_t* object_equal(
   bool flag = false;
   if (
     BOSL_OBJECT_VALUE_NULL == left->value_type
-    && BOSL_OBJECT_VALUE_NULL == right->value_type
-  ) {
+    && BOSL_OBJECT_VALUE_NULL == right->value_type ) {
     // handle both null
     flag = true;
   } else if ( left->value_type == right->value_type ) {
@@ -237,8 +236,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
   if (
     TOKEN_BANG_EQUAL != b->operator->type
     && TOKEN_EQUAL_EQUAL != b->operator->type
-    && !same_type
-  ) {
+    && !same_type ) {
     if ( BOSL_OBJECT_VALUE_INT_SIGNED == left->value_type ) {
       // change right if left is signed
       right->value_type = left->value_type;
@@ -269,8 +267,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     && (
       !bosl_object_extract_number( left, &left_unsigned_number, &left_signed_number, &left_float_number )
       || !bosl_object_extract_number( right, &right_unsigned_number, &right_signed_number, &right_float_number )
-    )
-  ) {
+    ) ) {
     bosl_interpreter_emit_error( b->operator, "Number extraction failed." );
     destroy_object( left );
     destroy_object( right );
@@ -552,8 +549,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
     return equality;
   } else if (
     TOKEN_SHIFT_LEFT == b->operator->type
-    || TOKEN_SHIFT_RIGHT == b->operator->type
-  ) {
+    || TOKEN_SHIFT_RIGHT == b->operator->type ) {
     // save type and destroy objects
     bosl_object_value_type_t left_value_type = left->value_type;
     bosl_object_type_t left_type = left->type;
@@ -565,8 +561,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
       BOSL_OBJECT_TYPE_UINT_8 <= left_type
       && BOSL_OBJECT_TYPE_INT_64 >= left_type
       && BOSL_OBJECT_TYPE_UINT_8 <= right_type
-      && BOSL_OBJECT_TYPE_INT_64 >= right_type
-    ) {
+      && BOSL_OBJECT_TYPE_INT_64 >= right_type ) {
       // determine max shift bit
       size_t max_bit = 0;
       switch ( left_type ) {
@@ -601,8 +596,7 @@ static bosl_object_t* evaluate_binary( bosl_ast_expression_binary_t* b ) {
             max_bit <= ( size_t )right_signed_number
             || 0 >= right_signed_number
           )
-        )
-      ) {
+        ) ) {
         bosl_error_raise(
           b->operator,
           "Bit amount to shift has to be positive and smaller than %zd.",
@@ -699,16 +693,14 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     // minus unary is only possible for signed values, so just change it
     if (
       right->value_type != BOSL_OBJECT_VALUE_INT_SIGNED
-      && right->value_type != BOSL_OBJECT_VALUE_FLOAT
-    ) {
+      && right->value_type != BOSL_OBJECT_VALUE_FLOAT ) {
       // handle incompatible environment variables
       if (
         right->environment
         && (
           BOSL_OBJECT_TYPE_INT_8 > right->type
           || BOSL_OBJECT_TYPE_INT_64 < right->type
-        )
-      ) {
+        ) ) {
         // error message
         bosl_interpreter_emit_error( u->operator, "Expected signed variable." );
         // free object
@@ -722,8 +714,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
         && (
           BOSL_OBJECT_TYPE_INT_8 > right->type
           || BOSL_OBJECT_TYPE_INT_64 < right->type
-        )
-      ) {
+        ) ) {
         // now just change to the largest possible integer
         right->value_type = BOSL_OBJECT_VALUE_INT_SIGNED;
         right->type = BOSL_OBJECT_TYPE_INT_64;
@@ -765,8 +756,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     // validate type
     if (
       right->value_type >= BOSL_OBJECT_VALUE_FLOAT
-      && right->value_type <= BOSL_OBJECT_VALUE_INT_UNSIGNED
-    ) {
+      && right->value_type <= BOSL_OBJECT_VALUE_INT_UNSIGNED ) {
       // raise error and return NULL
       bosl_interpreter_emit_error( u->operator, "Expect numeric" );
       return NULL;
@@ -777,8 +767,7 @@ static bosl_object_t* evaluate_unary( bosl_ast_expression_unary_t* u ) {
     // validate type
     if (
       right->value_type >= BOSL_OBJECT_VALUE_INT_SIGNED
-      && right->value_type <= BOSL_OBJECT_VALUE_INT_UNSIGNED
-    ) {
+      && right->value_type <= BOSL_OBJECT_VALUE_INT_UNSIGNED ) {
       // raise error and return NULL
       bosl_interpreter_emit_error( u->operator, "Expect numeric integer" );
       return NULL;
@@ -916,11 +905,8 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
         return NULL;
       }
       // evaluate arguments
-      for (
-        list_item_t* current_item = e->call->arguments->first;
-        current_item;
-        current_item = current_item->next
-      ) {
+      list_item_t* current_item = e->call->arguments->first;
+      while ( current_item ) {
         // evaluate argument
         bosl_object_t* argument = evaluate_expression( current_item->data );
         if ( !argument ) {
@@ -946,6 +932,8 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
           destroy_object( object );
           return NULL;
         }
+        // get to next item
+        current_item = current_item->next;
       }
       // get expected and passed parameters
       size_t expected = list_count_item( callee->statement->parameter );
@@ -1010,8 +998,7 @@ static bosl_object_t* evaluate_expression( bosl_ast_expression_t* e ) {
         // handle logical or
         ( TOKEN_OR_OR == e->logical->operator->type && *flag )
         // handle logical and
-        && ( TOKEN_AND_AND == e->logical->operator->type && !*flag )
-      ) {
+        && ( TOKEN_AND_AND == e->logical->operator->type && !*flag ) ) {
         destroy_object( truthy );
         return left;
       }

@@ -52,8 +52,7 @@ bool bosl_object_init( void ) {
     || !hashmap_value_set( type_map, "uint32", ( void* )BOSL_OBJECT_TYPE_UINT_32 )
     || !hashmap_value_set( type_map, "uint64", ( void* )BOSL_OBJECT_TYPE_UINT_64 )
     || !hashmap_value_set( type_map, "float", ( void* )BOSL_OBJECT_TYPE_FLOAT )
-    || !hashmap_value_set( type_map, "string", ( void* )BOSL_OBJECT_TYPE_STRING )
-  ) {
+    || !hashmap_value_set( type_map, "string", ( void* )BOSL_OBJECT_TYPE_STRING ) ) {
     hashmap_destruct( type_map );
     return false;
   }
@@ -270,8 +269,7 @@ static bool value_fits_float( bosl_token_t* name, bosl_object_t* value ) {
   // uint to double
   if (
     BOSL_OBJECT_TYPE_UINT_8 <= value->type
-    && BOSL_OBJECT_TYPE_UINT_64 >= value->type
-  ) {
+    && BOSL_OBJECT_TYPE_UINT_64 >= value->type ) {
     // test whether value can be stored safely by converting with conversion
     // back and comparison
     long double repr;
@@ -369,8 +367,7 @@ bool bosl_object_assign_push_value(
         || BOSL_OBJECT_TYPE_FLOAT == value->type
         || BOSL_OBJECT_TYPE_STRING == value->type
       )
-    )
-  ) {
+    ) ) {
     bosl_error_raise(
       name, "Cannot assign %s to %s.",
       bosl_object_type_to_str( value->type ),
@@ -399,8 +396,7 @@ bool bosl_object_assign_push_value(
     if (
       BOSL_OBJECT_TYPE_FLOAT == object_type
       && BOSL_OBJECT_TYPE_UINT_8 <= value->type
-      && BOSL_OBJECT_TYPE_INT_64 >= value->type
-    ) {
+      && BOSL_OBJECT_TYPE_INT_64 >= value->type ) {
       if ( !value_fits_float( name, value ) ) {
         // return false
         return false;
@@ -421,8 +417,7 @@ bool bosl_object_assign_push_value(
       long double* new_val = new_data;
       if (
         BOSL_OBJECT_TYPE_UINT_8 <= value->type
-        && BOSL_OBJECT_TYPE_UINT_64 >= value->type
-      ) {
+        && BOSL_OBJECT_TYPE_UINT_64 >= value->type ) {
         *new_val = ( long double )unsigned_number;
       } else {
         *new_val = ( long double )float_number;
@@ -436,8 +431,7 @@ bool bosl_object_assign_push_value(
       BOSL_OBJECT_TYPE_UINT_8 <= object_type
       && BOSL_OBJECT_TYPE_INT_64 >= object_type
       && BOSL_OBJECT_TYPE_UINT_8 <= value->type
-      && BOSL_OBJECT_TYPE_INT_64 >= value->type
-    ) {
+      && BOSL_OBJECT_TYPE_INT_64 >= value->type ) {
       bosl_object_type_t backup = value->type;
       // transform value to string
       char* value_str = bosl_object_stringify( value );
@@ -465,8 +459,7 @@ bool bosl_object_assign_push_value(
       // treat different string lengths or comparison mismatch as incompatible
       if (
         strlen( value_str ) != strlen( converted_str )
-        || 0 != strcmp( value_str, converted_str )
-      ) {
+        || 0 != strcmp( value_str, converted_str ) ) {
         // raise error
         bosl_error_raise(
           name, "Range error: %s is not in range of type %s.",
@@ -761,8 +754,7 @@ bool bosl_object_validate(
         || BOSL_OBJECT_TYPE_FLOAT == value->type
         || BOSL_OBJECT_TYPE_STRING == value->type
       )
-    )
-  ) {
+    ) ) {
     bosl_error_raise(
       name, "Cannot assign %s to %s.",
       bosl_object_type_to_str( value->type ),
@@ -791,8 +783,7 @@ bool bosl_object_validate(
     if (
       BOSL_OBJECT_TYPE_FLOAT == object_type
       && BOSL_OBJECT_TYPE_UINT_8 <= value->type
-      && BOSL_OBJECT_TYPE_INT_64 >= value->type
-    ) {
+      && BOSL_OBJECT_TYPE_INT_64 >= value->type ) {
       if ( !value_fits_float( name, value ) ) {
         bosl_error_raise( name, "Value to big for type float." );
         return false;
@@ -801,8 +792,7 @@ bool bosl_object_validate(
       BOSL_OBJECT_TYPE_UINT_8 <= object_type
       && BOSL_OBJECT_TYPE_INT_64 >= object_type
       && BOSL_OBJECT_TYPE_UINT_8 <= value->type
-      && BOSL_OBJECT_TYPE_INT_64 >= value->type
-    ) {
+      && BOSL_OBJECT_TYPE_INT_64 >= value->type ) {
       bosl_object_type_t backup = value->type;
       // transform value to string
       char* value_str = bosl_object_stringify( value );
@@ -830,8 +820,7 @@ bool bosl_object_validate(
       // treat different string lengths or comparison mismatch as incompatible
       if (
         strlen( value_str ) != strlen( converted_str )
-        || 0 != strcmp( value_str, converted_str )
-      ) {
+        || 0 != strcmp( value_str, converted_str ) ) {
         // raise error
         bosl_error_raise(
           name, "Range error: %s is not in range of type %s.",

@@ -386,8 +386,7 @@ static bosl_ast_expression_t* expression_unary( void ) {
     match( TOKEN_BANG )
     || match( TOKEN_MINUS )
     || match( TOKEN_PLUS )
-    || match( TOKEN_BINARY_ONE_COMPLEMENT )
-  ) {
+    || match( TOKEN_BINARY_ONE_COMPLEMENT ) ) {
     bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_unary();
     if ( !right ) {
@@ -430,8 +429,7 @@ static bosl_ast_expression_t* expression_factor( void ) {
   while (
     match( TOKEN_SLASH )
     || match( TOKEN_STAR )
-    || match( TOKEN_MODULO )
-  ) {
+    || match( TOKEN_MODULO ) ) {
     bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_unary();
     if ( !right ) {
@@ -501,8 +499,7 @@ static bosl_ast_expression_t* expression_comparison( void ) {
     || match( TOKEN_LESS )
     || match( TOKEN_LESS_EQUAL )
     || match( TOKEN_SHIFT_LEFT )
-    || match( TOKEN_SHIFT_RIGHT )
-  ) {
+    || match( TOKEN_SHIFT_RIGHT ) ) {
     bosl_token_t* operator = parser->previous();
     bosl_ast_expression_t* right = expression_term();
     if ( !right ) {
@@ -1022,8 +1019,7 @@ static bosl_ast_node_t* statement_block( void ) {
   }
   while (
     TOKEN_RIGHT_BRACE != parser->current()->type
-    && TOKEN_EOF != parser->current()->type
-  ) {
+    && TOKEN_EOF != parser->current()->type ) {
     // evaluate
     bosl_ast_node_t* inner = declaration();
     if ( !inner ) {
@@ -1821,11 +1817,13 @@ static void print_statement( bosl_ast_statement_t* s ) {
         if ( c != s->function->parameter->first ) {
           fprintf( stdout, " " );
         }
-        bosl_ast_statement_parameter_t* p = c->data;
+        bosl_ast_statement_t* p = c->data;
         fprintf(
           stdout, "%*.*s:%*.*s",
-          ( int )p->name->length, ( int )p->name->length, p->name->start,
-          ( int )p->type->length, ( int )p->name->length, p->type->start
+          ( int )p->parameter->name->length, ( int )p->parameter->name->length,
+          p->parameter->name->start,
+          ( int )p->parameter->type->length, ( int )p->parameter->type->length,
+          p->parameter->type->start
         );
       }
       // close parameter parenthesis
@@ -2047,14 +2045,15 @@ void bosl_parser_print( void ) {
   if ( !parser ) {
     return;
   }
+  list_item_t* current_item = parser->ast->first;
   // loop through nodes and print them
-  for (
-    list_item_t* current_item = parser->ast->first;
-    current_item;
-    current_item = current_item->next
-  ) {
+  while ( current_item ) {
+    // initialize depth
     parser->depth = 0;
+    // print node
     print_node( current_item->data );
+    // get to next
+    current_item = current_item->next;
   }
   // final newline
   fprintf( stdout, "\r\n" );

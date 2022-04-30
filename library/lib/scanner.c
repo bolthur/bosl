@@ -54,10 +54,7 @@ static char next( void ) {
  * @return
  */
 static bool match( char expected ) {
-  if (
-    '\0' == scanner->current[ 0 ]
-    || scanner->current[ 0 ] != expected
-  ) {
+  if ( '\0' == scanner->current[ 0 ] || scanner->current[ 0 ] != expected ) {
     return false;
   }
   scanner->current++;
@@ -77,10 +74,6 @@ static bool add_token(
 ) {
   // handle not initialized
   if ( !scanner->token ) {
-    return false;
-  }
-  // message parameter is for error token only
-  if ( TOKEN_ERROR != type && message ) {
     return false;
   }
   // allocate token
@@ -210,15 +203,13 @@ static bool scan_number( void ) {
   // continue loop if hex or float
   if (
     ( is_float && isdigit( ( int )next() ) )
-    || ( is_hex && isalnum( ( int )next() ) )
-  ) {
+    || ( is_hex && isalnum( ( int )next() ) ) ) {
     // skip xX.
     advance();
     // loop until non digit
     while (
       ( is_float && isdigit( ( int )*scanner->current ) )
-      || ( is_hex && isalnum( ( int )*scanner->current ) )
-    ) {
+      || ( is_hex && isalnum( ( int )*scanner->current ) ) ) {
       advance();
     }
   }
@@ -403,8 +394,7 @@ bool bosl_scanner_init( const char* source ) {
     || !hashmap_value_set( scanner->keyword, "string", ( void* )TOKEN_TYPE_IDENTIFIER )
     || !hashmap_value_set( scanner->keyword, "void", ( void* )TOKEN_TYPE_IDENTIFIER )
     || !hashmap_value_set( scanner->keyword, "bool", ( void* )TOKEN_TYPE_IDENTIFIER )
-    || !hashmap_value_set( scanner->keyword, "print", ( void* )TOKEN_PRINT )
-  ) {
+    || !hashmap_value_set( scanner->keyword, "print", ( void* )TOKEN_PRINT ) ) {
     hashmap_destruct( scanner->keyword );
     list_destruct( scanner->token );
     free( scanner );
